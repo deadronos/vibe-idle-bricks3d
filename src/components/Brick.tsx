@@ -1,30 +1,29 @@
-import { useRef, useState } from 'react'
-import { useFrame } from '@react-three/fiber'
-import type { Mesh } from 'three'
-import type { Brick as BrickType } from '../store/gameStore'
+import { useRef, useState } from 'react';
+import { useFrame } from '@react-three/fiber';
+import type { Mesh } from 'three';
+import type { Brick as BrickType } from '../store/gameStore';
 
 interface BrickProps {
-  brick: BrickType
+  brick: BrickType;
 }
 
 export function Brick({ brick }: BrickProps) {
-  const meshRef = useRef<Mesh>(null)
-  const [hovered, setHovered] = useState(false)
-  
+  const meshRef = useRef<Mesh>(null);
+  const [hovered, setHovered] = useState(false);
+
   // Calculate damage color based on remaining health
-  const healthRatio = brick.health / brick.maxHealth
-  const damageColor = healthRatio > 0.5 
-    ? brick.color 
-    : `hsl(${Math.floor(healthRatio * 60)}, 80%, 50%)`
-  
+  const healthRatio = brick.health / brick.maxHealth;
+  const damageColor =
+    healthRatio > 0.5 ? brick.color : `hsl(${Math.floor(healthRatio * 60)}, 80%, 50%)`;
+
   // Subtle animation when damaged
   useFrame(() => {
     if (meshRef.current && healthRatio < 1) {
-      const shake = Math.sin(Date.now() * 0.01) * (1 - healthRatio) * 0.02
-      meshRef.current.rotation.z = shake
+      const shake = Math.sin(Date.now() * 0.01) * (1 - healthRatio) * 0.02;
+      meshRef.current.rotation.z = shake;
     }
-  })
-  
+  });
+
   return (
     <mesh
       ref={meshRef}
@@ -45,5 +44,5 @@ export function Brick({ brick }: BrickProps) {
         opacity={0.7 + healthRatio * 0.3}
       />
     </mesh>
-  )
+  );
 }
