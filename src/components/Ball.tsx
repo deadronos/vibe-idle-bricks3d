@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { Mesh } from 'three'
 import { useGameStore, ARENA_SIZE, type Ball as BallType } from '../store/gameStore'
@@ -16,8 +16,13 @@ export function Ball({ ball }: BallProps) {
   const updateBallVelocity = useGameStore((state) => state.updateBallVelocity)
   const damageBrick = useGameStore((state) => state.damageBrick)
   
-  // Use refs for velocity to avoid re-renders
+  // Use refs for velocity to avoid re-renders during frame updates
   const velocityRef = useRef<Vector3Tuple>([...ball.velocity])
+  
+  // Sync velocityRef when ball.velocity changes from store (e.g., speed upgrades)
+  useEffect(() => {
+    velocityRef.current = [...ball.velocity]
+  }, [ball.velocity])
   
   useFrame((_, delta) => {
     if (isPaused || !meshRef.current) return
