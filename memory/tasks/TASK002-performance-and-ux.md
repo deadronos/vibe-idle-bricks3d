@@ -44,19 +44,19 @@ Key changes:
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 10%
+**Overall Status:** In Progress - 60%
 
 ### Subtasks
 
 | ID  | Description                                      | Status       | Updated    | Notes |
 | --- | ------------------------------------------------ | ------------ | ---------- | ----- |
-| 1.1 | Setup profiling harness & PerfOverlay            | In Progress  | 2025-11-29 | Minimal harness started |
-| 2.1 | Create FrameManager & collision engine           | Not Started  | 2025-11-29 | Centralize loop |
-| 2.2 | Refactor Ball to render-only component           | Not Started  | 2025-11-29 | Driven by FrameManager |
-| 3.1 | Create BricksInstanced component                 | Not Started  | 2025-11-29 | Use InstancedMesh |
-| 3.2 | Implement batch updates & picking                | Not Started  | 2025-11-29 | Matrix updates |
-| 4.1 | Add UI a11y (aria-live, keyboard shortcuts)      | Not Started  | 2025-11-29 | Space, U keys |
-| 5.1 | Validation tests (picking & perf)                | Not Started  | 2025-11-29 | Ensure >45 FPS |
+| 1.1 | Setup profiling harness & PerfOverlay            | Complete     | 2025-11-29 | PerfOverlay gated by ?perf=1; perf harness test added |
+| 2.1 | Create FrameManager & collision engine           | Complete     | 2025-11-29 | Centralized physics loop + helpers |
+| 2.2 | Refactor Ball to render-only component           | Complete     | 2025-11-29 | Driven by FrameManager |
+| 3.1 | Create BricksInstanced component                 | Complete     | 2025-11-29 | InstancedMesh renderer |
+| 3.2 | Implement batch updates & picking                | In Progress  | 2025-11-29 | Batched instanced updates with hover picking |
+| 4.1 | Add UI a11y (aria-live, keyboard shortcuts)      | Complete     | 2025-11-29 | Space, U keys + live region |
+| 5.1 | Validation tests (picking & perf)                | In Progress  | 2025-11-29 | Perf harness added; picking test pending |
 
 ## Progress Log
 
@@ -65,3 +65,9 @@ Key changes:
 - Refined task based on DESIGN002: adopting FrameManager and InstancedMesh architecture.
 - Created task to profile and optimize GameScene render and update loops.
 - Added initial plan and harness ideas.
+
+### 2025-11-29 (later)
+
+- Implemented FrameManager with centralized collision step and refactored Ball into a render-only mesh.
+- Added InstancedMesh-based brick renderer with instance picking hover, plus PerfOverlay toggle via `?perf=1`.
+- Introduced perf harness test scaffold for collision loop; added UI aria-live announcements and keyboard shortcuts (Space pause, U upgrade).

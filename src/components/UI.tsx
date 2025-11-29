@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { ACHIEVEMENTS, useGameStore } from '../store/gameStore';
 import './UI.css';
 
@@ -25,8 +26,43 @@ export function UI() {
     unlockedAchievements.includes(achievement.id)
   );
 
+  const [liveMessage, setLiveMessage] = useState('');
+  const achievementsRef = useRef<string[]>(unlockedAchievements);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (event.code === 'Space') {
+        event.preventDefault();
+        togglePause();
+      }
+      if (event.code === 'KeyU') {
+        event.preventDefault();
+        upgradeBallDamage();
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [togglePause, upgradeBallDamage]);
+
+  useEffect(() => {
+    if (unlockedAchievements.length <= achievementsRef.current.length) return;
+
+    const latestId = unlockedAchievements[unlockedAchievements.length - 1];
+    const latest = ACHIEVEMENTS.find((item) => item.id === latestId);
+    if (latest) {
+      setLiveMessage(`Achievement unlocked: ${latest.label}`);
+    }
+
+    achievementsRef.current = unlockedAchievements;
+  }, [unlockedAchievements]);
+
   return (
     <div className="ui-container">
+      <div className="sr-only" aria-live="polite">
+        {liveMessage}
+      </div>
+
       {/* Score Panel */}
       <div className="panel score-panel">
         <h2>Score</h2>
@@ -125,6 +161,7 @@ export function UI() {
       <div className="instructions">
         <p>🖱️ Drag to rotate camera • Scroll to zoom</p>
         <p>Watch the balls break bricks automatically!</p>
+        <p>⎵ Space to pause/resume • U to upgrade damage</p>
       </div>
     </div>
   );
