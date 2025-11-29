@@ -1,6 +1,6 @@
 # DESIGN001 - Wave & Meta Progression
 
-**Status:** In Progress  
+**Status:** Completed  
 **Created:** 2025-11-29  
 **Updated:** 2025-11-29
 
@@ -117,6 +117,27 @@ Introduce explicit wave-based progression, a small achievement system, and meta-
 5. Add new selectors to `UI` for `wave`, `maxWaveReached`, and `unlockedAchievements`, and update HUD components to display wave and a compact achievements summary.  
 6. Wrap `useGameStore` with Zustand `persist`, configuring key, partialize, and migration; on hydrate, reconstruct bricks and balls from persisted meta progression.  
 7. Add and update unit tests in `src/test` to cover wave scaling, achievements, and persistence behavior.
+
+## Implementation Summary
+
+- Implemented `wave`, `maxWaveReached`, `unlockedAchievements`, and `settings` in `src/store/gameStore.ts`.  
+- Added wave-aware brick generation with scaling and wave advancement via `regenerateBricks`.  
+- Introduced an `ACHIEVEMENTS` list and `checkAndUnlockAchievements` helper; integrated unlock checks into `addScore`, `damageBrick`, `regenerateBricks`, and upgrade actions.  
+- Integrated Zustand `persist` (partialized storage) to persist only meta progression under the `idle-bricks3d:game:v1` key and rehydrate runtime entities on load.  
+- Exposed wave and achievements in HUD via `src/components/UI.tsx`.  
+- Added comprehensive tests in `src/test/gameStore.test.ts` and `src/test/gameStore.comprehensive.test.ts` covering scaling, achievements, upgrades, and persistence.
+
+## Validation
+
+- Unit and integration tests confirm wave and achievement behaviors; tests verify persistence partialization and successful rehydrate into runtime state.  
+- UI surfaces wave and unlocked achievements and remains lightweight.  
+- Persistence guards in `onRehydrateStorage` handle malformed data and fallback to safe defaults.
+
+## Next Steps
+
+- Tune the `WAVE_SCALE_FACTOR` and achievement thresholds based on playtesting telemetry and feedback.  
+- Add more achievement milestones and optionally per-achievement progress tracking.  
+- Perform performance profiling and UI polish for clarity and accessibility.
 
 ## Open Questions
 

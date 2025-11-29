@@ -9,7 +9,6 @@
 ## Key technical decisions
 
 - Keep game logic (ball physics, scoring, upgrades) separated from rendering components
-- Prefer pure functions and unit tests for store logic
 
 ## Design patterns
 
@@ -19,4 +18,3 @@
 ## Component relationships
 
 - App -> GameScene -> (Arena, Balls[], Bricks[])
-- UI reads/writes Zustand store; GameScene reacts to store changes

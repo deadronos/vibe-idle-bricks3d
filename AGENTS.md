@@ -2,6 +2,8 @@
 
 This document describes how AI agents should interact with and develop on the Idle Bricks 3D codebase.
 
+Also see copilot instructions in `.github/copilot-instructions.md`.
+
 ## Project Context
 
 Idle Bricks 3D is a 3D idle breakout game. Agents working on this project should understand:
@@ -172,3 +174,5 @@ The `/memory` directory stores persistent context:
 - `tasks/` - Task tracking
 
 Agents should consult these for project context between sessions.
+
+Important Details for the memory bank and spec driven workflows are in `.github/instructions/memory-bank.instructions.md` and `.github/instructions/spec-driven-workflow-v1.instructions.md`.

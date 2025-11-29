@@ -2,7 +2,7 @@
 
 ## PENDING
 
-- [DESIGN001] Wave & Meta Progression - Define wave scaling, achievements, and meta-only persistence.
+none
 
 ## IN PROGRESS
 
@@ -10,7 +10,7 @@ none
 
 ## COMPLETED
 
-none
+- [DESIGN001] Wave & Meta Progression - Completed: wave scaling, achievements, meta-only persistence, UI updates, tests
 
 ## ABANDONED
 

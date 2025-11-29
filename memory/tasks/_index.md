@@ -2,15 +2,15 @@
 
 ## PENDING
 
-- [TASK001] Wave & Meta Progression Implementation - Implement waves, achievements, and meta persistence per DESIGN001.
+- [TASK003] Investigate Persist/Rehydrate Race - Investigate failing rehydrate test behavior and propose fix
 
 ## IN PROGRESS
 
-none
+- [TASK002] Performance Profiling & UX Polish - Profile rendering and optimize GameScene/Ball updates; polish UI
 
 ## COMPLETED
 
-none
+- [TASK001] Wave & Meta Progression Implementation - Implemented waves, achievements, partial persistence (meta-only), and UI updates (see tests and store updates)
 
 ## ABANDONED
 

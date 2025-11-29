@@ -4,8 +4,9 @@
 
 ## Current focus
 
-- Maintain and improve core gameplay responsiveness and upgrade UX
-- Keep TypeScript types strict and tests covering store logic
+- Performance profiling and optimizations, especially around rendering and `useFrame` loops.  
+- UI polish including accessibility and clearer achievement feedback.  
+- Continue to expand test coverage for integrations and edge cases.
 
 ## Recent changes
 
@@ -13,10 +14,12 @@
 
 ## Next steps
 
-- Add or update tests for store logic
-- Review performance hotspots in GameScene and Ball components
+- Profile `GameScene` and `Ball` physics to reduce per-frame allocations and re-renders.  
+- Propose UI tweaks for achievements display and wave feedback.  
+- Add migration path and versioning for persisted meta when needed.
 
 ## Active decisions
 
 - Use Zustand for state management
-- Keep physics deterministic and mostly frame-rate independent
+-- Keep physics deterministic and mostly frame-rate independent
+- Persist only meta progression and reconstruct runtime entities on hydrate using Zustand persist partialize + onRehydrateStorage guard

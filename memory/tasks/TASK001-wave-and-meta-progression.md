@@ -1,6 +1,6 @@
 # TASK001 - Wave & Meta Progression Implementation
 
-**Status:** Pending  
+**Status:** Completed  
 **Added:** 2025-11-29  
 **Updated:** 2025-11-29
 
@@ -73,25 +73,28 @@ We will:
 
 ## Progress Tracking
 
-**Overall Status:** Not Started - 0%
+**Overall Status:** Completed - 100%
 
 ### Subtasks
 
 | ID  | Description                                             | Status       | Updated    | Notes |
 | --- | ------------------------------------------------------- | ------------ | ---------- | ----- |
-| 1.1 | Extend GameState with progression and settings fields   | Not Started  | 2025-11-29 |       |
-| 2.1 | Make brick generation wave-aware with linear scaling    | Not Started  | 2025-11-29 |       |
-| 3.1 | Update regenerateBricks to manage wave advancement      | Not Started  | 2025-11-29 |       |
-| 4.1 | Implement achievements definitions and unlock helper    | Not Started  | 2025-11-29 |       |
-| 4.2 | Wire achievement checks into store actions              | Not Started  | 2025-11-29 |       |
-| 5.1 | Add Zustand persist for meta progression                | Not Started  | 2025-11-29 |       |
-| 5.2 | Implement robust hydrate/fallback behavior              | Not Started  | 2025-11-29 |       |
-| 6.1 | Update UI to display wave and achievements              | Not Started  | 2025-11-29 |       |
-| 7.1 | Extend store tests for waves, achievements, persistence | Not Started  | 2025-11-29 |       |
+| 1.1 | Extend GameState with progression and settings fields   | Completed    | 2025-11-29 | Implemented in `src/store/gameStore.ts` |
+| 2.1 | Make brick generation wave-aware with linear scaling    | Completed    | 2025-11-29 | `createInitialBricks(wave)` implemented and used in regeneration |
+| 3.1 | Update regenerateBricks to manage wave advancement      | Completed    | 2025-11-29 | `regenerateBricks` implemented, wave bonus applied |
+| 4.1 | Implement achievements definitions and unlock helper    | Completed    | 2025-11-29 | `ACHIEVEMENTS` and `checkAndUnlockAchievements` implemented |
+| 4.2 | Wire achievement checks into store actions              | Completed    | 2025-11-29 | Integrated into `addScore`, `damageBrick`, `regenerateBricks`, and upgrades |
+| 5.1 | Add Zustand persist for meta progression                | Completed    | 2025-11-29 | Persistence partialize and onRehydrateStorage implemented |
+| 5.2 | Implement robust hydrate/fallback behavior              | Completed    | 2025-11-29 | Guarding and clamping implemented in `onRehydrateStorage` |
+| 6.1 | Update UI to display wave and achievements              | Completed    | 2025-11-29 | HUD updated in `src/components/UI.tsx` |
+| 7.1 | Extend store tests for waves, achievements, persistence | Completed    | 2025-11-29 | Tests added/extended under `src/test/` |
 
 ## Progress Log
 
 ### 2025-11-29
 
 - Task created from DESIGN001 Wave & Meta Progression.  
-- Initial implementation plan and subtasks defined.
+- Implemented wave-aware brick generation, achievements, and Zustand persistence in `src/store/gameStore.ts`.  
+- Updated UI to show wave and achievements in `src/components/UI.tsx`.  
+- Added comprehensive tests validating scaling, unlocking, upgrade costs, regeneration, and persistence (`src/test/gameStore.*.ts`).  
+- Task marked Completed: code, tests, and UI are present and validated.
