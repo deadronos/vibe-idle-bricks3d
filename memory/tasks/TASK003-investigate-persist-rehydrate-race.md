@@ -1,6 +1,6 @@
 # TASK003 - Investigate Persist/Rehydrate Race Causing Test Failure
 
-**Status:** Pending  
+**Status:** Completed  
 **Added:** 2025-11-29  
 **Updated:** 2025-11-29
 
@@ -21,18 +21,19 @@ The test expects rehydrate to restore a previously saved state after resetting t
 
 ## Progress Tracking
 
-**Overall Status:** Pending - 0%
+**Overall Status:** Completed - 100%
 
 ### Subtasks
 
 | ID  | Description                                              | Status      | Updated    | Notes |
 | --- | -------------------------------------------------------- | ----------- | ---------- | ----- |
-| 1.1 | Reproduce failing test in isolation                      | Pending     | 2025-11-29 |  |
-| 2.1 | Evaluate fix options (skip writes in test; rehydrate helper) | Pending     | 2025-11-29 |  |
-| 3.1 | Implement minimal fix with tests                         | Pending     | 2025-11-29 |  |
+| 1.1 | Reproduce failing test in isolation                      | Completed   | 2025-11-29 | Reproduced locally and logged write order |
+| 2.1 | Evaluate fix options (skip writes in test; rehydrate helper) | Completed   | 2025-11-29 | Implemented companion metadata approach |
+| 3.1 | Implement minimal fix with tests                         | Completed   | 2025-11-29 | Tests updated and passing for the failing case |
 
 ## Progress Log
 
 ### 2025-11-29
 
 - Task created to track investigation of the persist/rehydrate test failure.
+- Implemented a companion metadata key for atomic recovery of meaningful snapshots. Updated `gameStore.ts` to use the metadata key during storage `getItem`/`setItem` and removed earlier test-only suppression hacks. Verified failing test `persist meta progression` now passes locally.

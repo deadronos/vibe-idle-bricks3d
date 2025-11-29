@@ -11,6 +11,7 @@
 ## COMPLETED
 
 - [TASK001] Wave & Meta Progression Implementation - Implemented waves, achievements, partial persistence (meta-only), and UI updates (see tests and store updates)
+- [TASK003] Investigate Persist/Rehydrate Race - Investigated and implemented companion metadata fix; tests updated and passing
 
 ## ABANDONED
 
