@@ -2,7 +2,7 @@
 
 ## PENDING
 
-none
+- [TASK001] Wave & Meta Progression Implementation - Implement waves, achievements, and meta persistence per DESIGN001.
 
 ## IN PROGRESS
 
