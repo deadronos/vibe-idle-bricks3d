@@ -1,7 +1,16 @@
 ---
 description: Research context and return findings to parent agent
 argument-hint: Research goal or problem statement
-tools: ['execute/testFailure', 'read/readFile', 'search', 'web', 'cognitionai/deepwiki/*', 'sequentialthinking/*', 'upstash/context7/*']
+tools:
+  [
+    'execute/testFailure',
+    'read/readFile',
+    'search',
+    'web',
+    'cognitionai/deepwiki/*',
+    'sequentialthinking/*',
+    'upstash/context7/*',
+  ]
 model: 'gpt-5-mini'
 ---
 

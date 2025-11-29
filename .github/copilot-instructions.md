@@ -60,6 +60,13 @@ src/
 └── main.tsx       # Entry point
 ```
 
+use this for new test files:
+```
+tests/
+├── components/     # Component tests
+└── store/          # Store tests
+```
+
 ## Development Commands
 
 ```bash
@@ -69,7 +76,7 @@ npm run lint       # Run ESLint
 npm run lint:fix   # Run ESLint with auto-fix
 npm run format     # Format code with Prettier
 npm run typecheck  # Run TypeScript type checking
-npm run test       # Run tests in watch mode
+npm run test       # Run tests without watch mode
 npm run test:run   # Run tests once
 ```
 

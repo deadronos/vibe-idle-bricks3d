@@ -1,7 +1,21 @@
 ---
 description: 'Execute implementation tasks delegated by the CONDUCTOR agent.'
 tools:
-  ['execute/testFailure', 'execute/getTerminalOutput', 'execute/runTask', 'execute/getTaskOutput', 'execute/createAndRunTask', 'execute/runInTerminal', 'read/readFile', 'read/terminalSelection', 'read/terminalLastCommand', 'edit', 'search', 'web', 'todo']
+  [
+    'execute/testFailure',
+    'execute/getTerminalOutput',
+    'execute/runTask',
+    'execute/getTaskOutput',
+    'execute/createAndRunTask',
+    'execute/runInTerminal',
+    'read/readFile',
+    'read/terminalSelection',
+    'read/terminalLastCommand',
+    'edit',
+    'search',
+    'web',
+    'todo',
+  ]
 model: 'gpt-5-mini'
 ---
 
