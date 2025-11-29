@@ -1,5 +1,5 @@
-import { GameScene } from './components/GameScene'
-import { UI } from './components/UI'
+import { GameScene } from './components/GameScene';
+import { UI } from './components/UI';
 
 function App() {
   return (
@@ -7,7 +7,7 @@ function App() {
       <GameScene />
       <UI />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

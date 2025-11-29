@@ -29,7 +29,7 @@ A 3D "idle breakout" style game built with React, TypeScript, and React Three Fi
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 
 ### Installation

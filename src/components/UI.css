@@ -164,11 +164,11 @@
   .panel {
     padding: 12px;
   }
-  
+
   .score-value {
     font-size: 28px;
   }
-  
+
   .upgrades-panel {
     position: absolute;
     right: 20px;
@@ -176,7 +176,7 @@
     bottom: 80px;
     transform: none;
   }
-  
+
   .instructions {
     display: none;
   }
