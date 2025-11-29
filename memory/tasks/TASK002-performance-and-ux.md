@@ -1,7 +1,7 @@
 # TASK002 - Performance Profiling & UX Polish
 
-**Status:** In Progress  
-**Added:** 2025-11-29  
+**Status:** In Progress
+**Added:** 2025-11-29
 **Updated:** 2025-11-29
 
 ## Original Request
@@ -10,15 +10,37 @@ Profile and optimize rendering and update loops in `GameScene` and `Ball` to sup
 
 ## Thought Process
 
-Performance is key to keeping a smooth experience when multiple balls and layers of bricks are present. Use `useFrame` sparingly, minimize per-frame allocations, and prefer stable references for arrays and vectors. Improve UI affordances (a11y, clarity) without heavy redesign.
+Refined approach based on [DESIGN002](../designs/DESIGN002-performance-and-ux.md). The initial profiling plan is now expanded into a concrete architectural refactor.
+
+Key changes:
+
+- **Centralized Loop**: Moving logic from individual components to a single `FrameManager` to control update order and batching.
+- **Instanced Rendering**: Migrating `Brick` components to `InstancedMesh` to drastically reduce draw calls.
+- **Batch Updates**: Updating matrices and colors in bulk rather than per-object.
+- **Accessibility**: Explicit focus on keyboard navigation and `aria-live` regions.
 
 ## Implementation Plan
 
-1. **Profiling setup**: Add a small benchmark harness to stress the scene; use browser performance tools and `console.profile` to capture traces.
-2. **Render loop analysis**: Audit `useFrame` callbacks in `GameScene`, `Ball`, and other components to minimize repeated allocations and event subscriptions.
-3. **Memory & object reuse**: Reuse Vector3 objects and limit per-frame array copies; consider `instancedMesh` for large brick counts if needed.
-4. **UI polish**: Add accessible labels, keyboard shortcuts for pause/resume, and clear achievement reveals.
-5. **Instrumentation & tests**: Add a Vitest harness that simulates high entity counts and asserts no significant memory or CPU regression.
+1. **Profiling & Harness**
+   - Add `src/test/perf/performance.harness.test.ts` for baseline measurements.
+   - Add `PerfOverlay` component (toggle via `?perf=1`).
+
+2. **Core Engine Refactor**
+   - Create `src/engine/FrameManager.tsx`: Centralize the loop.
+   - Create `src/engine/collision.ts`: Pure, allocation-free collision helpers.
+   - Refactor `Ball.tsx`: Make it a dumb render component driven by `FrameManager`.
+
+3. **Instanced Rendering**
+   - Create `src/components/BricksInstanced.tsx`.
+   - Implement batch updates for `InstancedMesh` (matrices/colors).
+   - Implement picking via `InstancedMesh.raycast` or spatial grid fallback.
+
+4. **UI & Accessibility**
+   - Update `UI.tsx`: Add `aria-live` region, keyboard listeners (Space=Pause, U=Upgrade), and focus management.
+
+5. **Validation**
+   - Verify picking accuracy with `tests/e2e/picking.spec.ts`.
+   - Verify performance targets with the harness.
 
 ## Progress Tracking
 
@@ -26,17 +48,20 @@ Performance is key to keeping a smooth experience when multiple balls and layers
 
 ### Subtasks
 
-| ID  | Description                                 | Status       | Updated    | Notes |
-| --- | ------------------------------------------- | ------------ | ---------- | ----- |
-| 1.1 | Setup profiling harness                      | In Progress  | 2025-11-29 | Minimal harness added for trace capture |
-| 2.1 | Audit `useFrame` and render paths            | Not Started  | 2025-11-29 | Initial profiling pending |
-| 3.1 | Implement object re-use and reduce allocations | Not Started  | 2025-11-29 | --- |
-| 4.1 | Add UI/accessibility polish                  | Not Started  | 2025-11-29 | --- |
-| 5.1 | Add tests for performance and memory         | Not Started  | 2025-11-29 | --- |
+| ID  | Description                                      | Status       | Updated    | Notes |
+| --- | ------------------------------------------------ | ------------ | ---------- | ----- |
+| 1.1 | Setup profiling harness & PerfOverlay            | In Progress  | 2025-11-29 | Minimal harness started |
+| 2.1 | Create FrameManager & collision engine           | Not Started  | 2025-11-29 | Centralize loop |
+| 2.2 | Refactor Ball to render-only component           | Not Started  | 2025-11-29 | Driven by FrameManager |
+| 3.1 | Create BricksInstanced component                 | Not Started  | 2025-11-29 | Use InstancedMesh |
+| 3.2 | Implement batch updates & picking                | Not Started  | 2025-11-29 | Matrix updates |
+| 4.1 | Add UI a11y (aria-live, keyboard shortcuts)      | Not Started  | 2025-11-29 | Space, U keys |
+| 5.1 | Validation tests (picking & perf)                | Not Started  | 2025-11-29 | Ensure >45 FPS |
 
 ## Progress Log
 
 ### 2025-11-29
 
-- Created task to profile and optimize GameScene render and update loops.  
+- Refined task based on DESIGN002: adopting FrameManager and InstancedMesh architecture.
+- Created task to profile and optimize GameScene render and update loops.
 - Added initial plan and harness ideas.
