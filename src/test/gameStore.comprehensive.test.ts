@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  useGameStore,
-  createInitialBricks,
-  createInitialBall,
   ARENA_SIZE,
-  type Brick,
+  buildInitialState,
+  createInitialBall,
+  createInitialBricks,
   type Ball,
+  type Brick,
+  type GameState,
+  useGameStore,
 } from '../store/gameStore';
 import type { Vector3Tuple } from 'three';
 
@@ -19,16 +21,10 @@ import type { Vector3Tuple } from 'three';
  */
 
 // Helper to get a fresh store state with known values
-const resetToKnownState = (overrides: Partial<ReturnType<typeof useGameStore.getState>> = {}) => {
+const resetToKnownState = (overrides: Partial<GameState> = {}) => {
+  useGameStore.persist?.clearStorage();
   useGameStore.setState({
-    score: 0,
-    bricksDestroyed: 0,
-    bricks: createInitialBricks(),
-    balls: [createInitialBall(0.1, 1)],
-    ballDamage: 1,
-    ballSpeed: 0.1,
-    ballCount: 1,
-    isPaused: false,
+    ...buildInitialState(),
     ...overrides,
   });
 };
@@ -88,18 +84,18 @@ describe('Game Store - Comprehensive Tests', () => {
 
   describe('createInitialBricks', () => {
     it('should create a non-empty array of bricks', () => {
-      const bricks = createInitialBricks();
+      const bricks = createInitialBricks(1);
       expect(bricks.length).toBeGreaterThan(0);
     });
 
     it('should create bricks with unique IDs', () => {
-      const bricks = createInitialBricks();
+      const bricks = createInitialBricks(1);
       const ids = new Set(bricks.map((b) => b.id));
       expect(ids.size).toBe(bricks.length);
     });
 
     it('should create bricks with valid health values', () => {
-      const bricks = createInitialBricks();
+      const bricks = createInitialBricks(1);
       bricks.forEach((brick) => {
         expect(brick.health).toBeGreaterThan(0);
         expect(brick.maxHealth).toBeGreaterThan(0);
@@ -108,7 +104,7 @@ describe('Game Store - Comprehensive Tests', () => {
     });
 
     it('should create bricks with valid positions', () => {
-      const bricks = createInitialBricks();
+      const bricks = createInitialBricks(1);
       bricks.forEach((brick) => {
         expect(Array.isArray(brick.position)).toBe(true);
         expect(brick.position).toHaveLength(3);
@@ -120,14 +116,14 @@ describe('Game Store - Comprehensive Tests', () => {
     });
 
     it('should create bricks with positive value', () => {
-      const bricks = createInitialBricks();
+      const bricks = createInitialBricks(1);
       bricks.forEach((brick) => {
         expect(brick.value).toBeGreaterThan(0);
       });
     });
 
     it('should create bricks with valid color strings', () => {
-      const bricks = createInitialBricks();
+      const bricks = createInitialBricks(1);
       bricks.forEach((brick) => {
         expect(typeof brick.color).toBe('string');
         expect(brick.color.length).toBeGreaterThan(0);
@@ -135,14 +131,25 @@ describe('Game Store - Comprehensive Tests', () => {
     });
 
     it('should create multiple calls yielding different brick IDs', () => {
-      const bricks1 = createInitialBricks();
-      const bricks2 = createInitialBricks();
+      const bricks1 = createInitialBricks(1);
+      const bricks2 = createInitialBricks(1);
       const ids1 = new Set(bricks1.map((b) => b.id));
       const ids2 = new Set(bricks2.map((b) => b.id));
 
       // Should have no overlapping IDs between calls
       const intersection = [...ids1].filter((id) => ids2.has(id));
       expect(intersection.length).toBe(0);
+    });
+
+    it('should scale health and value with higher waves', () => {
+      const wave1 = createInitialBricks(1);
+      const wave3 = createInitialBricks(3);
+
+      const paired = wave1.map((brick, index) => [brick, wave3[index]]);
+      paired.forEach(([base, scaled]) => {
+        expect(scaled.health).toBeGreaterThanOrEqual(base.health);
+        expect(scaled.value).toBeGreaterThanOrEqual(base.value);
+      });
     });
   });
 
@@ -853,6 +860,62 @@ describe('Game Store - Comprehensive Tests', () => {
     });
   });
 
+  describe('Progression & Persistence', () => {
+    it('should advance waves and update maxWaveReached', () => {
+      const initialWave = useGameStore.getState().wave;
+      useGameStore.getState().regenerateBricks();
+
+      const afterFirst = useGameStore.getState();
+      expect(afterFirst.wave).toBe(initialWave + 1);
+      expect(afterFirst.maxWaveReached).toBe(afterFirst.wave);
+
+      useGameStore.getState().regenerateBricks();
+      const afterSecond = useGameStore.getState();
+      expect(afterSecond.wave).toBe(initialWave + 2);
+      expect(afterSecond.maxWaveReached).toBe(afterSecond.wave);
+    });
+
+    it('should unlock achievements for score and wave milestones', () => {
+      useGameStore.getState().addScore(1200);
+      expect(useGameStore.getState().unlockedAchievements).toContain('score-1k');
+
+      useGameStore.getState().regenerateBricks();
+      useGameStore.getState().regenerateBricks();
+      const unlocked = useGameStore.getState().unlockedAchievements;
+      expect(unlocked).toContain('wave-3');
+    });
+
+    it('should persist meta progression and rebuild runtime entities on hydrate', async () => {
+      const storageKey = 'idle-bricks3d:game:v1';
+      useGameStore.setState({
+        score: 500,
+        bricksDestroyed: 5,
+        wave: 2,
+        maxWaveReached: 2,
+        ballDamage: 3,
+        ballSpeed: 0.14,
+        ballCount: 3,
+        unlockedAchievements: ['score-1k'],
+        bricks: [],
+        balls: [],
+      });
+
+      const raw = localStorage.getItem(storageKey);
+      expect(raw).toBeTruthy();
+      const parsed = raw ? JSON.parse(raw) : {};
+      expect(parsed.state.score).toBe(500);
+      expect(parsed.state.bricks).toBeUndefined();
+
+      useGameStore.setState(buildInitialState());
+      await useGameStore.persist?.rehydrate();
+
+      const hydrated = useGameStore.getState();
+      expect(hydrated.score).toBe(500);
+      expect(hydrated.bricks.length).toBeGreaterThan(0);
+      expect(hydrated.balls.length).toBe(hydrated.ballCount);
+    });
+  });
+
   describe('Store Selectors', () => {
     it('should return consistent values on repeated calls', () => {
       const state1 = useGameStore.getState();
@@ -920,6 +983,7 @@ describe('Game Store - Integration Tests', () => {
   it('should handle complete brick destruction and regeneration cycle', () => {
     const state = useGameStore.getState();
     const totalValue = state.bricks.reduce((sum, brick) => sum + brick.value, 0);
+    const initialWave = state.wave;
 
     // Destroy all bricks
     state.bricks.forEach((brick) => {
@@ -933,7 +997,11 @@ describe('Game Store - Integration Tests', () => {
     useGameStore.getState().regenerateBricks();
     expect(useGameStore.getState().bricks.length).toBeGreaterThan(0);
 
-    // Score should be preserved
-    expect(useGameStore.getState().score).toBe(totalValue);
+    // Score should include wave bonus and wave should advance
+    const expectedScore = totalValue + Math.floor(20 * (initialWave + 1));
+    expect(useGameStore.getState().score).toBe(expectedScore);
+    expect(useGameStore.getState().wave).toBe(initialWave + 1);
+    expect(useGameStore.getState().maxWaveReached).toBeGreaterThanOrEqual(initialWave + 1);
   });
 });
+

@@ -1,13 +1,16 @@
-import { useGameStore } from '../store/gameStore';
+import { ACHIEVEMENTS, useGameStore } from '../store/gameStore';
 import './UI.css';
 
 export function UI() {
   const score = useGameStore((state) => state.score);
   const bricksDestroyed = useGameStore((state) => state.bricksDestroyed);
+  const wave = useGameStore((state) => state.wave);
+  const maxWaveReached = useGameStore((state) => state.maxWaveReached);
   const ballCount = useGameStore((state) => state.ballCount);
   const ballDamage = useGameStore((state) => state.ballDamage);
   const ballSpeed = useGameStore((state) => state.ballSpeed);
   const isPaused = useGameStore((state) => state.isPaused);
+  const unlockedAchievements = useGameStore((state) => state.unlockedAchievements);
 
   const togglePause = useGameStore((state) => state.togglePause);
   const upgradeBallDamage = useGameStore((state) => state.upgradeBallDamage);
@@ -18,6 +21,10 @@ export function UI() {
   const speedCost = useGameStore((state) => state.getBallSpeedCost());
   const ballCost = useGameStore((state) => state.getBallCountCost());
 
+  const unlockedList = ACHIEVEMENTS.filter((achievement) =>
+    unlockedAchievements.includes(achievement.id)
+  );
+
   return (
     <div className="ui-container">
       {/* Score Panel */}
@@ -27,6 +34,12 @@ export function UI() {
         <div className="stat">
           <span>Bricks Destroyed:</span>
           <span>{bricksDestroyed}</span>
+        </div>
+        <div className="stat">
+          <span>Wave:</span>
+          <span>
+            {wave} / {maxWaveReached}
+          </span>
         </div>
       </div>
 
@@ -79,6 +92,26 @@ export function UI() {
             <span className="upgrade-cost">{ballCost.toLocaleString()} pts</span>
           </div>
         </button>
+      </div>
+
+      {/* Achievements Panel */}
+      <div className="panel achievements-panel">
+        <h2>Achievements</h2>
+        <div className="stat">
+          <span>Unlocked:</span>
+          <span>
+            {unlockedList.length} / {ACHIEVEMENTS.length}
+          </span>
+        </div>
+        <div className="achievements-list">
+          {unlockedList.slice(0, 4).map((achievement) => (
+            <div key={achievement.id} className="achievement-row">
+              <span className="achievement-label">{achievement.label}</span>
+              <span className="achievement-description">{achievement.description}</span>
+            </div>
+          ))}
+          {unlockedList.length === 0 && <div className="achievement-empty">No unlocks yet.</div>}
+        </div>
       </div>
 
       {/* Controls */}

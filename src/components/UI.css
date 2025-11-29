@@ -144,6 +144,42 @@
   border-color: rgba(226, 74, 144, 0.5);
 }
 
+.achievements-panel {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  max-width: 280px;
+}
+
+.achievements-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.achievement-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.achievement-label {
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.achievement-description {
+  color: #8aaad8;
+  font-size: 12px;
+}
+
+.achievement-empty {
+  color: #666;
+  font-size: 12px;
+}
+
 /* Instructions */
 .instructions {
   position: absolute;
@@ -175,6 +211,13 @@
     top: auto;
     bottom: 80px;
     transform: none;
+  }
+
+  .achievements-panel {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    left: 20px;
   }
 
   .instructions {
