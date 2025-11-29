@@ -1,0 +1,183 @@
+.ui-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  z-index: 100;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.panel {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(74, 144, 226, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  pointer-events: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.panel h2 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #4a90e2;
+}
+
+/* Score Panel */
+.score-panel {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  min-width: 180px;
+}
+
+.score-value {
+  font-size: 36px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(74, 144, 226, 0.5);
+  margin-bottom: 8px;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #aaa;
+  margin-top: 4px;
+}
+
+.stat span:last-child {
+  color: #fff;
+  font-weight: bold;
+}
+
+/* Stats Panel */
+.stats-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  min-width: 150px;
+}
+
+/* Upgrades Panel */
+.upgrades-panel {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 200px;
+}
+
+.upgrade-button {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(74, 144, 226, 0.1));
+  border: 1px solid rgba(74, 144, 226, 0.5);
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.upgrade-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.4), rgba(74, 144, 226, 0.2));
+  border-color: #4a90e2;
+  transform: translateX(-4px);
+}
+
+.upgrade-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.upgrade-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.upgrade-name {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.upgrade-cost {
+  font-size: 12px;
+  color: #4a90e2;
+}
+
+/* Controls Panel */
+.controls-panel {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+}
+
+.control-button {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.3), rgba(74, 144, 226, 0.1));
+  border: 1px solid rgba(74, 144, 226, 0.5);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.control-button:hover {
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.5), rgba(74, 144, 226, 0.2));
+  border-color: #4a90e2;
+}
+
+.control-button.paused {
+  background: linear-gradient(135deg, rgba(226, 74, 144, 0.3), rgba(226, 74, 144, 0.1));
+  border-color: rgba(226, 74, 144, 0.5);
+}
+
+/* Instructions */
+.instructions {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  color: #666;
+  font-size: 12px;
+}
+
+.instructions p {
+  margin: 4px 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .panel {
+    padding: 12px;
+  }
+  
+  .score-value {
+    font-size: 28px;
+  }
+  
+  .upgrades-panel {
+    position: absolute;
+    right: 20px;
+    top: auto;
+    bottom: 80px;
+    transform: none;
+  }
+  
+  .instructions {
+    display: none;
+  }
+}
