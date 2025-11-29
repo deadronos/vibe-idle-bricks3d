@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import { ACHIEVEMENTS, useGameStore } from '../store/gameStore';
 import './UI.css';
 
@@ -26,9 +26,6 @@ export function UI() {
     unlockedAchievements.includes(achievement.id)
   );
 
-  const [liveMessage, setLiveMessage] = useState('');
-  const achievementsRef = useRef<string[]>(unlockedAchievements);
-
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (event.code === 'Space') {
@@ -45,17 +42,9 @@ export function UI() {
     return () => window.removeEventListener('keydown', handler);
   }, [togglePause, upgradeBallDamage]);
 
-  useEffect(() => {
-    if (unlockedAchievements.length <= achievementsRef.current.length) return;
-
-    const latestId = unlockedAchievements[unlockedAchievements.length - 1];
-    const latest = ACHIEVEMENTS.find((item) => item.id === latestId);
-    if (latest) {
-      setLiveMessage(`Achievement unlocked: ${latest.label}`);
-    }
-
-    achievementsRef.current = unlockedAchievements;
-  }, [unlockedAchievements]);
+  const latestAchievementId = unlockedAchievements[unlockedAchievements.length - 1];
+  const latestAchievement = ACHIEVEMENTS.find((item) => item.id === latestAchievementId);
+  const liveMessage = latestAchievement ? `Achievement unlocked: ${latestAchievement.label}` : '';
 
   return (
     <div className="ui-container">

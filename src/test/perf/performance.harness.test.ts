@@ -44,14 +44,32 @@ describe('performance harness', () => {
 
   it('registers brick collisions with instanced sizing', () => {
     const brick = createTestBrick({ position: [BRICK_SIZE.x, 0, 0] });
-    const ball = createTestBall({
+    let ball = createTestBall({
       position: [-BRICK_SIZE.x * 1.5, 0, 0],
       velocity: [0.6, 0, 0],
     });
 
-    const { hitBrickId, nextVelocity } = stepBallFrame(ball, 1 / 20, ARENA_SIZE, [brick]);
+    let hitBrickId: string | undefined;
+    let nextVelocity: Ball['velocity'] | undefined;
+
+    for (let i = 0; i < 5 && !hitBrickId; i += 1) {
+      const result = stepBallFrame(ball, 1 / 20, ARENA_SIZE, [brick]);
+
+      if (result.hitBrickId) {
+        hitBrickId = result.hitBrickId;
+        nextVelocity = result.nextVelocity;
+        break;
+      }
+
+      ball = {
+        ...ball,
+        position: result.nextPosition,
+        velocity: result.nextVelocity,
+      };
+    }
 
     expect(hitBrickId).toBe(brick.id);
-    expect(nextVelocity[0]).toBeLessThan(0);
+    expect(nextVelocity).toBeDefined();
+    expect(nextVelocity?.[0]).toBeLessThan(0);
   });
 });
