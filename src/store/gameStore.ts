@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Vector3Tuple } from 'three';
 
 export interface Brick {
@@ -30,24 +31,44 @@ export interface Upgrade {
   effect: () => void;
 }
 
-interface GameState {
-  // Game stats
+interface GameSettings {
+  // Placeholder for future toggles (audio, accessibility, etc.)
+  [key: string]: unknown;
+}
+
+type AchievementType = 'score' | 'bricks' | 'wave' | 'upgrade';
+
+interface AchievementDefinition {
+  id: string;
+  label: string;
+  description: string;
+  type: AchievementType;
+  threshold: number;
+  metric?: 'ballDamage' | 'ballSpeed' | 'ballCount';
+}
+
+interface GameDataState {
   score: number;
   bricksDestroyed: number;
+  wave: number;
+  maxWaveReached: number;
+  unlockedAchievements: string[];
+  settings: GameSettings;
+}
 
-  // Game entities
+interface GameEntitiesState {
   bricks: Brick[];
   balls: Ball[];
+  isPaused: boolean;
+}
 
-  // Upgrades
+interface UpgradeState {
   ballDamage: number;
   ballSpeed: number;
   ballCount: number;
+}
 
-  // Game controls
-  isPaused: boolean;
-
-  // Actions
+interface GameActions {
   addScore: (amount: number) => void;
   spawnBall: () => void;
   removeBall: (id: string) => void;
@@ -69,6 +90,8 @@ interface GameState {
   getBallCountCost: () => number;
 }
 
+export type GameState = GameDataState & GameEntitiesState & UpgradeState & GameActions;
+
 const BRICK_COLORS = [
   '#FF6B6B',
   '#4ECDC4',
@@ -81,10 +104,93 @@ const BRICK_COLORS = [
 ];
 const ARENA_SIZE = { width: 12, height: 10, depth: 8 };
 
+const DEFAULT_WAVE = 1;
+const DEFAULT_BALL_SPEED = 0.1;
+const DEFAULT_BALL_DAMAGE = 1;
+const DEFAULT_BALL_COUNT = 1;
+const WAVE_SCALE_FACTOR = 0.2;
+const MAX_BALL_COUNT = 20;
+const STORAGE_KEY = 'idle-bricks3d:game:v1';
+
+const ACHIEVEMENTS: AchievementDefinition[] = [
+  {
+    id: 'score-1k',
+    label: 'Rising Star',
+    description: 'Reach 1,000 score',
+    type: 'score',
+    threshold: 1000,
+  },
+  {
+    id: 'score-10k',
+    label: 'Meteoric',
+    description: 'Reach 10,000 score',
+    type: 'score',
+    threshold: 10000,
+  },
+  {
+    id: 'bricks-50',
+    label: 'Crusher',
+    description: 'Destroy 50 bricks',
+    type: 'bricks',
+    threshold: 50,
+  },
+  {
+    id: 'bricks-200',
+    label: 'Pulverizer',
+    description: 'Destroy 200 bricks',
+    type: 'bricks',
+    threshold: 200,
+  },
+  {
+    id: 'wave-3',
+    label: 'Wave Rider',
+    description: 'Reach wave 3',
+    type: 'wave',
+    threshold: 3,
+  },
+  {
+    id: 'wave-5',
+    label: 'Tide Surfer',
+    description: 'Reach wave 5',
+    type: 'wave',
+    threshold: 5,
+  },
+  {
+    id: 'upgrade-damage-5',
+    label: 'Sharper Edge',
+    description: 'Reach Ball Damage level 5',
+    type: 'upgrade',
+    threshold: 5,
+    metric: 'ballDamage',
+  },
+  {
+    id: 'upgrade-speed-5',
+    label: 'Speed Demon',
+    description: 'Reach Ball Speed level 5',
+    type: 'upgrade',
+    threshold: 5,
+    metric: 'ballSpeed',
+  },
+  {
+    id: 'upgrade-count-5',
+    label: 'Ball Brigade',
+    description: 'Reach 5 balls',
+    type: 'upgrade',
+    threshold: 5,
+    metric: 'ballCount',
+  },
+];
+
 const generateBrickId = () => `brick-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 const generateBallId = () => `ball-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-const createInitialBricks = (): Brick[] => {
+const scaleForWave = (base: number, wave: number) =>
+  Math.max(
+    1,
+    Math.round(base * (1 + WAVE_SCALE_FACTOR * Math.max(0, wave - 1)))
+  );
+
+const createInitialBricks = (wave: number): Brick[] => {
   const bricks: Brick[] = [];
   const rows = 4;
   const cols = 6;
@@ -94,7 +200,8 @@ const createInitialBricks = (): Brick[] => {
   for (let layer = 0; layer < layers; layer++) {
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
-        const health = (layer + 1) * 3;
+        const baseHealth = (layer + 1) * 3;
+        const health = scaleForWave(baseHealth, wave);
         bricks.push({
           id: generateBrickId(),
           position: [
@@ -105,7 +212,7 @@ const createInitialBricks = (): Brick[] => {
           health,
           maxHealth: health,
           color: BRICK_COLORS[(row + col + layer) % BRICK_COLORS.length],
-          value: (layer + 1) * 10,
+          value: scaleForWave((layer + 1) * 10, wave),
         });
       }
     }
@@ -132,159 +239,361 @@ const createInitialBall = (speed: number, damage: number): Ball => {
   };
 };
 
-export const useGameStore = create<GameState>((set, get) => ({
-  // Initial stats
+const createBallsForCount = (count: number, speed: number, damage: number): Ball[] => {
+  const safeCount = Math.max(1, Math.round(count));
+  return Array.from({ length: safeCount }, () => createInitialBall(speed, damage));
+};
+
+const getBallSpeedLevel = (speed: number) =>
+  Math.round((speed - DEFAULT_BALL_SPEED) / 0.02) + 1;
+
+const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState => ({
   score: 0,
   bricksDestroyed: 0,
-
-  // Initial entities
-  bricks: createInitialBricks(),
-  balls: [createInitialBall(0.1, 1)],
-
-  // Initial upgrades
-  ballDamage: 1,
-  ballSpeed: 0.1,
-  ballCount: 1,
-
-  // Game state
+  wave: DEFAULT_WAVE,
+  maxWaveReached: DEFAULT_WAVE,
+  unlockedAchievements: [],
+  settings: {},
+  bricks: createInitialBricks(DEFAULT_WAVE),
+  balls: [createInitialBall(DEFAULT_BALL_SPEED, DEFAULT_BALL_DAMAGE)],
   isPaused: false,
+  ballDamage: DEFAULT_BALL_DAMAGE,
+  ballSpeed: DEFAULT_BALL_SPEED,
+  ballCount: DEFAULT_BALL_COUNT,
+});
 
-  // Actions
-  addScore: (amount) =>
-    set((state) => ({
-      score: state.score + amount,
-    })),
+type AchievementView = Pick<
+  GameState,
+  | 'score'
+  | 'bricksDestroyed'
+  | 'wave'
+  | 'maxWaveReached'
+  | 'ballDamage'
+  | 'ballSpeed'
+  | 'ballCount'
+  | 'unlockedAchievements'
+>;
 
-  spawnBall: () =>
-    set((state) => ({
-      balls: [...state.balls, createInitialBall(state.ballSpeed, state.ballDamage)],
-    })),
+const getAchievementView = (state: GameState, overrides: Partial<AchievementView> = {}): AchievementView => ({
+  score: overrides.score ?? state.score,
+  bricksDestroyed: overrides.bricksDestroyed ?? state.bricksDestroyed,
+  wave: overrides.wave ?? state.wave,
+  maxWaveReached: overrides.maxWaveReached ?? state.maxWaveReached,
+  ballDamage: overrides.ballDamage ?? state.ballDamage,
+  ballSpeed: overrides.ballSpeed ?? state.ballSpeed,
+  ballCount: overrides.ballCount ?? state.ballCount,
+  unlockedAchievements: overrides.unlockedAchievements ?? state.unlockedAchievements,
+});
 
-  removeBall: (id) =>
-    set((state) => ({
-      balls: state.balls.filter((ball) => ball.id !== id),
-    })),
-
-  updateBallPosition: (id, position) =>
-    set((state) => ({
-      balls: state.balls.map((ball) => (ball.id === id ? { ...ball, position } : ball)),
-    })),
-
-  updateBallVelocity: (id, velocity) =>
-    set((state) => ({
-      balls: state.balls.map((ball) => (ball.id === id ? { ...ball, velocity } : ball)),
-    })),
-
-  damageBrick: (id, damage) =>
-    set((state) => {
-      const brick = state.bricks.find((b) => b.id === id);
-      if (!brick) return state;
-
-      const newHealth = brick.health - damage;
-
-      if (newHealth <= 0) {
-        return {
-          bricks: state.bricks.filter((b) => b.id !== id),
-          score: state.score + brick.value,
-          bricksDestroyed: state.bricksDestroyed + 1,
-        };
+const meetsAchievement = (achievement: AchievementDefinition, state: AchievementView) => {
+  switch (achievement.type) {
+    case 'score':
+      return state.score >= achievement.threshold;
+    case 'bricks':
+      return state.bricksDestroyed >= achievement.threshold;
+    case 'wave':
+      return state.wave >= achievement.threshold || state.maxWaveReached >= achievement.threshold;
+    case 'upgrade': {
+      if (!achievement.metric) return false;
+      if (achievement.metric === 'ballSpeed') {
+        return getBallSpeedLevel(state.ballSpeed) >= achievement.threshold;
       }
+      if (achievement.metric === 'ballDamage') {
+        return state.ballDamage >= achievement.threshold;
+      }
+      if (achievement.metric === 'ballCount') {
+        return state.ballCount >= achievement.threshold;
+      }
+      return false;
+    }
+    default:
+      return false;
+  }
+};
+
+const mergeUnlocks = (current: string[], additions: string[]) => {
+  const unique = new Set([...current, ...additions]);
+  return Array.from(unique);
+};
+
+const checkAndUnlockAchievements = (state: GameState, overrides: Partial<AchievementView> = {}) => {
+  const view = getAchievementView(state, overrides);
+  const newlyUnlocked = ACHIEVEMENTS.filter(
+    (achievement) => !view.unlockedAchievements.includes(achievement.id) && meetsAchievement(achievement, view)
+  ).map((achievement) => achievement.id);
+
+  return mergeUnlocks(view.unlockedAchievements, newlyUnlocked);
+};
+
+const clampNumber = (value: unknown, fallback: number, min: number) =>
+  typeof value === 'number' && Number.isFinite(value) && value >= min ? value : fallback;
+
+export const useGameStore = create<GameState>()(
+  persist(
+    (set, get) => {
+      const initialState = buildInitialState();
 
       return {
-        bricks: state.bricks.map((b) => (b.id === id ? { ...b, health: newHealth } : b)),
-      };
-    }),
+        ...initialState,
 
-  removeBrick: (id) =>
-    set((state) => ({
-      bricks: state.bricks.filter((brick) => brick.id !== id),
-    })),
-
-  regenerateBricks: () =>
-    set({
-      bricks: createInitialBricks(),
-    }),
-
-  togglePause: () =>
-    set((state) => ({
-      isPaused: !state.isPaused,
-    })),
-
-  // Upgrade costs
-  getBallDamageCost: () => {
-    const { ballDamage } = get();
-    return Math.floor(50 * Math.pow(1.5, ballDamage - 1));
-  },
-
-  getBallSpeedCost: () => {
-    const { ballSpeed } = get();
-    const level = Math.round((ballSpeed - 0.1) / 0.02);
-    return Math.floor(30 * Math.pow(1.3, level));
-  },
-
-  getBallCountCost: () => {
-    const { ballCount } = get();
-    return Math.floor(100 * Math.pow(2, ballCount - 1));
-  },
-
-  // Upgrade actions
-  upgradeBallDamage: () =>
-    set((state) => {
-      const cost = get().getBallDamageCost();
-      if (state.score >= cost) {
-        return {
-          score: state.score - cost,
-          ballDamage: state.ballDamage + 1,
-          balls: state.balls.map((ball) => ({
-            ...ball,
-            damage: state.ballDamage + 1,
-          })),
-        };
-      }
-      return state;
-    }),
-
-  upgradeBallSpeed: () =>
-    set((state) => {
-      const cost = get().getBallSpeedCost();
-      if (state.score >= cost) {
-        const newSpeed = state.ballSpeed + 0.02;
-        return {
-          score: state.score - cost,
-          ballSpeed: newSpeed,
-          balls: state.balls.map((ball) => {
-            const currentSpeed = Math.sqrt(
-              ball.velocity[0] ** 2 + ball.velocity[1] ** 2 + ball.velocity[2] ** 2
-            );
-            const scale = currentSpeed > 0 ? newSpeed / currentSpeed : 1;
+        addScore: (amount) =>
+          set((state) => {
+            const score = state.score + amount;
+            const unlockedAchievements = checkAndUnlockAchievements(state, { score });
             return {
-              ...ball,
-              velocity: [
-                ball.velocity[0] * scale,
-                ball.velocity[1] * scale,
-                ball.velocity[2] * scale,
-              ] as Vector3Tuple,
+              score,
+              unlockedAchievements,
             };
           }),
-        };
-      }
-      return state;
-    }),
 
-  upgradeBallCount: () =>
-    set((state) => {
-      const cost = get().getBallCountCost();
-      if (state.score >= cost && state.ballCount < 20) {
-        const newBall = createInitialBall(state.ballSpeed, state.ballDamage);
-        return {
-          score: state.score - cost,
-          ballCount: state.ballCount + 1,
-          balls: [...state.balls, newBall],
-        };
-      }
-      return state;
-    }),
-}));
+        spawnBall: () =>
+          set((state) => ({
+            balls: [...state.balls, createInitialBall(state.ballSpeed, state.ballDamage)],
+          })),
 
-// Export for testing
-export { ARENA_SIZE, createInitialBricks, createInitialBall };
+        removeBall: (id) =>
+          set((state) => ({
+            balls: state.balls.filter((ball) => ball.id !== id),
+          })),
+
+        updateBallPosition: (id, position) =>
+          set((state) => ({
+            balls: state.balls.map((ball) => (ball.id === id ? { ...ball, position } : ball)),
+          })),
+
+        updateBallVelocity: (id, velocity) =>
+          set((state) => ({
+            balls: state.balls.map((ball) => (ball.id === id ? { ...ball, velocity } : ball)),
+          })),
+
+        damageBrick: (id, damage) =>
+          set((state) => {
+            const brick = state.bricks.find((b) => b.id === id);
+            if (!brick) return state;
+
+            const newHealth = brick.health - damage;
+
+            if (newHealth <= 0) {
+              const score = state.score + brick.value;
+              const bricksDestroyed = state.bricksDestroyed + 1;
+              const unlockedAchievements = checkAndUnlockAchievements(state, { score, bricksDestroyed });
+              return {
+                bricks: state.bricks.filter((b) => b.id !== id),
+                score,
+                bricksDestroyed,
+                unlockedAchievements,
+              };
+            }
+
+            return {
+              bricks: state.bricks.map((b) => (b.id === id ? { ...b, health: newHealth } : b)),
+            };
+          }),
+
+        removeBrick: (id) =>
+          set((state) => ({
+            bricks: state.bricks.filter((brick) => brick.id !== id),
+          })),
+
+        regenerateBricks: () =>
+          set((state) => {
+            const nextWave = state.wave + 1;
+            const maxWaveReached = Math.max(state.maxWaveReached, nextWave);
+            const waveBonus = Math.floor(20 * nextWave);
+            const score = state.score + waveBonus;
+            const unlockedAchievements = checkAndUnlockAchievements(state, {
+              score,
+              wave: nextWave,
+              maxWaveReached,
+            });
+
+            return {
+              bricks: createInitialBricks(nextWave),
+              wave: nextWave,
+              maxWaveReached,
+              score,
+              unlockedAchievements,
+            };
+          }),
+
+        togglePause: () =>
+          set((state) => ({
+            isPaused: !state.isPaused,
+          })),
+
+        getBallDamageCost: () => {
+          const { ballDamage } = get();
+          return Math.floor(50 * Math.pow(1.5, ballDamage - 1));
+        },
+
+        getBallSpeedCost: () => {
+          const { ballSpeed } = get();
+          const level = getBallSpeedLevel(ballSpeed) - 1;
+          return Math.floor(30 * Math.pow(1.3, level));
+        },
+
+        getBallCountCost: () => {
+          const { ballCount } = get();
+          return Math.floor(100 * Math.pow(2, ballCount - 1));
+        },
+
+        upgradeBallDamage: () =>
+          set((state) => {
+            const cost = get().getBallDamageCost();
+            if (state.score >= cost) {
+              const ballDamage = state.ballDamage + 1;
+              const score = state.score - cost;
+              const unlockedAchievements = checkAndUnlockAchievements(state, { score, ballDamage });
+              return {
+                score,
+                ballDamage,
+                balls: state.balls.map((ball) => ({
+                  ...ball,
+                  damage: ballDamage,
+                })),
+                unlockedAchievements,
+              };
+            }
+            return state;
+          }),
+
+        upgradeBallSpeed: () =>
+          set((state) => {
+            const cost = get().getBallSpeedCost();
+            if (state.score >= cost) {
+              const ballSpeed = state.ballSpeed + 0.02;
+              const score = state.score - cost;
+              const unlockedAchievements = checkAndUnlockAchievements(state, { score, ballSpeed });
+              return {
+                score,
+                ballSpeed,
+                balls: state.balls.map((ball) => {
+                  const currentSpeed = Math.sqrt(
+                    ball.velocity[0] ** 2 + ball.velocity[1] ** 2 + ball.velocity[2] ** 2
+                  );
+                  const scale = currentSpeed > 0 ? ballSpeed / currentSpeed : 1;
+                  return {
+                    ...ball,
+                    velocity: [
+                      ball.velocity[0] * scale,
+                      ball.velocity[1] * scale,
+                      ball.velocity[2] * scale,
+                    ] as Vector3Tuple,
+                  };
+                }),
+                unlockedAchievements,
+              };
+            }
+            return state;
+          }),
+
+        upgradeBallCount: () =>
+          set((state) => {
+            const cost = get().getBallCountCost();
+            if (state.score >= cost && state.ballCount < MAX_BALL_COUNT) {
+              const ballCount = state.ballCount + 1;
+              const score = state.score - cost;
+              const unlockedAchievements = checkAndUnlockAchievements(state, { score, ballCount });
+              const newBall = createInitialBall(state.ballSpeed, state.ballDamage);
+              return {
+                score,
+                ballCount,
+                balls: [...state.balls, newBall],
+                unlockedAchievements,
+              };
+            }
+            return state;
+          }),
+      };
+    },
+    {
+      name: STORAGE_KEY,
+      version: 1,
+      partialize: (state) => ({
+        score: state.score,
+        bricksDestroyed: state.bricksDestroyed,
+        wave: state.wave,
+        maxWaveReached: state.maxWaveReached,
+        ballDamage: state.ballDamage,
+        ballSpeed: state.ballSpeed,
+        ballCount: state.ballCount,
+        unlockedAchievements: state.unlockedAchievements,
+        settings: state.settings,
+      }),
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          return;
+        }
+
+        const wave = clampNumber(state?.wave, DEFAULT_WAVE, DEFAULT_WAVE);
+        const ballDamage = clampNumber(state?.ballDamage, DEFAULT_BALL_DAMAGE, 1);
+        const ballSpeed = clampNumber(state?.ballSpeed, DEFAULT_BALL_SPEED, 0.02);
+        const ballCount = clampNumber(state?.ballCount, DEFAULT_BALL_COUNT, 1);
+        const maxWaveReached = clampNumber(
+          state?.maxWaveReached,
+          Math.max(DEFAULT_WAVE, wave),
+          wave
+        );
+        const score = clampNumber(state?.score, 0, 0);
+        const bricksDestroyed = clampNumber(state?.bricksDestroyed, 0, 0);
+        const unlockedAchievements = Array.isArray(state?.unlockedAchievements)
+          ? state?.unlockedAchievements.filter((id): id is string => typeof id === 'string')
+          : [];
+
+        set((current) => {
+          const achievementSafeState = {
+            ...(current as GameState),
+            score,
+            bricksDestroyed,
+            wave,
+            maxWaveReached,
+            ballDamage,
+            ballSpeed,
+            ballCount,
+            unlockedAchievements,
+          };
+
+          const nextAchievements = checkAndUnlockAchievements(achievementSafeState, {
+            unlockedAchievements,
+            score,
+            bricksDestroyed,
+            wave,
+            maxWaveReached,
+            ballDamage,
+            ballSpeed,
+            ballCount,
+          });
+
+          return {
+            ...current,
+            score,
+            bricksDestroyed,
+            wave,
+            maxWaveReached,
+            ballDamage,
+            ballSpeed,
+            ballCount,
+            unlockedAchievements: nextAchievements,
+            bricks: createInitialBricks(wave),
+            balls: createBallsForCount(ballCount, ballSpeed, ballDamage),
+            settings: state?.settings && typeof state.settings === 'object' ? state.settings : {},
+          };
+        });
+      },
+      getStorage: () => localStorage,
+    }
+  )
+);
+
+// Export for testing and UI
+export {
+  ARENA_SIZE,
+  ACHIEVEMENTS,
+  DEFAULT_BALL_SPEED,
+  DEFAULT_BALL_DAMAGE,
+  DEFAULT_BALL_COUNT,
+  createInitialBricks,
+  createInitialBall,
+  buildInitialState,
+  getBallSpeedLevel,
+};
