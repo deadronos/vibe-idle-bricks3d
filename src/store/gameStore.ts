@@ -562,12 +562,28 @@ export const useGameStore = create<GameState>()(
           ? state.unlockedAchievements.filter((id): id is string => typeof id === 'string')
           : [];
 
+        // Schedule a revalidation check after rehydration completes to catch race conditions
+        const validateAndFixAfterRehydrate = () => {
+          const currentState = useGameStore.getState();
+          if (currentState.ballCount > 0 && currentState.balls.length !== currentState.ballCount) {
+            console.warn(
+              '[GameStore] Ball count mismatch after rehydration: expected ' +
+                currentState.ballCount +
+                ', got ' +
+                currentState.balls.length +
+                '. Rebuilding balls array.'
+            );
+            const newBalls = createBallsForCount(currentState.ballCount, currentState.ballSpeed, currentState.ballDamage);
+            useGameStore.setState({ balls: newBalls });
+          }
+        };
+
         // We can't use set() here because onRehydrateStorage doesn't provide it directly in this signature
         // But the state returned/mutated here is what gets put into the store.
         
         // Actually, the cleanest way to rebuild entities is to do it here.
         useGameStore.setState((current) => {
-             const achievementSafeState = {
+          const achievementSafeState = {
             ...(current as GameState),
             score,
             bricksDestroyed,
@@ -590,6 +606,9 @@ export const useGameStore = create<GameState>()(
             ballCount,
           });
 
+          // Ensure balls array is rebuilt to match ballCount
+          const rebuiltBalls = createBallsForCount(ballCount, ballSpeed, ballDamage);
+
           return {
             ...current,
             score,
@@ -601,10 +620,13 @@ export const useGameStore = create<GameState>()(
             ballCount,
             unlockedAchievements: nextAchievements,
             bricks: createInitialBricks(wave),
-            balls: createBallsForCount(ballCount, ballSpeed, ballDamage),
+            balls: rebuiltBalls,
             settings: state.settings && typeof state.settings === 'object' ? state.settings : {},
           };
         });
+
+        // Use setTimeout to revalidate after the store update propagates
+        setTimeout(validateAndFixAfterRehydrate, 0);
       },
       storage: createJSONStorage(() => ({
         getItem: (name) => {

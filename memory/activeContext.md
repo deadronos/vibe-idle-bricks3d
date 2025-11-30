@@ -1,16 +1,18 @@
 # Active Context
 
-**Last updated:** 2025-11-29
+**Last updated:** 2025-11-30
 
 ## Current focus
 
+- Bug fix: Ball count mismatch after page reload (ballCount upgraded to 8 but only 1 ball visible)
 - Performance profiling and optimizations, especially around rendering and `useFrame` loops.  
-- UI polish including accessibility and clearer achievement feedback.  
-- Continue to expand test coverage for integrations and edge cases.
+- UI polish including accessibility and clearer achievement feedback.
 
 ## Recent changes
 
-- Project initial structure with R3F components and Zustand store (see src/)
+- Fixed ball count persistence issue where rehydration wasn't properly rebuilding balls array to match ballCount
+- Added safety check to validate and fix ball count mismatch during rehydration
+- Added regression test for 8+ balls reload scenario
 
 ## Next steps
 
@@ -21,5 +23,6 @@
 ## Active decisions
 
 - Use Zustand for state management
--- Keep physics deterministic and mostly frame-rate independent
+- Keep physics deterministic and mostly frame-rate independent
 - Persist only meta progression and reconstruct runtime entities on hydrate using Zustand persist partialize + onRehydrateStorage guard
+- Add post-rehydration validation to ensure balls array length matches ballCount (handles race conditions)

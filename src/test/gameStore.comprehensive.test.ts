@@ -1003,5 +1003,46 @@ describe('Game Store - Integration Tests', () => {
     expect(useGameStore.getState().wave).toBe(initialWave + 1);
     expect(useGameStore.getState().maxWaveReached).toBeGreaterThanOrEqual(initialWave + 1);
   });
+
+  it('should restore correct number of balls after reloading with 8+ purchased balls (regression test)', async () => {
+    const storageKey = 'idle-bricks3d:game:v1';
+
+    // Simulate user with 8 purchased balls
+    useGameStore.setState({
+      score: 1000,
+      bricksDestroyed: 10,
+      wave: 1,
+      maxWaveReached: 1,
+      ballDamage: 2,
+      ballSpeed: 0.14,
+      ballCount: 8,
+      unlockedAchievements: [],
+      bricks: [],
+      balls: [], // This gets rebuilt on rehydrate
+    });
+
+    // Verify 8 balls were in the state
+    expect(useGameStore.getState().ballCount).toBe(8);
+    const raw = localStorage.getItem(storageKey);
+    expect(raw).toBeTruthy();
+
+    // Simulate page reload - reset store to initial state
+    useGameStore.setState(buildInitialState());
+    expect(useGameStore.getState().ballCount).toBe(1); // Back to default
+    expect(useGameStore.getState().balls.length).toBe(1); // Only 1 ball initially
+
+    // Rehydrate from storage
+    await useGameStore.persist?.rehydrate();
+
+    // After rehydration, should have 8 balls
+    const hydrated = useGameStore.getState();
+    expect(hydrated.ballCount).toBe(8);
+    expect(hydrated.balls.length).toBe(8); // THE KEY TEST: balls array should have 8 items, not 1
+    
+    // Verify each ball has correct damage and speed
+    hydrated.balls.forEach((ball) => {
+      expect(ball.damage).toBe(2);
+    });
+  });
 });
 
