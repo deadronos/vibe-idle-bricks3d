@@ -1,6 +1,8 @@
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Stars, PerspectiveCamera } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Arena } from './Arena';
+import { GeometricBackground } from './GeometricBackground';
 import { useGameStore } from '../store/gameStore';
 import { useEffect } from 'react';
 import { Ball } from './Ball';
@@ -46,7 +48,7 @@ function GameContent() {
       <pointLight position={[10, -5, 10]} intensity={0.5} color="#e24a90" />
 
       {/* Background */}
-      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+      <GeometricBackground />
 
       {/* Game elements */}
       <Arena />
@@ -69,6 +71,14 @@ export function GameScene() {
     <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}>
       <Canvas shadows>
         <GameContent />
+        <EffectComposer>
+          <Bloom
+            intensity={0.5}
+            luminanceThreshold={0.2}
+            luminanceSmoothing={0.9}
+            mipmapBlur
+          />
+        </EffectComposer>
       </Canvas>
     </div>
   );
