@@ -1,13 +1,17 @@
-import { useGameStore } from '../store/gameStore';
+import { useEffect } from 'react';
+import { ACHIEVEMENTS, useGameStore } from '../store/gameStore';
 import './UI.css';
 
 export function UI() {
   const score = useGameStore((state) => state.score);
   const bricksDestroyed = useGameStore((state) => state.bricksDestroyed);
+  const wave = useGameStore((state) => state.wave);
+  const maxWaveReached = useGameStore((state) => state.maxWaveReached);
   const ballCount = useGameStore((state) => state.ballCount);
   const ballDamage = useGameStore((state) => state.ballDamage);
   const ballSpeed = useGameStore((state) => state.ballSpeed);
   const isPaused = useGameStore((state) => state.isPaused);
+  const unlockedAchievements = useGameStore((state) => state.unlockedAchievements);
 
   const togglePause = useGameStore((state) => state.togglePause);
   const upgradeBallDamage = useGameStore((state) => state.upgradeBallDamage);
@@ -18,8 +22,36 @@ export function UI() {
   const speedCost = useGameStore((state) => state.getBallSpeedCost());
   const ballCost = useGameStore((state) => state.getBallCountCost());
 
+  const unlockedList = ACHIEVEMENTS.filter((achievement) =>
+    unlockedAchievements.includes(achievement.id)
+  );
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (event.code === 'Space') {
+        event.preventDefault();
+        togglePause();
+      }
+      if (event.code === 'KeyU') {
+        event.preventDefault();
+        upgradeBallDamage();
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [togglePause, upgradeBallDamage]);
+
+  const latestAchievementId = unlockedAchievements[unlockedAchievements.length - 1];
+  const latestAchievement = ACHIEVEMENTS.find((item) => item.id === latestAchievementId);
+  const liveMessage = latestAchievement ? `Achievement unlocked: ${latestAchievement.label}` : '';
+
   return (
     <div className="ui-container">
+      <div className="sr-only" aria-live="polite">
+        {liveMessage}
+      </div>
+
       {/* Score Panel */}
       <div className="panel score-panel">
         <h2>Score</h2>
@@ -27,6 +59,12 @@ export function UI() {
         <div className="stat">
           <span>Bricks Destroyed:</span>
           <span>{bricksDestroyed}</span>
+        </div>
+        <div className="stat">
+          <span>Wave:</span>
+          <span>
+            {wave} / {maxWaveReached}
+          </span>
         </div>
       </div>
 
@@ -81,6 +119,26 @@ export function UI() {
         </button>
       </div>
 
+      {/* Achievements Panel */}
+      <div className="panel achievements-panel">
+        <h2>Achievements</h2>
+        <div className="stat">
+          <span>Unlocked:</span>
+          <span>
+            {unlockedList.length} / {ACHIEVEMENTS.length}
+          </span>
+        </div>
+        <div className="achievements-list">
+          {unlockedList.slice(0, 4).map((achievement) => (
+            <div key={achievement.id} className="achievement-row">
+              <span className="achievement-label">{achievement.label}</span>
+              <span className="achievement-description">{achievement.description}</span>
+            </div>
+          ))}
+          {unlockedList.length === 0 && <div className="achievement-empty">No unlocks yet.</div>}
+        </div>
+      </div>
+
       {/* Controls */}
       <div className="panel controls-panel">
         <button className={`control-button ${isPaused ? 'paused' : ''}`} onClick={togglePause}>
@@ -92,6 +150,7 @@ export function UI() {
       <div className="instructions">
         <p>🖱️ Drag to rotate camera • Scroll to zoom</p>
         <p>Watch the balls break bricks automatically!</p>
+        <p>⎵ Space to pause/resume • U to upgrade damage</p>
       </div>
     </div>
   );

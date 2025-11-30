@@ -1,19 +1,24 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useGameStore, createInitialBricks, createInitialBall } from '../store/gameStore';
+import {
+  ACHIEVEMENTS,
+  buildInitialState,
+  createInitialBall,
+  createInitialBricks,
+  useGameStore,
+} from '../store/gameStore';
+
+const resetStore = (overrides: Partial<ReturnType<typeof buildInitialState>> = {}) => {
+  useGameStore.persist?.clearStorage();
+  useGameStore.setState({
+    ...buildInitialState(),
+    ...overrides,
+  });
+};
 
 describe('Game Store', () => {
   beforeEach(() => {
     // Reset store before each test
-    useGameStore.setState({
-      score: 0,
-      bricksDestroyed: 0,
-      bricks: createInitialBricks(),
-      balls: [createInitialBall(0.1, 1)],
-      ballDamage: 1,
-      ballSpeed: 0.1,
-      ballCount: 1,
-      isPaused: false,
-    });
+    resetStore();
   });
 
   describe('Initial State', () => {
@@ -198,7 +203,7 @@ describe('Game Store', () => {
 
   describe('Helper Functions', () => {
     it('createInitialBricks should return an array of bricks', () => {
-      const bricks = createInitialBricks();
+      const bricks = createInitialBricks(1);
 
       expect(Array.isArray(bricks)).toBe(true);
       expect(bricks.length).toBeGreaterThan(0);
@@ -226,5 +231,35 @@ describe('Game Store', () => {
       expect(ball.damage).toBe(1);
       expect(ball.radius).toBe(0.3);
     });
+  });
+});
+
+describe('Wave & Achievements', () => {
+  beforeEach(() => {
+    resetStore();
+  });
+
+  it('should advance wave and maxWaveReached when regenerating bricks', () => {
+    const initialWave = useGameStore.getState().wave;
+    useGameStore.getState().regenerateBricks();
+
+    const state = useGameStore.getState();
+    expect(state.wave).toBe(initialWave + 1);
+    expect(state.maxWaveReached).toBe(initialWave + 1);
+    expect(state.bricks.length).toBeGreaterThan(0);
+  });
+
+  it('unlocks achievements when thresholds are met', () => {
+    useGameStore.getState().addScore(2000);
+    expect(useGameStore.getState().unlockedAchievements).toContain(ACHIEVEMENTS[0].id);
+
+    useGameStore.setState({ score: 100000 });
+    for (let i = 0; i < 5; i++) {
+      useGameStore.getState().upgradeBallDamage();
+    }
+
+    const state = useGameStore.getState();
+    expect(state.ballDamage).toBeGreaterThanOrEqual(5);
+    expect(state.unlockedAchievements).toContain('upgrade-damage-5');
   });
 });

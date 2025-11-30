@@ -1,7 +1,23 @@
 ---
 description: 'Orchestrates Planning, Implementation, and Review cycle for complex tasks'
 tools:
-  ['execute/testFailure', 'execute/getTerminalOutput', 'execute/runTask', 'execute/getTaskOutput', 'execute/createAndRunTask', 'execute/runInTerminal', 'read/readFile', 'read/terminalSelection', 'read/terminalLastCommand', 'edit', 'search', 'web', 'sequentialthinking/*', 'agent', 'todo']
+  [
+    'execute/testFailure',
+    'execute/getTerminalOutput',
+    'execute/runTask',
+    'execute/getTaskOutput',
+    'execute/createAndRunTask',
+    'execute/runInTerminal',
+    'read/readFile',
+    'read/terminalSelection',
+    'read/terminalLastCommand',
+    'edit',
+    'search',
+    'web',
+    'sequentialthinking/*',
+    'agent',
+    'todo',
+  ]
 model: 'gpt-5-mini'
 ---
 

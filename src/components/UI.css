@@ -13,6 +13,18 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .panel {
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(10px);
@@ -144,6 +156,42 @@
   border-color: rgba(226, 74, 144, 0.5);
 }
 
+.achievements-panel {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  max-width: 280px;
+}
+
+.achievements-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.achievement-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.achievement-label {
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.achievement-description {
+  color: #8aaad8;
+  font-size: 12px;
+}
+
+.achievement-empty {
+  color: #666;
+  font-size: 12px;
+}
+
 /* Instructions */
 .instructions {
   position: absolute;
@@ -175,6 +223,13 @@
     top: auto;
     bottom: 80px;
     transform: none;
+  }
+
+  .achievements-panel {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    left: 20px;
   }
 
   .instructions {

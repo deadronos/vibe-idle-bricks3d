@@ -6,11 +6,11 @@ none
 
 ## IN PROGRESS
 
-none
+- [DESIGN002] Performance & UX - Drafted: FrameManager, InstancedMesh, Accessibility
 
 ## COMPLETED
 
-none
+- [DESIGN001] Wave & Meta Progression - Completed: wave scaling, achievements, meta-only persistence, UI updates, tests
 
 ## ABANDONED
 
