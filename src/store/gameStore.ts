@@ -1,193 +1,27 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { Vector3Tuple } from 'three';
-
-export interface Brick {
-  id: string;
-  position: Vector3Tuple;
-  health: number;
-  maxHealth: number;
-  color: string;
-  value: number;
-}
-
-export interface Ball {
-  id: string;
-  position: Vector3Tuple;
-  velocity: Vector3Tuple;
-  radius: number;
-  damage: number;
-  color: string;
-}
-
-export interface Upgrade {
-  id: string;
-  name: string;
-  description: string;
-  baseCost: number;
-  costMultiplier: number;
-  level: number;
-  maxLevel: number;
-  effect: () => void;
-}
-
-interface GameSettings {
-  // Placeholder for future toggles (audio, accessibility, etc.)
-  [key: string]: unknown;
-}
-
-type AchievementType = 'score' | 'bricks' | 'wave' | 'upgrade';
-
-interface AchievementDefinition {
-  id: string;
-  label: string;
-  description: string;
-  type: AchievementType;
-  threshold: number;
-  metric?: 'ballDamage' | 'ballSpeed' | 'ballCount';
-}
-
-interface GameDataState {
-  score: number;
-  bricksDestroyed: number;
-  wave: number;
-  maxWaveReached: number;
-  unlockedAchievements: string[];
-  settings: GameSettings;
-}
-
-interface GameEntitiesState {
-  bricks: Brick[];
-  balls: Ball[];
-  isPaused: boolean;
-  ballSpawnQueue: number; // Number of balls waiting to be spawned
-  lastBallSpawnTime: number; // Timestamp of last ball spawn
-}
-
-interface UpgradeState {
-  ballDamage: number;
-  ballSpeed: number;
-  ballCount: number;
-}
-
-interface GameActions {
-  addScore: (amount: number) => void;
-  spawnBall: () => void;
-  removeBall: (id: string) => void;
-  updateBallPosition: (id: string, position: Vector3Tuple) => void;
-  updateBallVelocity: (id: string, velocity: Vector3Tuple) => void;
-  damageBrick: (id: string, damage: number) => void;
-  removeBrick: (id: string) => void;
-  regenerateBricks: () => void;
-  togglePause: () => void;
-
-  // Upgrades
-  upgradeBallDamage: () => void;
-  upgradeBallSpeed: () => void;
-  upgradeBallCount: () => void;
-
-  // Costs
-  getBallDamageCost: () => number;
-  getBallSpeedCost: () => number;
-  getBallCountCost: () => number;
-  resetGame: () => void;
-
-  // Ball spawn queue (used for gradual spawning on reload)
-  queueBallSpawns: (count: number) => void;
-  tryProcessBallSpawnQueue: () => void;
-  forceProcessAllQueuedBalls: () => void; // For testing - spawns all queued balls immediately
-}
-
-export type GameState = GameDataState & GameEntitiesState & UpgradeState & GameActions;
-
-const BRICK_COLORS = [
-  '#FF6B6B',
-  '#4ECDC4',
-  '#45B7D1',
-  '#96CEB4',
-  '#FFEAA7',
-  '#DDA0DD',
-  '#98D8C8',
-  '#F7DC6F',
-];
-const ARENA_SIZE = { width: 12, height: 10, depth: 8 };
-
-const DEFAULT_WAVE = 1;
-const DEFAULT_BALL_SPEED = 0.1;
-const DEFAULT_BALL_DAMAGE = 1;
-const DEFAULT_BALL_COUNT = 1;
-const WAVE_SCALE_FACTOR = 0.2;
-const MAX_BALL_COUNT = 20;
-const STORAGE_KEY = 'idle-bricks3d:game:v1';
-
-const ACHIEVEMENTS: AchievementDefinition[] = [
-  {
-    id: 'score-1k',
-    label: 'Rising Star',
-    description: 'Reach 1,000 score',
-    type: 'score',
-    threshold: 1000,
-  },
-  {
-    id: 'score-10k',
-    label: 'Meteoric',
-    description: 'Reach 10,000 score',
-    type: 'score',
-    threshold: 10000,
-  },
-  {
-    id: 'bricks-50',
-    label: 'Crusher',
-    description: 'Destroy 50 bricks',
-    type: 'bricks',
-    threshold: 50,
-  },
-  {
-    id: 'bricks-200',
-    label: 'Pulverizer',
-    description: 'Destroy 200 bricks',
-    type: 'bricks',
-    threshold: 200,
-  },
-  {
-    id: 'wave-3',
-    label: 'Wave Rider',
-    description: 'Reach wave 3',
-    type: 'wave',
-    threshold: 3,
-  },
-  {
-    id: 'wave-5',
-    label: 'Tide Surfer',
-    description: 'Reach wave 5',
-    type: 'wave',
-    threshold: 5,
-  },
-  {
-    id: 'upgrade-damage-5',
-    label: 'Sharper Edge',
-    description: 'Reach Ball Damage level 5',
-    type: 'upgrade',
-    threshold: 5,
-    metric: 'ballDamage',
-  },
-  {
-    id: 'upgrade-speed-5',
-    label: 'Speed Demon',
-    description: 'Reach Ball Speed level 5',
-    type: 'upgrade',
-    threshold: 5,
-    metric: 'ballSpeed',
-  },
-  {
-    id: 'upgrade-count-5',
-    label: 'Ball Brigade',
-    description: 'Reach 5 balls',
-    type: 'upgrade',
-    threshold: 5,
-    metric: 'ballCount',
-  },
-];
+import {
+  ACHIEVEMENTS,
+  ARENA_SIZE,
+  BRICK_COLORS,
+  DEFAULT_BALL_COUNT,
+  DEFAULT_BALL_DAMAGE,
+  DEFAULT_BALL_SPEED,
+  DEFAULT_WAVE,
+  MAX_BALL_COUNT,
+  STORAGE_KEY,
+  WAVE_SCALE_FACTOR,
+} from './constants';
+import type {
+  AchievementDefinition,
+  Ball,
+  Brick,
+  GameDataState,
+  GameEntitiesState,
+  GameState,
+  UpgradeState,
+} from './types';
 
 const generateBrickId = () => `brick-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 const generateBallId = () => `ball-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -830,3 +664,16 @@ export {
   buildInitialState,
   getBallSpeedLevel,
 };
+export type {
+  AchievementDefinition,
+  AchievementType,
+  Ball,
+  Brick,
+  GameActions,
+  GameDataState,
+  GameEntitiesState,
+  GameSettings,
+  GameState,
+  Upgrade,
+  UpgradeState,
+} from './types';

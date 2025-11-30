@@ -2,11 +2,12 @@
 
 ## PENDING
 
-- [TASK003] Investigate Persist/Rehydrate Race - Investigate failing rehydrate test behavior and propose fix
+- _None_
 
 ## IN PROGRESS
 
 - [TASK002] Performance Profiling & UX Polish - Profile rendering and optimize GameScene/Ball updates; polish UI
+- [TASK004] Refactor: Modularize `src/` (Store & Components) - Modularize store, BricksInstanced, and UI without behavior change
 
 ## COMPLETED
 
