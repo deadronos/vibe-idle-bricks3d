@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import type { Vector3Tuple } from 'three';
 import {
   ACHIEVEMENTS,
@@ -13,25 +13,33 @@ import {
 } from './constants';
 import { checkAndUnlockAchievements, getBallSpeedLevel } from './achievements';
 import { createInitialBall, createInitialBricks } from './createInitials';
-import type { GameDataState, GameEntitiesState, GameState, UpgradeState } from './types';
+import { createMetaStorage, handleRehydrate, hasExistingStorage } from './persistence';
+import type { Ball, GameDataState, GameEntitiesState, GameState, UpgradeState } from './types';
+
+const rescaleVelocity = (velocity: Vector3Tuple, targetSpeed: number): Vector3Tuple => {
+  const currentSpeed = Math.sqrt(
+    velocity[0] ** 2 + velocity[1] ** 2 + velocity[2] ** 2
+  );
+  const scale = currentSpeed > 0 ? targetSpeed / currentSpeed : 1;
+  return [velocity[0] * scale, velocity[1] * scale, velocity[2] * scale];
+};
+
+const updateBallDamages = (balls: Ball[], ballDamage: number): Ball[] =>
+  balls.map((ball) => ({
+    ...ball,
+    damage: ballDamage,
+  }));
+
+const updateBallSpeeds = (balls: Ball[], ballSpeed: number): Ball[] =>
+  balls.map((ball) => ({
+    ...ball,
+    velocity: rescaleVelocity(ball.velocity, ballSpeed),
+  }));
 
 /**
  * Check if we have existing game data in storage.
  * If so, we should NOT create default balls - rehydration will handle it.
  */
-const hasExistingStorage = (): boolean => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return false;
-    const parsed = JSON.parse(stored);
-    // Check if it has meaningful state (not just empty/default)
-    const state = parsed?.state ?? parsed;
-    return state && typeof state === 'object' && 'ballCount' in state;
-  } catch {
-    return false;
-  }
-};
-
 /**
  * Build initial state for the game.
  * If storage exists, start with empty entities - rehydration will rebuild them.
@@ -59,26 +67,6 @@ const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState =
     lastBallSpawnTime: 0,
   };
 };
-
-const clampNumber = (value: unknown, fallback: number, min: number) =>
-  typeof value === 'number' && Number.isFinite(value) && value >= min ? value : fallback;
-
-// Keep a short-lived in-memory copy of the most meaningful persisted snapshot
-// (used as a last-resort when onRehydrateStorage cannot find a non-default
-// snapshot in storage due to write ordering in tests). This improves test
-// robustness without changing on-disk formats.
-// let LAST_MEANINGFUL_PERSISTED: any = null;
-
-const isDefaultPersisted = (s: Partial<GameState> | null | undefined) =>
-  !s ||
-  (s.score === 0 &&
-    s.bricksDestroyed === 0 &&
-    s.wave === DEFAULT_WAVE &&
-    s.maxWaveReached === DEFAULT_WAVE &&
-    s.ballDamage === DEFAULT_BALL_DAMAGE &&
-    s.ballSpeed === DEFAULT_BALL_SPEED &&
-    s.ballCount === DEFAULT_BALL_COUNT &&
-    (!Array.isArray(s.unlockedAchievements) || s.unlockedAchievements.length === 0));
 
 export const useGameStore = create<GameState>()(
   persist(
@@ -202,10 +190,7 @@ export const useGameStore = create<GameState>()(
               return {
                 score,
                 ballDamage,
-                balls: state.balls.map((ball) => ({
-                  ...ball,
-                  damage: ballDamage,
-                })),
+                balls: updateBallDamages(state.balls, ballDamage),
                 unlockedAchievements,
               };
             }
@@ -222,20 +207,7 @@ export const useGameStore = create<GameState>()(
               return {
                 score,
                 ballSpeed,
-                balls: state.balls.map((ball) => {
-                  const currentSpeed = Math.sqrt(
-                    ball.velocity[0] ** 2 + ball.velocity[1] ** 2 + ball.velocity[2] ** 2
-                  );
-                  const scale = currentSpeed > 0 ? ballSpeed / currentSpeed : 1;
-                  return {
-                    ...ball,
-                    velocity: [
-                      ball.velocity[0] * scale,
-                      ball.velocity[1] * scale,
-                      ball.velocity[2] * scale,
-                    ] as Vector3Tuple,
-                  };
-                }),
+                balls: updateBallSpeeds(state.balls, ballSpeed),
                 unlockedAchievements,
               };
             }
@@ -321,201 +293,14 @@ export const useGameStore = create<GameState>()(
         unlockedAchievements: state.unlockedAchievements,
         settings: state.settings,
       }),
-      onRehydrateStorage: () => (state) => {
-        if (!state) return;
-
-        // Validate and clamp values after rehydration
-        const wave = clampNumber(state.wave, DEFAULT_WAVE, DEFAULT_WAVE);
-        const ballDamage = clampNumber(state.ballDamage, DEFAULT_BALL_DAMAGE, 1);
-        const ballSpeed = clampNumber(state.ballSpeed, DEFAULT_BALL_SPEED, 0.02);
-        const ballCount = clampNumber(state.ballCount, DEFAULT_BALL_COUNT, 1);
-        const maxWaveReached = clampNumber(
-          state.maxWaveReached,
-          Math.max(DEFAULT_WAVE, wave),
-          wave
-        );
-        const score = clampNumber(state.score, 0, 0);
-        const bricksDestroyed = clampNumber(state.bricksDestroyed, 0, 0);
-        const unlockedAchievements = Array.isArray(state.unlockedAchievements)
-          ? state.unlockedAchievements.filter((id): id is string => typeof id === 'string')
-          : [];
-        const settings = state.settings && typeof state.settings === 'object' ? state.settings : {};
-
-        // Log rehydrated values for debugging
-        console.log('[GameStore] Rehydrated state:', {
-          ballCount,
-          ballDamage,
-          ballSpeed,
-          wave,
-          score,
-          bricksDestroyed,
-          unlockedAchievements: unlockedAchievements.length,
-        });
-
-        // Defer store operations to next tick to ensure store is fully initialized
-        // This avoids "Cannot access 'useGameStore' before initialization" error
-        setTimeout(() => {
-          try {
-            console.log('[GameStore] Applying rehydration fix...');
-
-            const achievementSafeState = {
-              ...useGameStore.getState(),
-              score,
-              bricksDestroyed,
-              wave,
-              maxWaveReached,
-              ballDamage,
-              ballSpeed,
-              ballCount,
-              unlockedAchievements,
-            };
-
-            const nextAchievements = checkAndUnlockAchievements(achievementSafeState, {
-              unlockedAchievements,
-              score,
-              bricksDestroyed,
-              wave,
-              maxWaveReached,
-              ballDamage,
-              ballSpeed,
-              ballCount,
-            });
-
-            // Clear ALL existing balls and create fresh ones with correct stats
-            // This fixes the issue where the initial default ball has wrong velocity
-            const initialBall = createInitialBall(ballSpeed, ballDamage);
-            const ballsToQueue = Math.max(0, ballCount - 1); // -1 because we have the initial ball
-
-            console.log('[GameStore] Ball spawn plan:', {
-              initialBalls: 1,
-              queuedBalls: ballsToQueue,
-              total: ballCount,
-              ballSpeed,
-              ballDamage,
-            });
-
-            useGameStore.setState({
-              score,
-              bricksDestroyed,
-              wave,
-              maxWaveReached,
-              ballDamage,
-              ballSpeed,
-              ballCount,
-              unlockedAchievements: nextAchievements,
-              bricks: createInitialBricks(wave),
-              // Replace entire balls array - don't keep any default balls
-              balls: [initialBall],
-              ballSpawnQueue: ballsToQueue,
-              // Set to past time so queue processing can start immediately
-              lastBallSpawnTime: 0,
-              settings,
-            });
-
-            console.log('[GameStore] State after rehydration fix:', {
-              balls: useGameStore.getState().balls.length,
-              ballSpawnQueue: useGameStore.getState().ballSpawnQueue,
-              ballCount: useGameStore.getState().ballCount,
-              firstBallVelocity: useGameStore.getState().balls[0]?.velocity,
-            });
-          } catch (error) {
-            console.error('[GameStore] Error in rehydration callback:', error);
-          }
-        }, 0);
-
-        // Revalidate stats after a frame
-        setTimeout(() => {
-          const currentState = useGameStore.getState();
-          console.log('[GameStore] Post-rehydration validation:', {
-            ballCount: currentState.ballCount,
-            actualBalls: currentState.balls.length,
-            ballDamage: currentState.ballDamage,
-            ballSpeed: currentState.ballSpeed,
-            ballSpawnQueue: currentState.ballSpawnQueue,
-          });
-
-          // Verify ball stats match store config
-          const ballStatMismatch = currentState.balls.some(
-            (ball) =>
-              ball.damage !== currentState.ballDamage ||
-              Math.abs(
-                Math.sqrt(
-                  ball.velocity[0] ** 2 + ball.velocity[1] ** 2 + ball.velocity[2] ** 2
-                ) - currentState.ballSpeed
-              ) > 0.01
-          );
-
-          if (ballStatMismatch) {
-            console.warn(
-              '[GameStore] Ball stats mismatch detected! Rebuilding balls with correct stats.'
-            );
-            const rebuiltBalls = currentState.balls.map((ball) => ({
-              ...ball,
-              damage: currentState.ballDamage,
-              velocity: Array.from(
-                { length: 3 },
-                (_, i) => {
-                  const currentVelMagnitude = Math.sqrt(
-                    ball.velocity[0] ** 2 +
-                      ball.velocity[1] ** 2 +
-                      ball.velocity[2] ** 2
-                  );
-                  return currentVelMagnitude > 0
-                    ? (ball.velocity[i] / currentVelMagnitude) * currentState.ballSpeed
-                    : ball.velocity[i];
-                }
-              ) as Vector3Tuple,
-            }));
-            useGameStore.setState({ balls: rebuiltBalls });
-          }
-        }, 16); // One frame at 60fps
-      },
-      storage: createJSONStorage(() => ({
-        getItem: (name) => {
-          const raw = localStorage.getItem(name);
-          const meta = localStorage.getItem(name + ':meta');
-          
-          // If we have a meta snapshot (meaningful progress) and the primary
-          // snapshot is missing or default (e.g. due to test reset), prefer meta.
-          if (meta) {
-            try {
-              const parsedRaw = raw ? JSON.parse(raw) : null;
-              const parsedMeta = JSON.parse(meta);
-              
-              const rawState = parsedRaw?.state ?? parsedRaw;
-              const metaState = parsedMeta?.state ?? parsedMeta;
-
-              if (isDefaultPersisted(rawState) && !isDefaultPersisted(metaState)) {
-                return meta;
-              }
-            } catch {
-              // Ignore parse errors
-            }
-          }
-          return raw;
-        },
-        setItem: (name, value) => {
-          localStorage.setItem(name, value);
-          try {
-            const parsed = JSON.parse(value);
-            const state = parsed?.state ?? parsed;
-            
-            // If this snapshot represents meaningful progress, save it to a
-            // companion meta key. This persists through "soft resets" (like
-            // those in tests) where the main key might be overwritten with
-            // default state.
-            if (!isDefaultPersisted(state)) {
-              localStorage.setItem(name + ':meta', value);
-            }
-          } catch {
-            // Ignore errors
-          }
-        },
-        removeItem: (name) => {
-          localStorage.removeItem(name);
-          localStorage.removeItem(name + ':meta');
-        },
-      })),
+      onRehydrateStorage: () => (state) =>
+        handleRehydrate(state, {
+          checkAndUnlockAchievements,
+          createInitialBall,
+          createInitialBricks,
+          useGameStore,
+        }),
+      storage: createMetaStorage(),
     }
   )
 );
