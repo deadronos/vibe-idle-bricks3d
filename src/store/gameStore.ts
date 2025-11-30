@@ -335,7 +335,7 @@ const clampNumber = (value: unknown, fallback: number, min: number) =>
 // robustness without changing on-disk formats.
 // let LAST_MEANINGFUL_PERSISTED: any = null;
 
-const isDefaultPersisted = (s: any) =>
+const isDefaultPersisted = (s: Partial<GameState> | null | undefined) =>
   !s ||
   (s.score === 0 &&
     s.bricksDestroyed === 0 &&
@@ -668,4 +668,3 @@ export {
   buildInitialState,
   getBallSpeedLevel,
 };
-

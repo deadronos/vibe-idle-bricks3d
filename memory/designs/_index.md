@@ -6,7 +6,7 @@ none
 
 ## IN PROGRESS
 
-none
+- [DESIGN002] Performance & UX - Drafted: FrameManager, InstancedMesh, Accessibility
 
 ## COMPLETED
 

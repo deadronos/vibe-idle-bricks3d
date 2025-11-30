@@ -1,10 +1,11 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars, PerspectiveCamera } from '@react-three/drei';
-import { Ball } from './Ball';
-import { Brick } from './Brick';
 import { Arena } from './Arena';
 import { useGameStore } from '../store/gameStore';
 import { useEffect } from 'react';
+import { Ball } from './Ball';
+import { BricksInstanced } from './BricksInstanced';
+import { FrameManager } from '../engine/FrameManager';
 
 function GameContent() {
   const balls = useGameStore((state) => state.balls);
@@ -50,15 +51,15 @@ function GameContent() {
       {/* Game elements */}
       <Arena />
 
+      <FrameManager />
+
       {/* Balls */}
       {balls.map((ball) => (
         <Ball key={ball.id} ball={ball} />
       ))}
 
       {/* Bricks */}
-      {bricks.map((brick) => (
-        <Brick key={brick.id} brick={brick} />
-      ))}
+      <BricksInstanced bricks={bricks} />
     </>
   );
 }
