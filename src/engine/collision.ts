@@ -1,5 +1,11 @@
 import type { Vector3Tuple } from 'three';
-import type { Ball, Brick } from '../store/gameStore';
+import type { Ball, Brick } from '../store/types';
+import { BRICK_SIZE } from './collision/constants';
+import {
+  clampDelta as clampDeltaImpl,
+  reflectIfOutOfBounds as reflectIfOutOfBoundsImpl,
+  resolveBrickCollision as resolveBrickCollisionImpl,
+} from './collision/math';
 
 export interface ArenaSize {
   width: number;
@@ -7,12 +13,7 @@ export interface ArenaSize {
   depth: number;
 }
 
-export const BRICK_SIZE = { x: 1.5, y: 0.8, z: 1 };
-const BRICK_HALF_SIZE = {
-  x: BRICK_SIZE.x / 2,
-  y: BRICK_SIZE.y / 2,
-  z: BRICK_SIZE.z / 2,
-};
+// BRICK_SIZE is defined in ./collision/constants and re-exported below.
 
 export interface BallFrameResult {
   nextPosition: Vector3Tuple;
@@ -20,50 +21,11 @@ export interface BallFrameResult {
   hitBrickId?: string;
 }
 
-export const clampDelta = (delta: number) => Math.min(delta, 0.05);
+export const clampDelta = clampDeltaImpl;
 
-const reflectIfOutOfBounds = (position: number, limit: number) => {
-  if (position < -limit || position > limit) {
-    const clamped = Math.max(-limit, Math.min(limit, position));
-    return { reflected: true, value: clamped };
-  }
-  return { reflected: false, value: position };
-};
+const reflectIfOutOfBounds = reflectIfOutOfBoundsImpl;
 
-const resolveBrickCollision = (
-  target: { x: number; y: number; z: number; radius: number },
-  brick: Brick
-) => {
-  const dx = target.x - brick.position[0];
-  const dy = target.y - brick.position[1];
-  const dz = target.z - brick.position[2];
-
-  const closestX = Math.max(-BRICK_HALF_SIZE.x, Math.min(BRICK_HALF_SIZE.x, dx));
-  const closestY = Math.max(-BRICK_HALF_SIZE.y, Math.min(BRICK_HALF_SIZE.y, dy));
-  const closestZ = Math.max(-BRICK_HALF_SIZE.z, Math.min(BRICK_HALF_SIZE.z, dz));
-
-  const distX = dx - closestX;
-  const distY = dy - closestY;
-  const distZ = dz - closestZ;
-  const distance = Math.sqrt(distX * distX + distY * distY + distZ * distZ);
-
-  if (distance >= target.radius) {
-    return { hit: false as const };
-  }
-
-  const absDistX = Math.abs(distX);
-  const absDistY = Math.abs(distY);
-  const absDistZ = Math.abs(distZ);
-
-  if (absDistX >= absDistY && absDistX >= absDistZ) {
-    return { hit: true as const, axis: 'x' as const, brickId: brick.id };
-  }
-  if (absDistY >= absDistX && absDistY >= absDistZ) {
-    return { hit: true as const, axis: 'y' as const, brickId: brick.id };
-  }
-
-  return { hit: true as const, axis: 'z' as const, brickId: brick.id };
-};
+const resolveBrickCollision = resolveBrickCollisionImpl;
 
 export const stepBallFrame = (
   ball: Ball,
@@ -134,3 +96,5 @@ export const stepBallFrame = (
     hitBrickId,
   };
 };
+
+export { BRICK_SIZE };
