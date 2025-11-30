@@ -10,9 +10,10 @@ export function Ball({ ball }: BallProps) {
   const meshRef = useRef<Mesh>(null);
 
   useEffect(() => {
+    // Debug: Ball component mount/update - ball.id, ball.position
     if (!meshRef.current) return;
     meshRef.current.position.set(ball.position[0], ball.position[1], ball.position[2]);
-  }, [ball.position]);
+  }, [ball.id, ball.position]);
 
   return (
     <mesh ref={meshRef} position={ball.position} castShadow>
