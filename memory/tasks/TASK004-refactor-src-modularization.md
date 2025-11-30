@@ -23,7 +23,7 @@ The current store and key components mix types, constants, helpers, rendering lo
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 55%
+**Overall Status:** Completed - 100%
 
 ### Subtasks
 
@@ -32,9 +32,9 @@ The current store and key components mix types, constants, helpers, rendering lo
 | 1.1 | Extract store types/constants and update imports                 | Completed    | 2025-11-30 | Created `src/store/types.ts` and `constants.ts`; updated `gameStore.ts` imports/exports and re-ran typecheck |
 | 2.1 | Extract createInitials/achievements with unit tests              | Completed    | 2025-11-30 | Added `src/store/createInitials.ts`, `src/store/achievements.ts`, updated store imports/exports, and added `src/test/achievements.test.ts` |
 | 3.1 | Extract persistence helpers and keep STORAGE_KEY/partialize same | Completed    | 2025-11-30 | Added `src/store/persistence.ts` with meta storage adapter and rehydrate handler; wired `gameStore.ts` to use it |
-| 4.1 | Slim `gameStore.ts` actions while keeping API stable             | In Progress  | 2025-11-30 | Introduced shared helpers for ball damage/speed updates to reduce duplication |
-| 5.1 | Split BricksInstanced into hook/utils + add tests                | Not Started  | 2025-11-30 |  |
-| 6.1 | Split UI into panels + keyboard hook; preserve behavior          | Not Started  | 2025-11-30 |  |
+| 4.1 | Slim `gameStore.ts` actions while keeping API stable             | Completed    | 2025-11-30 | Introduced shared helpers for ball damage/speed updates to reduce duplication |
+| 5.1 | Split BricksInstanced into hook/utils + add tests                | Completed    | 2025-11-30 | Created `components/bricks/*` with hook+utils, added `bricks.utils.test.ts`, updated imports |
+| 6.1 | Split UI into panels + keyboard hook; preserve behavior          | Completed    | 2025-11-30 | Added `components/ui/*` panels, keyboard hook, moved styles, and updated App wiring |
 
 ## Progress Log
 
@@ -44,4 +44,6 @@ The current store and key components mix types, constants, helpers, rendering lo
 - Extracted store types/constants into dedicated modules and updated `gameStore.ts` imports/exports; confirmed `npm run typecheck` passes.
 - Split store creation helpers and achievement logic into `createInitials.ts`/`achievements.ts`, added `achievements` unit tests, and re-ran `npm run typecheck` and `npm run test:run` (all green).
 - Extracted persistence/storage logic into `persistence.ts`, refactored `onRehydrateStorage` to reuse it, added shared ball speed/damage helpers in actions, and re-ran `npm run typecheck` and `npm run test:run` (all green).
+- Split `BricksInstanced` into `components/bricks` (hook + utils + renderer), added `bricks.utils.test.ts`, and wired imports.
+- Split UI into panel components, keyboard hook, and moved styles under `components/ui`; updated App wiring. All tests/typecheck remain green.
 - Extracted store types/constants into dedicated modules and updated `gameStore.ts` imports/exports; confirmed `npm run typecheck` passes.
