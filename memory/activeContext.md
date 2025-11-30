@@ -4,15 +4,24 @@
 
 ## Current focus
 
-- Bug fix: Ball count mismatch after page reload (ballCount upgraded to 8 but only 1 ball visible)
+- Ball spawn queue system for graceful reload behavior
 - Performance profiling and optimizations, especially around rendering and `useFrame` loops.  
 - UI polish including accessibility and clearer achievement feedback.
 
 ## Recent changes
 
-- Fixed ball count persistence issue where rehydration wasn't properly rebuilding balls array to match ballCount
-- Added safety check to validate and fix ball count mismatch during rehydration
-- Added regression test for 8+ balls reload scenario
+- **NEW: Gradual ball spawning system** - When reloading with 8+ purchased balls, balls now spawn every 0.5s instead of all at once
+  - Added `ballSpawnQueue` and `lastBallSpawnTime` to track pending spawns
+  - Added `tryProcessBallSpawnQueue()` in FrameManager to spawn queued balls during game loop
+  - Added `forceProcessAllQueuedBalls()` for testing and immediate spawn needs
+
+- **Enhanced rehydration validation** - Added comprehensive logging and stat verification:
+  - Logs rehydrated state (ballCount, damage, speed, wave, score, bricks, achievements)
+  - Validates ball stats match store config after rehydration
+  - Automatically rebuilds balls with correct damage/speed if mismatch detected
+  - Post-rehydration validation runs after one frame to catch race conditions
+
+- Updated workflow to use `npm` instead of `pnpm` for deploy runner compatibility
 
 ## Next steps
 
@@ -24,5 +33,6 @@
 
 - Use Zustand for state management
 - Keep physics deterministic and mostly frame-rate independent
-- Persist only meta progression and reconstruct runtime entities on hydrate using Zustand persist partialize + onRehydrateStorage guard
-- Add post-rehydration validation to ensure balls array length matches ballCount (handles race conditions)
+- Persist only meta progression (ballCount, ballDamage, ballSpeed, etc) - reconstruct runtime entities (bricks, balls) on hydrate
+- Spawn missing balls gradually (0.5s interval) rather than all at once to smooth reload experience
+- Add comprehensive validation and logging during rehydration to catch and fix stat mismatches

@@ -60,6 +60,8 @@ interface GameEntitiesState {
   bricks: Brick[];
   balls: Ball[];
   isPaused: boolean;
+  ballSpawnQueue: number; // Number of balls waiting to be spawned
+  lastBallSpawnTime: number; // Timestamp of last ball spawn
 }
 
 interface UpgradeState {
@@ -89,6 +91,11 @@ interface GameActions {
   getBallSpeedCost: () => number;
   getBallCountCost: () => number;
   resetGame: () => void;
+
+  // Ball spawn queue (used for gradual spawning on reload)
+  queueBallSpawns: (count: number) => void;
+  tryProcessBallSpawnQueue: () => void;
+  forceProcessAllQueuedBalls: () => void; // For testing - spawns all queued balls immediately
 }
 
 export type GameState = GameDataState & GameEntitiesState & UpgradeState & GameActions;
@@ -240,11 +247,6 @@ const createInitialBall = (speed: number, damage: number): Ball => {
   };
 };
 
-const createBallsForCount = (count: number, speed: number, damage: number): Ball[] => {
-  const safeCount = Math.max(1, Math.round(count));
-  return Array.from({ length: safeCount }, () => createInitialBall(speed, damage));
-};
-
 const getBallSpeedLevel = (speed: number) =>
   Math.round((speed - DEFAULT_BALL_SPEED) / 0.02) + 1;
 
@@ -261,6 +263,8 @@ const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState =
   ballDamage: DEFAULT_BALL_DAMAGE,
   ballSpeed: DEFAULT_BALL_SPEED,
   ballCount: DEFAULT_BALL_COUNT,
+  ballSpawnQueue: 0,
+  lastBallSpawnTime: 0,
 });
 
 type AchievementView = Pick<
@@ -365,10 +369,13 @@ export const useGameStore = create<GameState>()(
           }),
 
         spawnBall: () =>
-          set((state) => ({
-            balls: [...state.balls, createInitialBall(state.ballSpeed, state.ballDamage)],
-          })),
-
+    set((state) => {
+      const newBall = createInitialBall(state.ballSpeed, state.ballDamage);
+      return {
+        balls: [...state.balls, newBall],
+        lastBallSpawnTime: Date.now(),
+      };
+    }),
         removeBall: (id) =>
           set((state) => ({
             balls: state.balls.filter((ball) => ball.id !== id),
@@ -527,6 +534,47 @@ export const useGameStore = create<GameState>()(
           useGameStore.persist.clearStorage();
           set(buildInitialState());
         },
+
+        queueBallSpawns: (count) =>
+          set((state) => ({
+            ballSpawnQueue: state.ballSpawnQueue + count,
+          })),
+
+        tryProcessBallSpawnQueue: () =>
+          set((state) => {
+            if (state.ballSpawnQueue <= 0) return state;
+
+            const now = Date.now();
+            const timeSinceLastSpawn = now - state.lastBallSpawnTime;
+            // Spawn a ball every 0.5 seconds (500ms)
+            const SPAWN_INTERVAL_MS = 500;
+
+            if (timeSinceLastSpawn >= SPAWN_INTERVAL_MS) {
+              const newBall = createInitialBall(state.ballSpeed, state.ballDamage);
+              return {
+                balls: [...state.balls, newBall],
+                ballSpawnQueue: state.ballSpawnQueue - 1,
+                lastBallSpawnTime: now,
+              };
+            }
+
+            return state;
+          }),
+
+        forceProcessAllQueuedBalls: () =>
+          set((state) => {
+            if (state.ballSpawnQueue <= 0) return state;
+
+            const ballsToSpawn = Array.from({ length: state.ballSpawnQueue }, () =>
+              createInitialBall(state.ballSpeed, state.ballDamage)
+            );
+
+            return {
+              balls: [...state.balls, ...ballsToSpawn],
+              ballSpawnQueue: 0,
+              lastBallSpawnTime: Date.now(),
+            };
+          }),
       };
     },
     {
@@ -562,26 +610,17 @@ export const useGameStore = create<GameState>()(
           ? state.unlockedAchievements.filter((id): id is string => typeof id === 'string')
           : [];
 
-        // Schedule a revalidation check after rehydration completes to catch race conditions
-        const validateAndFixAfterRehydrate = () => {
-          const currentState = useGameStore.getState();
-          if (currentState.ballCount > 0 && currentState.balls.length !== currentState.ballCount) {
-            console.warn(
-              '[GameStore] Ball count mismatch after rehydration: expected ' +
-                currentState.ballCount +
-                ', got ' +
-                currentState.balls.length +
-                '. Rebuilding balls array.'
-            );
-            const newBalls = createBallsForCount(currentState.ballCount, currentState.ballSpeed, currentState.ballDamage);
-            useGameStore.setState({ balls: newBalls });
-          }
-        };
+        // Log rehydrated values for debugging
+        console.log('[GameStore] Rehydrated state:', {
+          ballCount,
+          ballDamage,
+          ballSpeed,
+          wave,
+          score,
+          bricksDestroyed,
+          unlockedAchievements: unlockedAchievements.length,
+        });
 
-        // We can't use set() here because onRehydrateStorage doesn't provide it directly in this signature
-        // But the state returned/mutated here is what gets put into the store.
-        
-        // Actually, the cleanest way to rebuild entities is to do it here.
         useGameStore.setState((current) => {
           const achievementSafeState = {
             ...(current as GameState),
@@ -606,8 +645,16 @@ export const useGameStore = create<GameState>()(
             ballCount,
           });
 
-          // Ensure balls array is rebuilt to match ballCount
-          const rebuiltBalls = createBallsForCount(ballCount, ballSpeed, ballDamage);
+          // Start with just one ball (initial spawn state)
+          // Queue the remaining balls to spawn gradually
+          const initialBall = createInitialBall(ballSpeed, ballDamage);
+          const ballsToQueue = Math.max(0, ballCount - 1); // -1 because we have the initial ball
+
+          console.log('[GameStore] Ball spawn plan:', {
+            initialBalls: 1,
+            queuedBalls: ballsToQueue,
+            total: ballCount,
+          });
 
           return {
             ...current,
@@ -620,13 +667,60 @@ export const useGameStore = create<GameState>()(
             ballCount,
             unlockedAchievements: nextAchievements,
             bricks: createInitialBricks(wave),
-            balls: rebuiltBalls,
+            balls: [initialBall],
+            ballSpawnQueue: ballsToQueue,
+            // Set to past time so queue processing can start immediately
+            lastBallSpawnTime: 0,
             settings: state.settings && typeof state.settings === 'object' ? state.settings : {},
           };
         });
 
-        // Use setTimeout to revalidate after the store update propagates
-        setTimeout(validateAndFixAfterRehydrate, 0);
+        // Revalidate stats after a frame
+        setTimeout(() => {
+          const currentState = useGameStore.getState();
+          console.log('[GameStore] Post-rehydration validation:', {
+            ballCount: currentState.ballCount,
+            actualBalls: currentState.balls.length,
+            ballDamage: currentState.ballDamage,
+            ballSpeed: currentState.ballSpeed,
+            ballSpawnQueue: currentState.ballSpawnQueue,
+          });
+
+          // Verify ball stats match store config
+          const ballStatMismatch = currentState.balls.some(
+            (ball) =>
+              ball.damage !== currentState.ballDamage ||
+              Math.abs(
+                Math.sqrt(
+                  ball.velocity[0] ** 2 + ball.velocity[1] ** 2 + ball.velocity[2] ** 2
+                ) - currentState.ballSpeed
+              ) > 0.01
+          );
+
+          if (ballStatMismatch) {
+            console.warn(
+              '[GameStore] Ball stats mismatch detected! Rebuilding balls with correct stats.'
+            );
+            const rebuiltBalls = currentState.balls.map((ball) => ({
+              ...ball,
+              damage: currentState.ballDamage,
+              velocity: Array.from(
+                { length: 3 },
+                (_, i) => {
+                  const currentVelMagnitude = Math.sqrt(
+                    ball.velocity[0] ** 2 +
+                      ball.velocity[1] ** 2 +
+                      ball.velocity[2] ** 2
+                  );
+                  return currentVelMagnitude > 0
+                    ? (ball.velocity[i] / currentVelMagnitude) * currentState.ballSpeed
+                    : ball.velocity[i];
+                }
+              ) as Vector3Tuple,
+            }));
+            useGameStore.setState({ balls: rebuiltBalls });
+          }
+        }, 16); // One frame at 60fps
       },
       storage: createJSONStorage(() => ({
         getItem: (name) => {

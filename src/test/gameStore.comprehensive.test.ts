@@ -909,6 +909,9 @@ describe('Game Store - Comprehensive Tests', () => {
       useGameStore.setState(buildInitialState());
       await useGameStore.persist?.rehydrate();
 
+      // Process ball spawn queue to spawn all queued balls (for testing)
+      useGameStore.getState().forceProcessAllQueuedBalls();
+
       const hydrated = useGameStore.getState();
       expect(hydrated.score).toBe(500);
       expect(hydrated.bricks.length).toBeGreaterThan(0);
@@ -1034,7 +1037,10 @@ describe('Game Store - Integration Tests', () => {
     // Rehydrate from storage
     await useGameStore.persist?.rehydrate();
 
-    // After rehydration, should have 8 balls
+    // Process ball spawn queue to spawn all queued balls (for testing)
+    useGameStore.getState().forceProcessAllQueuedBalls();
+
+    // After rehydration and processing spawn queue, should have 8 balls
     const hydrated = useGameStore.getState();
     expect(hydrated.ballCount).toBe(8);
     expect(hydrated.balls.length).toBe(8); // THE KEY TEST: balls array should have 8 items, not 1

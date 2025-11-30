@@ -5,8 +5,12 @@ import { stepBallFrame } from './collision';
 export function FrameManager() {
   const isPaused = useGameStore((state) => state.isPaused);
   const damageBrick = useGameStore((state) => state.damageBrick);
+  const tryProcessBallSpawnQueue = useGameStore((state) => state.tryProcessBallSpawnQueue);
 
   useFrame((_, delta) => {
+    // Process ball spawn queue (for gradual spawning on reload)
+    tryProcessBallSpawnQueue();
+
     if (isPaused) return;
 
     const { balls, bricks } = useGameStore.getState();
