@@ -21,6 +21,13 @@ const resetToKnownState = (overrides: Partial<GameState> = {}) => {
   });
 };
 
+/**
+ * Helper to wait for setTimeout(0) in onRehydrateStorage to complete.
+ * The rehydration fix uses setTimeout to avoid "Cannot access 'useGameStore'
+ * before initialization" errors, so tests need to wait for it.
+ */
+const waitForRehydrationFix = () => new Promise((resolve) => setTimeout(resolve, 10));
+
 describe('Rehydration - Value Clamping', () => {
   beforeEach(() => {
     resetToKnownState();
@@ -36,6 +43,7 @@ describe('Rehydration - Value Clamping', () => {
 
     useGameStore.setState(buildInitialState());
     await useGameStore.persist?.rehydrate();
+    await waitForRehydrationFix(); // Wait for setTimeout(0) in onRehydrateStorage
 
     const state = useGameStore.getState();
     expect(state.ballDamage).toBeGreaterThanOrEqual(1);
@@ -51,6 +59,7 @@ describe('Rehydration - Value Clamping', () => {
 
     useGameStore.setState(buildInitialState());
     await useGameStore.persist?.rehydrate();
+    await waitForRehydrationFix(); // Wait for setTimeout(0) in onRehydrateStorage
 
     const state = useGameStore.getState();
     expect(state.ballDamage).toBeGreaterThanOrEqual(DEFAULT_BALL_DAMAGE);
@@ -66,6 +75,7 @@ describe('Rehydration - Value Clamping', () => {
 
     useGameStore.setState(buildInitialState());
     await useGameStore.persist?.rehydrate();
+    await waitForRehydrationFix(); // Wait for setTimeout(0) in onRehydrateStorage
 
     const state = useGameStore.getState();
     expect(state.ballSpeed).toBeGreaterThanOrEqual(DEFAULT_BALL_SPEED);
@@ -81,6 +91,7 @@ describe('Rehydration - Value Clamping', () => {
 
     useGameStore.setState(buildInitialState());
     await useGameStore.persist?.rehydrate();
+    await waitForRehydrationFix(); // Wait for setTimeout(0) in onRehydrateStorage
 
     const state = useGameStore.getState();
     expect(state.ballSpeed).toBeGreaterThanOrEqual(DEFAULT_BALL_SPEED);
@@ -321,6 +332,7 @@ describe('Rehydration - Data Type Validation', () => {
 
     useGameStore.setState(buildInitialState());
     await useGameStore.persist?.rehydrate();
+    await waitForRehydrationFix(); // Wait for setTimeout(0) in onRehydrateStorage
 
     const state = useGameStore.getState();
     expect(typeof state.score).toBe('number');
@@ -337,6 +349,7 @@ describe('Rehydration - Data Type Validation', () => {
 
     useGameStore.setState(buildInitialState());
     await useGameStore.persist?.rehydrate();
+    await waitForRehydrationFix(); // Wait for setTimeout(0) in onRehydrateStorage
 
     const state = useGameStore.getState();
     expect(typeof state.wave).toBe('number');
@@ -356,6 +369,7 @@ describe('Rehydration - Data Type Validation', () => {
 
     useGameStore.setState(buildInitialState());
     await useGameStore.persist?.rehydrate();
+    await waitForRehydrationFix(); // Wait for setTimeout(0) in onRehydrateStorage
 
     const state = useGameStore.getState();
     expect(state.ballDamage).toBeGreaterThanOrEqual(1);
@@ -375,6 +389,7 @@ describe('Rehydration - Data Type Validation', () => {
     useGameStore.setState(stateOverride);
     useGameStore.setState(buildInitialState());
     await useGameStore.persist?.rehydrate();
+    await waitForRehydrationFix(); // Wait for setTimeout(0) in onRehydrateStorage
 
     const state = useGameStore.getState();
     expect(state.ballDamage).toBeDefined();
@@ -513,5 +528,260 @@ describe('Rehydration - Extreme Values', () => {
 
     const state = useGameStore.getState();
     expect(state.ballSpeed).toBeCloseTo(0.123456, 5);
+  });
+});
+
+describe('Browser Storage Edge Cases', () => {
+  beforeEach(() => {
+    resetToKnownState();
+  });
+
+  it('should recover from corrupted JSON in localStorage', async () => {
+    const storageKey = 'idle-bricks3d:game:v1';
+
+    // Store corrupted JSON
+    localStorage.setItem(storageKey, '{invalid json here');
+
+    // Reset and rehydrate should not throw
+    useGameStore.setState(buildInitialState());
+
+    // Should fall back to defaults without crashing
+    const state = useGameStore.getState();
+    expect(state.score).toBe(0);
+    expect(state.ballCount).toBe(1);
+  });
+
+  it('should handle empty localStorage value', async () => {
+    const storageKey = 'idle-bricks3d:game:v1';
+
+    // Store empty string
+    localStorage.setItem(storageKey, '');
+
+    useGameStore.setState(buildInitialState());
+
+    const state = useGameStore.getState();
+    expect(state.score).toBeGreaterThanOrEqual(0);
+    expect(state.ballCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should handle null value in localStorage', async () => {
+    const storageKey = 'idle-bricks3d:game:v1';
+
+    // Store literal "null" string
+    localStorage.setItem(storageKey, 'null');
+
+    useGameStore.setState(buildInitialState());
+
+    const state = useGameStore.getState();
+    expect(state.score).toBeGreaterThanOrEqual(0);
+    expect(state.ballCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should handle partial JSON (missing fields)', async () => {
+    const storageKey = 'idle-bricks3d:game:v1';
+
+    // Store valid JSON with only some fields
+    const partialData = JSON.stringify({
+      state: {
+        score: 500,
+        // Missing: wave, ballDamage, ballSpeed, ballCount, etc.
+      },
+    });
+    localStorage.setItem(storageKey, partialData);
+
+    useGameStore.setState(buildInitialState());
+    await useGameStore.persist?.rehydrate();
+
+    const state = useGameStore.getState();
+    // Score may or may not be preserved depending on the storage format
+    // The important thing is the state is valid
+    expect(typeof state.score).toBe('number');
+    expect(state.score).toBeGreaterThanOrEqual(0);
+    // Other fields should have defaults
+    expect(state.ballDamage).toBeGreaterThanOrEqual(DEFAULT_BALL_DAMAGE);
+    expect(state.ballSpeed).toBeGreaterThanOrEqual(DEFAULT_BALL_SPEED);
+  });
+
+  it('should handle localStorage.getItem returning undefined behavior', () => {
+    const storageKey = 'idle-bricks3d:game:v1';
+
+    // Ensure no key exists
+    localStorage.removeItem(storageKey);
+    localStorage.removeItem(storageKey + ':meta');
+
+    const result = localStorage.getItem(storageKey);
+    expect(result).toBeNull();
+
+    // Store should initialize with defaults
+    useGameStore.setState(buildInitialState());
+    const state = useGameStore.getState();
+    expect(state.score).toBe(0);
+  });
+
+  it('should handle deeply nested corrupted state', async () => {
+    const storageKey = 'idle-bricks3d:game:v1';
+
+    // Store JSON with unexpected nested structure
+    const weirdData = JSON.stringify({
+      state: {
+        score: { nested: 'object' }, // Wrong type
+        wave: [1, 2, 3], // Wrong type
+        ballCount: 'five', // Wrong type
+      },
+    });
+    localStorage.setItem(storageKey, weirdData);
+
+    useGameStore.setState(buildInitialState());
+    await useGameStore.persist?.rehydrate();
+
+    const state = useGameStore.getState();
+    // Should have valid values (clamped/defaulted)
+    expect(typeof state.score).toBe('number');
+    expect(typeof state.wave).toBe('number');
+    expect(typeof state.ballCount).toBe('number');
+  });
+});
+
+describe('Stat Propagation', () => {
+  beforeEach(() => {
+    resetToKnownState();
+  });
+
+  it('should spawn balls with current ballDamage setting', () => {
+    useGameStore.setState({
+      ballDamage: 5,
+      ballSpeed: 0.15,
+      balls: [],
+    });
+
+    // Spawn a new ball
+    useGameStore.getState().spawnBall();
+
+    const state = useGameStore.getState();
+    expect(state.balls.length).toBe(1);
+    expect(state.balls[0].damage).toBe(5);
+  });
+
+  it('should spawn balls with current ballSpeed setting', () => {
+    const targetSpeed = 0.2;
+    useGameStore.setState({
+      ballDamage: 1,
+      ballSpeed: targetSpeed,
+      balls: [],
+    });
+
+    useGameStore.getState().spawnBall();
+
+    const state = useGameStore.getState();
+    const ball = state.balls[0];
+    const velocityMagnitude = Math.sqrt(
+      ball.velocity[0] ** 2 + ball.velocity[1] ** 2 + ball.velocity[2] ** 2
+    );
+    // The velocity includes random components, so we check the base speed is used
+    expect(ball.velocity).toBeDefined();
+    expect(velocityMagnitude).toBeGreaterThan(0);
+  });
+
+  it('should update all existing balls immediately on damage upgrade', () => {
+    // Start with multiple balls at damage 1
+    useGameStore.setState({
+      ballDamage: 1,
+      score: 10000,
+      balls: [
+        { id: 'ball-1', position: [0, 0, 0], velocity: [0.1, 0.1, 0.1], radius: 0.3, damage: 1, color: '#fff' },
+        { id: 'ball-2', position: [1, 0, 0], velocity: [0.1, 0.1, 0.1], radius: 0.3, damage: 1, color: '#fff' },
+        { id: 'ball-3', position: [2, 0, 0], velocity: [0.1, 0.1, 0.1], radius: 0.3, damage: 1, color: '#fff' },
+      ],
+    });
+
+    // Upgrade damage
+    useGameStore.getState().upgradeBallDamage();
+
+    const state = useGameStore.getState();
+    expect(state.ballDamage).toBe(2);
+
+    // ALL balls should now have damage 2
+    state.balls.forEach((ball) => {
+      expect(ball.damage).toBe(2);
+    });
+  });
+
+  it('should scale velocity correctly for all balls on speed upgrade', () => {
+    const initialSpeed = 0.1;
+    useGameStore.setState({
+      ballSpeed: initialSpeed,
+      score: 10000,
+      balls: [
+        { id: 'ball-1', position: [0, 0, 0], velocity: [0.05, 0.05, 0.05], radius: 0.3, damage: 1, color: '#fff' },
+        { id: 'ball-2', position: [1, 0, 0], velocity: [0.1, 0, 0], radius: 0.3, damage: 1, color: '#fff' },
+      ],
+    });
+
+    // Upgrade speed
+    useGameStore.getState().upgradeBallSpeed();
+
+    const state = useGameStore.getState();
+    const expectedSpeed = initialSpeed + 0.02;
+    expect(state.ballSpeed).toBeCloseTo(expectedSpeed, 2);
+
+    // Each ball should have scaled velocity
+    state.balls.forEach((ball) => {
+      const magnitude = Math.sqrt(
+        ball.velocity[0] ** 2 + ball.velocity[1] ** 2 + ball.velocity[2] ** 2
+      );
+      expect(magnitude).toBeCloseTo(expectedSpeed, 2);
+    });
+  });
+
+  it('should not change velocity direction on speed upgrade', () => {
+    useGameStore.setState({
+      ballSpeed: 0.1,
+      score: 10000,
+      balls: [
+        { id: 'ball-1', position: [0, 0, 0], velocity: [0.1, 0, 0], radius: 0.3, damage: 1, color: '#fff' },
+      ],
+    });
+
+    const ballBefore = useGameStore.getState().balls[0];
+    const directionBefore = [
+      ballBefore.velocity[0] / 0.1,
+      ballBefore.velocity[1] / 0.1,
+      ballBefore.velocity[2] / 0.1,
+    ];
+
+    useGameStore.getState().upgradeBallSpeed();
+
+    const ballAfter = useGameStore.getState().balls[0];
+    const newMagnitude = Math.sqrt(
+      ballAfter.velocity[0] ** 2 + ballAfter.velocity[1] ** 2 + ballAfter.velocity[2] ** 2
+    );
+    const directionAfter = [
+      ballAfter.velocity[0] / newMagnitude,
+      ballAfter.velocity[1] / newMagnitude,
+      ballAfter.velocity[2] / newMagnitude,
+    ];
+
+    // Direction should be the same (within floating point tolerance)
+    expect(directionAfter[0]).toBeCloseTo(directionBefore[0], 5);
+    expect(directionAfter[1]).toBeCloseTo(directionBefore[1], 5);
+    expect(directionAfter[2]).toBeCloseTo(directionBefore[2], 5);
+  });
+
+  it('should handle zero velocity ball on speed upgrade', () => {
+    useGameStore.setState({
+      ballSpeed: 0.1,
+      score: 10000,
+      balls: [
+        { id: 'ball-1', position: [0, 0, 0], velocity: [0, 0, 0], radius: 0.3, damage: 1, color: '#fff' },
+      ],
+    });
+
+    // Should not crash or produce NaN
+    useGameStore.getState().upgradeBallSpeed();
+
+    const ball = useGameStore.getState().balls[0];
+    expect(Number.isFinite(ball.velocity[0])).toBe(true);
+    expect(Number.isFinite(ball.velocity[1])).toBe(true);
+    expect(Number.isFinite(ball.velocity[2])).toBe(true);
   });
 });

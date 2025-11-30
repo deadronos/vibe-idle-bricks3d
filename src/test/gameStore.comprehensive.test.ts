@@ -29,6 +29,13 @@ const resetToKnownState = (overrides: Partial<GameState> = {}) => {
   });
 };
 
+/**
+ * Helper to wait for setTimeout(0) in onRehydrateStorage to complete.
+ * The rehydration fix uses setTimeout to avoid "Cannot access 'useGameStore'
+ * before initialization" errors, so tests need to wait for it.
+ */
+const waitForRehydrationFix = () => new Promise((resolve) => setTimeout(resolve, 10));
+
 // Helper to create a predictable brick for testing
 const createTestBrick = (overrides: Partial<Brick> = {}): Brick => ({
   id: `test-brick-${Math.random().toString(36).substring(2, 9)}`,
@@ -908,6 +915,7 @@ describe('Game Store - Comprehensive Tests', () => {
 
       useGameStore.setState(buildInitialState());
       await useGameStore.persist?.rehydrate();
+      await waitForRehydrationFix(); // Wait for setTimeout(0) in onRehydrateStorage
 
       // Process ball spawn queue to spawn all queued balls (for testing)
       useGameStore.getState().forceProcessAllQueuedBalls();
@@ -1036,6 +1044,7 @@ describe('Game Store - Integration Tests', () => {
 
     // Rehydrate from storage
     await useGameStore.persist?.rehydrate();
+    await waitForRehydrationFix(); // Wait for setTimeout(0) in onRehydrateStorage
 
     // Process ball spawn queue to spawn all queued balls (for testing)
     useGameStore.getState().forceProcessAllQueuedBalls();

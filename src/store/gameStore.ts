@@ -609,6 +609,7 @@ export const useGameStore = create<GameState>()(
         const unlockedAchievements = Array.isArray(state.unlockedAchievements)
           ? state.unlockedAchievements.filter((id): id is string => typeof id === 'string')
           : [];
+        const settings = state.settings && typeof state.settings === 'object' ? state.settings : {};
 
         // Log rehydrated values for debugging
         console.log('[GameStore] Rehydrated state:', {
@@ -621,59 +622,72 @@ export const useGameStore = create<GameState>()(
           unlockedAchievements: unlockedAchievements.length,
         });
 
-        useGameStore.setState((current) => {
-          const achievementSafeState = {
-            ...(current as GameState),
-            score,
-            bricksDestroyed,
-            wave,
-            maxWaveReached,
-            ballDamage,
-            ballSpeed,
-            ballCount,
-            unlockedAchievements,
-          };
+        // Defer store operations to next tick to ensure store is fully initialized
+        // This avoids "Cannot access 'useGameStore' before initialization" error
+        setTimeout(() => {
+          try {
+            console.log('[GameStore] Applying rehydration fix...');
 
-          const nextAchievements = checkAndUnlockAchievements(achievementSafeState, {
-            unlockedAchievements,
-            score,
-            bricksDestroyed,
-            wave,
-            maxWaveReached,
-            ballDamage,
-            ballSpeed,
-            ballCount,
-          });
+            const achievementSafeState = {
+              ...useGameStore.getState(),
+              score,
+              bricksDestroyed,
+              wave,
+              maxWaveReached,
+              ballDamage,
+              ballSpeed,
+              ballCount,
+              unlockedAchievements,
+            };
 
-          // Start with just one ball (initial spawn state)
-          // Queue the remaining balls to spawn gradually
-          const initialBall = createInitialBall(ballSpeed, ballDamage);
-          const ballsToQueue = Math.max(0, ballCount - 1); // -1 because we have the initial ball
+            const nextAchievements = checkAndUnlockAchievements(achievementSafeState, {
+              unlockedAchievements,
+              score,
+              bricksDestroyed,
+              wave,
+              maxWaveReached,
+              ballDamage,
+              ballSpeed,
+              ballCount,
+            });
 
-          console.log('[GameStore] Ball spawn plan:', {
-            initialBalls: 1,
-            queuedBalls: ballsToQueue,
-            total: ballCount,
-          });
+            // Start with just one ball (initial spawn state)
+            // Queue the remaining balls to spawn gradually
+            const initialBall = createInitialBall(ballSpeed, ballDamage);
+            const ballsToQueue = Math.max(0, ballCount - 1); // -1 because we have the initial ball
 
-          return {
-            ...current,
-            score,
-            bricksDestroyed,
-            wave,
-            maxWaveReached,
-            ballDamage,
-            ballSpeed,
-            ballCount,
-            unlockedAchievements: nextAchievements,
-            bricks: createInitialBricks(wave),
-            balls: [initialBall],
-            ballSpawnQueue: ballsToQueue,
-            // Set to past time so queue processing can start immediately
-            lastBallSpawnTime: 0,
-            settings: state.settings && typeof state.settings === 'object' ? state.settings : {},
-          };
-        });
+            console.log('[GameStore] Ball spawn plan:', {
+              initialBalls: 1,
+              queuedBalls: ballsToQueue,
+              total: ballCount,
+            });
+
+            useGameStore.setState({
+              score,
+              bricksDestroyed,
+              wave,
+              maxWaveReached,
+              ballDamage,
+              ballSpeed,
+              ballCount,
+              unlockedAchievements: nextAchievements,
+              bricks: createInitialBricks(wave),
+              balls: [initialBall],
+              ballSpawnQueue: ballsToQueue,
+              // Set to past time so queue processing can start immediately
+              lastBallSpawnTime: 0,
+              settings,
+            });
+
+            console.log('[GameStore] State after rehydration fix:', {
+              balls: useGameStore.getState().balls.length,
+              ballSpawnQueue: useGameStore.getState().ballSpawnQueue,
+              ballCount: useGameStore.getState().ballCount,
+            });
+          } catch (error) {
+            console.error('[GameStore] Error in rehydration callback:', error);
+          }
+        }, 0);
 
         // Revalidate stats after a frame
         setTimeout(() => {

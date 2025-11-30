@@ -429,3 +429,137 @@ describe('Ball Spawn Queue - forceProcessAllQueuedBalls', () => {
     expect(useGameStore.getState().ballSpawnQueue).toBe(0);
   });
 });
+
+describe('Ball Spawn Queue - Physics Independence', () => {
+  beforeEach(() => {
+    resetToKnownState();
+  });
+
+  it('should not interfere with ball position updates during queue processing', () => {
+    useGameStore.setState({
+      ballCount: 3,
+      ballSpawnQueue: 2,
+      lastBallSpawnTime: Date.now() - 500,
+    });
+
+    const initialBall = useGameStore.getState().balls[0];
+    const newPosition: [number, number, number] = [1, 2, 3];
+
+    // Simulate physics update
+    useGameStore.getState().updateBallPosition(initialBall.id, newPosition);
+
+    // Process spawn queue
+    useGameStore.getState().tryProcessBallSpawnQueue();
+
+    // Original ball should retain its updated position
+    const updatedBall = useGameStore.getState().balls.find((b) => b.id === initialBall.id);
+    expect(updatedBall?.position).toEqual(newPosition);
+
+    // Queue should have processed
+    expect(useGameStore.getState().ballSpawnQueue).toBe(1);
+  });
+
+  it('should not interfere with ball velocity updates during queue processing', () => {
+    useGameStore.setState({
+      ballCount: 3,
+      ballSpawnQueue: 2,
+      lastBallSpawnTime: Date.now() - 500,
+    });
+
+    const initialBall = useGameStore.getState().balls[0];
+    const newVelocity: [number, number, number] = [0.5, 0.5, 0.5];
+
+    // Simulate physics update
+    useGameStore.getState().updateBallVelocity(initialBall.id, newVelocity);
+
+    // Process spawn queue
+    useGameStore.getState().tryProcessBallSpawnQueue();
+
+    // Original ball should retain its updated velocity
+    const updatedBall = useGameStore.getState().balls.find((b) => b.id === initialBall.id);
+    expect(updatedBall?.velocity).toEqual(newVelocity);
+
+    // Queue should have processed
+    expect(useGameStore.getState().ballSpawnQueue).toBe(1);
+  });
+
+  it('should allow simultaneous physics updates and queue processing', () => {
+    useGameStore.setState({
+      ballCount: 5,
+      ballSpawnQueue: 4,
+      lastBallSpawnTime: Date.now() - 1000,
+      bricks: [
+        {
+          id: 'brick-1',
+          position: [0, 0, 0] as const,
+          health: 10,
+          maxHealth: 10,
+          color: '#fff',
+          value: 10,
+        },
+      ],
+    });
+
+    // Simulate a frame with multiple operations
+    const initialBall = useGameStore.getState().balls[0];
+    useGameStore.getState().updateBallPosition(initialBall.id, [1, 1, 1]);
+    useGameStore.getState().damageBrick('brick-1', 5);
+    useGameStore.getState().tryProcessBallSpawnQueue();
+
+    const state = useGameStore.getState();
+
+    // All operations should have completed correctly
+    const ball = state.balls.find((b) => b.id === initialBall.id);
+    expect(ball?.position).toEqual([1, 1, 1]);
+
+    const brick = state.bricks.find((b) => b.id === 'brick-1');
+    expect(brick?.health).toBe(5);
+
+    expect(state.ballSpawnQueue).toBe(3);
+    expect(state.balls.length).toBe(2);
+  });
+
+  it('should maintain ball order during queue processing', () => {
+    useGameStore.setState({
+      ballCount: 5,
+      ballSpawnQueue: 4,
+      lastBallSpawnTime: Date.now() - 500,
+    });
+
+    const firstBallId = useGameStore.getState().balls[0].id;
+
+    // Process queue
+    useGameStore.getState().tryProcessBallSpawnQueue();
+
+    // First ball should still be first
+    expect(useGameStore.getState().balls[0].id).toBe(firstBallId);
+
+    // New ball should be appended
+    expect(useGameStore.getState().balls.length).toBe(2);
+  });
+
+  it('should handle ball removal during queue processing', () => {
+    useGameStore.setState({
+      ballCount: 5,
+      ballSpawnQueue: 4,
+      lastBallSpawnTime: Date.now() - 500,
+    });
+
+    const initialBall = useGameStore.getState().balls[0];
+
+    // Remove the initial ball (simulating it going out of bounds)
+    useGameStore.getState().removeBall(initialBall.id);
+
+    // Process queue
+    useGameStore.getState().tryProcessBallSpawnQueue();
+
+    const state = useGameStore.getState();
+
+    // Initial ball should be gone
+    expect(state.balls.find((b) => b.id === initialBall.id)).toBeUndefined();
+
+    // New ball from queue should exist
+    expect(state.balls.length).toBe(1);
+    expect(state.ballSpawnQueue).toBe(3);
+  });
+});
