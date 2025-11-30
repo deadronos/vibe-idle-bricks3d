@@ -411,6 +411,7 @@ describe('Rehydration - Storage & Persistence', () => {
 
     useGameStore.setState(buildInitialState());
     await useGameStore.persist?.rehydrate();
+    await waitForRehydrationFix(); // Wait for setTimeout(0) to rebuild bricks
 
     const state = useGameStore.getState();
     expect(state.wave).toBe(3);

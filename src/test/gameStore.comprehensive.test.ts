@@ -1038,9 +1038,10 @@ describe('Game Store - Integration Tests', () => {
     expect(raw).toBeTruthy();
 
     // Simulate page reload - reset store to initial state
+    // Since storage exists, buildInitialState returns empty balls (rehydration will rebuild)
     useGameStore.setState(buildInitialState());
     expect(useGameStore.getState().ballCount).toBe(1); // Back to default
-    expect(useGameStore.getState().balls.length).toBe(1); // Only 1 ball initially
+    expect(useGameStore.getState().balls.length).toBe(0); // Empty - rehydration will create correct balls
 
     // Rehydrate from storage
     await useGameStore.persist?.rehydrate();
