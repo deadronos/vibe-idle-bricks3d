@@ -1,0 +1,21 @@
+import { useGameStore } from '../../store/gameStore';
+
+export function Controls() {
+  const isPaused = useGameStore((state) => state.isPaused);
+  const togglePause = useGameStore((state) => state.togglePause);
+
+  return (
+    <>
+      <div className="panel controls-panel">
+        <button className={`control-button ${isPaused ? 'paused' : ''}`} onClick={togglePause}>
+          {isPaused ? '▶️ Resume' : '⏸️ Pause'}
+        </button>
+      </div>
+      <div className="instructions">
+        <p>🖱️ Drag to rotate camera • Scroll to zoom</p>
+        <p>Watch the balls break bricks automatically!</p>
+        <p>⎵ Space to pause/resume • U to upgrade damage</p>
+      </div>
+    </>
+  );
+}

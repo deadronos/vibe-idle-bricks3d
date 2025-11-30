@@ -1,0 +1,25 @@
+import { useGameStore } from '../../store/gameStore';
+
+export function StatsPanel() {
+  const ballCount = useGameStore((state) => state.ballCount);
+  const ballDamage = useGameStore((state) => state.ballDamage);
+  const ballSpeed = useGameStore((state) => state.ballSpeed);
+
+  return (
+    <div className="panel stats-panel">
+      <h2>Stats</h2>
+      <div className="stat">
+        <span>Balls:</span>
+        <span>{ballCount}</span>
+      </div>
+      <div className="stat">
+        <span>Damage:</span>
+        <span>{ballDamage}</span>
+      </div>
+      <div className="stat">
+        <span>Speed:</span>
+        <span>{(ballSpeed * 100).toFixed(0)}%</span>
+      </div>
+    </div>
+  );
+}

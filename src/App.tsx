@@ -1,5 +1,5 @@
 import { GameScene } from './components/GameScene';
-import { UI } from './components/UI';
+import { UI } from './components/ui/UI';
 import { PerfOverlay } from './components/PerfOverlay';
 
 function App() {
