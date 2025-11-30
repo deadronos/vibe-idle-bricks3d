@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 import type { Mesh } from 'three';
-import type { Ball as BallType } from '../store/gameStore';
+import type { Ball as BallType } from '../store/types';
 
 interface BallProps {
   ball: BallType;

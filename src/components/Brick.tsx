@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Mesh } from 'three';
-import type { Brick as BrickType } from '../store/gameStore';
+import type { Brick as BrickType } from '../store/types';
 
 interface BrickProps {
   brick: BrickType;
