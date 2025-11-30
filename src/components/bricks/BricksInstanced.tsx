@@ -1,4 +1,4 @@
-import type { Brick } from '../../store/gameStore';
+import type { Brick } from '../../store/types';
 import { BRICK_SIZE } from '../../engine/collision';
 import { useInstancedBricks } from './useInstancedBricks';
 

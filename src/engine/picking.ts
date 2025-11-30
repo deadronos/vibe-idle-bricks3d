@@ -1,4 +1,4 @@
-import type { Brick } from '../store/gameStore';
+import type { Brick } from '../store/types';
 
 export const getBrickFromInstance = (bricks: Brick[], instanceId: number | undefined | null) => {
   if (instanceId === null || instanceId === undefined) return null;

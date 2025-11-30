@@ -2,7 +2,7 @@ import { useCallback, useLayoutEffect, useRef } from 'react';
 import { Color, Object3D, type InstancedMesh } from 'three';
 import type { ThreeEvent } from '@react-three/fiber';
 import { getBrickFromInstance } from '../../engine/picking';
-import type { Brick } from '../../store/gameStore';
+import type { Brick } from '../../store/types';
 import { getDamageColor } from './utils';
 
 const tempObject = new Object3D();
