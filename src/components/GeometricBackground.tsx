@@ -3,36 +3,25 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { ARENA_SIZE } from '../store/constants';
 
-interface GeometricShape {
-  position: [number, number, number];
-  scale: [number, number, number];
-  rotation: [number, number, number];
-  color: string;
-  isGlowing: boolean;
-  rotationSpeed: [number, number, number];
-}
+// Primary neon colors matching the reference image
+const NEON_CYAN = '#00ffff';
+const NEON_MAGENTA = '#ff00ff';
+const NEON_PINK = '#ff0080';
+const NEON_BLUE = '#0066ff';
 
-// Neon colors for the cyberpunk aesthetic
-const NEON_COLORS = [
-  '#00ffff', // Cyan
-  '#ff00ff', // Magenta
-  '#ff0080', // Hot pink
-  '#0080ff', // Electric blue
-  '#8000ff', // Purple
-  '#ff4000', // Orange-red
-];
-
+// Dark metallic colors for solid boxes
 const DARK_COLORS = [
   '#1a1a2e',
   '#16213e',
   '#0f0f23',
   '#1e1e3f',
   '#252550',
-  '#0d0d1a',
+  '#2a2a4a',
+  '#1f1f35',
+  '#151528',
 ];
 
 // Linear Congruential Generator (LCG) for consistent procedural generation
-// Using standard LCG constants for reproducible random sequences
 function seededRandom(seed: number): () => number {
   let s = seed;
   return () => {
@@ -41,143 +30,129 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-function generateShapes(count: number, radius: number, seed: number = 42): GeometricShape[] {
-  const random = seededRandom(seed);
-  const shapes: GeometricShape[] = [];
-
-  for (let i = 0; i < count; i++) {
-    // Position shapes in a large sphere around the arena
-    const theta = random() * Math.PI * 2;
-    const phi = Math.acos(2 * random() - 1);
-    const r = radius * (0.5 + random() * 0.5);
-
-    const x = r * Math.sin(phi) * Math.cos(theta);
-    const y = r * Math.sin(phi) * Math.sin(theta);
-    const z = r * Math.cos(phi);
-
-    // Random scale for irregular boxes
-    const scaleX = 0.5 + random() * 3;
-    const scaleY = 0.5 + random() * 4;
-    const scaleZ = 0.5 + random() * 2;
-
-    // Random rotation
-    const rotX = random() * Math.PI * 2;
-    const rotY = random() * Math.PI * 2;
-    const rotZ = random() * Math.PI * 2;
-
-    // Mix of glowing and dark shapes
-    const isGlowing = random() < 0.25;
-    const color = isGlowing
-      ? NEON_COLORS[Math.floor(random() * NEON_COLORS.length)]
-      : DARK_COLORS[Math.floor(random() * DARK_COLORS.length)];
-
-    // Slow rotation speeds
-    const rotSpeedX = (random() - 0.5) * 0.002;
-    const rotSpeedY = (random() - 0.5) * 0.002;
-    const rotSpeedZ = (random() - 0.5) * 0.002;
-
-    shapes.push({
-      position: [x, y, z],
-      scale: [scaleX, scaleY, scaleZ],
-      rotation: [rotX, rotY, rotZ],
-      color,
-      isGlowing,
-      rotationSpeed: [rotSpeedX, rotSpeedY, rotSpeedZ],
-    });
-  }
-
-  return shapes;
-}
-
-function NeonEdgeBox({
-  position,
-  scale,
-  rotation,
-  color,
-}: {
+interface BuildingBlock {
   position: [number, number, number];
   scale: [number, number, number];
-  rotation: [number, number, number];
   color: string;
-}) {
-  const edgesRef = useRef<THREE.LineSegments>(null);
+  hasNeonEdge: boolean;
+  neonColor: string;
+}
+
+// Generate dense building-like structures on the sides
+function generateBuildingWall(
+  side: 'left' | 'right',
+  seed: number
+): BuildingBlock[] {
+  const random = seededRandom(seed);
+  const blocks: BuildingBlock[] = [];
+  const { width, depth } = ARENA_SIZE;
+  
+  const baseX = side === 'left' ? -width - 8 : width + 8;
+  const xDirection = side === 'left' ? -1 : 1;
+  
+  // Create multiple layers of depth
+  for (let layer = 0; layer < 6; layer++) {
+    const layerX = baseX + xDirection * layer * 4;
+    
+    // Create stacked columns
+    for (let col = 0; col < 12; col++) {
+      const colZ = (col - 6) * 5 - depth / 2;
+      
+      // Stack boxes vertically with varying heights
+      let currentY = -15;
+      const numBoxes = 3 + Math.floor(random() * 5);
+      
+      for (let box = 0; box < numBoxes; box++) {
+        const boxHeight = 2 + random() * 8;
+        const boxWidth = 1.5 + random() * 3;
+        const boxDepth = 1.5 + random() * 3;
+        
+        const hasNeonEdge = random() < 0.15;
+        const neonColors = [NEON_CYAN, NEON_MAGENTA, NEON_PINK, NEON_BLUE];
+        
+        blocks.push({
+          position: [
+            layerX + (random() - 0.5) * 2,
+            currentY + boxHeight / 2,
+            colZ + (random() - 0.5) * 2,
+          ],
+          scale: [boxWidth, boxHeight, boxDepth],
+          color: DARK_COLORS[Math.floor(random() * DARK_COLORS.length)],
+          hasNeonEdge,
+          neonColor: neonColors[Math.floor(random() * neonColors.length)],
+        });
+        
+        currentY += boxHeight + random() * 0.5;
+      }
+    }
+  }
+  
+  return blocks;
+}
+
+// Generate scattered floating boxes throughout the scene
+function generateFloatingBoxes(count: number, seed: number): BuildingBlock[] {
+  const random = seededRandom(seed);
+  const blocks: BuildingBlock[] = [];
+  const { width, height, depth } = ARENA_SIZE;
+  
+  for (let i = 0; i < count; i++) {
+    // Position in a wide area around and behind the arena
+    const x = (random() - 0.5) * width * 8;
+    const y = (random() - 0.5) * height * 4;
+    const z = -depth - random() * 60;
+    
+    const hasNeonEdge = random() < 0.3;
+    const neonColors = [NEON_CYAN, NEON_MAGENTA, NEON_PINK, NEON_BLUE];
+    
+    blocks.push({
+      position: [x, y, z],
+      scale: [
+        1 + random() * 4,
+        1 + random() * 6,
+        1 + random() * 3,
+      ],
+      color: DARK_COLORS[Math.floor(random() * DARK_COLORS.length)],
+      hasNeonEdge,
+      neonColor: neonColors[Math.floor(random() * neonColors.length)],
+    });
+  }
+  
+  return blocks;
+}
+
+// Single building block with optional neon edges
+function BuildingBlockMesh({ block }: { block: BuildingBlock }) {
   const geometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
   const edgesGeometry = useMemo(() => new THREE.EdgesGeometry(geometry), [geometry]);
-
+  
   return (
-    <group position={position} rotation={rotation} scale={scale}>
-      <lineSegments ref={edgesRef} geometry={edgesGeometry}>
-        {/* Note: linewidth > 1 only works in some WebGL contexts; bloom effect enhances visibility */}
-        <lineBasicMaterial color={color} />
-      </lineSegments>
+    <group position={block.position} scale={block.scale}>
+      {/* Solid dark box */}
+      <mesh geometry={geometry}>
+        <meshStandardMaterial
+          color={block.color}
+          metalness={0.9}
+          roughness={0.2}
+        />
+      </mesh>
+      {/* Neon edge highlight */}
+      {block.hasNeonEdge && (
+        <lineSegments geometry={edgesGeometry} scale={1.001}>
+          <lineBasicMaterial color={block.neonColor} />
+        </lineSegments>
+      )}
     </group>
   );
 }
 
-function BackgroundShape({ shape }: { shape: GeometricShape }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const edgesRef = useRef<THREE.LineSegments>(null);
-
-  const geometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
-  const edgesGeometry = useMemo(() => new THREE.EdgesGeometry(geometry), [geometry]);
-
-  useFrame(() => {
-    if (meshRef.current) {
-      meshRef.current.rotation.x += shape.rotationSpeed[0];
-      meshRef.current.rotation.y += shape.rotationSpeed[1];
-      meshRef.current.rotation.z += shape.rotationSpeed[2];
-    }
-    if (edgesRef.current) {
-      edgesRef.current.rotation.x += shape.rotationSpeed[0];
-      edgesRef.current.rotation.y += shape.rotationSpeed[1];
-      edgesRef.current.rotation.z += shape.rotationSpeed[2];
-    }
-  });
-
-  if (shape.isGlowing) {
-    // Glowing shapes - wireframe only with emissive color
-    return (
-      <group position={shape.position} rotation={shape.rotation} scale={shape.scale}>
-        <lineSegments ref={edgesRef} geometry={edgesGeometry}>
-          <lineBasicMaterial color={shape.color} linewidth={2} />
-        </lineSegments>
-        {/* Inner glow mesh */}
-        <mesh ref={meshRef} geometry={geometry}>
-          <meshBasicMaterial
-            color={shape.color}
-            transparent
-            opacity={0.1}
-          />
-        </mesh>
-      </group>
-    );
-  }
-
-  // Dark solid shapes
-  return (
-    <mesh
-      ref={meshRef}
-      position={shape.position}
-      rotation={shape.rotation}
-      scale={shape.scale}
-      geometry={geometry}
-    >
-      <meshStandardMaterial
-        color={shape.color}
-        metalness={0.8}
-        roughness={0.3}
-      />
-    </mesh>
-  );
-}
-
-// Central neon cube frame like in the reference image
+// Central neon cube frame - the main focal point
 function CentralNeonFrame() {
   const frameRef = useRef<THREE.Group>(null);
   const { width, height, depth } = ARENA_SIZE;
 
-  // Make it slightly larger than the arena
-  const frameScale = 1.8;
+  // Make it larger than the arena to create the iconic neon frame
+  const frameScale = 2.2;
   const frameWidth = width * frameScale;
   const frameHeight = height * frameScale;
   const frameDepth = depth * frameScale;
@@ -190,120 +165,277 @@ function CentralNeonFrame() {
   useFrame((state) => {
     if (frameRef.current) {
       // Subtle pulsing glow effect
-      const pulse = Math.sin(state.clock.elapsedTime * 2) * 0.1 + 0.9;
+      const pulse = Math.sin(state.clock.elapsedTime * 1.5) * 0.02 + 1;
       frameRef.current.scale.setScalar(pulse);
     }
   });
 
   return (
-    <group ref={frameRef} position={[0, 0, -depth / 2]}>
-      {/* Note: linewidth > 1 only works in some WebGL contexts; bloom effect enhances visibility */}
+    <group ref={frameRef} position={[0, 0, -depth * 0.3]}>
+      {/* Outer cyan frame */}
       <lineSegments geometry={edgesGeometry}>
-        <lineBasicMaterial color="#00ffff" />
+        <lineBasicMaterial color={NEON_CYAN} />
       </lineSegments>
-      {/* Inner glow layer */}
-      <lineSegments geometry={edgesGeometry} scale={0.99}>
-        <lineBasicMaterial color="#ff00ff" transparent opacity={0.5} />
+      {/* Inner magenta/pink frame for gradient effect */}
+      <lineSegments geometry={edgesGeometry} scale={0.98}>
+        <lineBasicMaterial color={NEON_MAGENTA} transparent opacity={0.7} />
       </lineSegments>
+      {/* Innermost pink layer */}
+      <lineSegments geometry={edgesGeometry} scale={0.96}>
+        <lineBasicMaterial color={NEON_PINK} transparent opacity={0.4} />
+      </lineSegments>
+      {/* Glowing fill for the frame */}
+      <mesh scale={[frameWidth * 0.999, frameHeight * 0.999, frameDepth * 0.999]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshBasicMaterial
+          color={NEON_CYAN}
+          transparent
+          opacity={0.03}
+          side={THREE.BackSide}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+// Reflective floor with neon color tinting
+function ReflectiveFloor() {
+  const { width, height, depth } = ARENA_SIZE;
+  const floorSize = Math.max(width, depth) * 15;
+  
+  return (
+    <group position={[0, -height * 1.5, -depth]}>
+      {/* Main reflective floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[floorSize, floorSize]} />
+        <meshStandardMaterial
+          color="#0a0a15"
+          metalness={0.95}
+          roughness={0.05}
+        />
+      </mesh>
+      
+      {/* Cyan glow on left side of floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-floorSize * 0.3, 0.01, 0]}>
+        <planeGeometry args={[floorSize * 0.4, floorSize]} />
+        <meshBasicMaterial
+          color={NEON_CYAN}
+          transparent
+          opacity={0.08}
+        />
+      </mesh>
+      
+      {/* Magenta glow on right side of floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[floorSize * 0.3, 0.01, 0]}>
+        <planeGeometry args={[floorSize * 0.4, floorSize]} />
+        <meshBasicMaterial
+          color={NEON_MAGENTA}
+          transparent
+          opacity={0.08}
+        />
+      </mesh>
+      
+      {/* Grid lines */}
+      <gridHelper
+        args={[floorSize, 80, '#1a1a3e', '#0d0d2e']}
+        position={[0, 0.02, 0]}
+      />
+    </group>
+  );
+}
+
+// Scattered floor boxes and debris
+function FloorDebris() {
+  const { width, height, depth } = ARENA_SIZE;
+  
+  const debris = useMemo(() => {
+    const random = seededRandom(789);
+    const items: { position: [number, number, number]; scale: [number, number, number]; color: string }[] = [];
+    
+    for (let i = 0; i < 50; i++) {
+      const x = (random() - 0.5) * width * 10;
+      const z = -depth - random() * 40;
+      
+      items.push({
+        position: [x, -height * 1.5 + 0.5, z],
+        scale: [0.5 + random() * 2, 0.2 + random() * 0.5, 0.5 + random() * 2],
+        color: DARK_COLORS[Math.floor(random() * DARK_COLORS.length)],
+      });
+    }
+    
+    return items;
+  }, [width, height, depth]);
+  
+  return (
+    <group>
+      {debris.map((item, i) => (
+        <mesh key={`debris-${i}`} position={item.position} scale={item.scale}>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshStandardMaterial color={item.color} metalness={0.8} roughness={0.3} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// Atmospheric neon lights
+function NeonLighting() {
+  const { width, height, depth } = ARENA_SIZE;
+  
+  return (
+    <group>
+      {/* Strong cyan light from left */}
+      <pointLight
+        position={[-width * 3, height, -depth]}
+        color={NEON_CYAN}
+        intensity={2}
+        distance={80}
+      />
+      <pointLight
+        position={[-width * 2, -height, -depth * 2]}
+        color={NEON_CYAN}
+        intensity={1.5}
+        distance={60}
+      />
+      
+      {/* Strong magenta/pink light from right */}
+      <pointLight
+        position={[width * 3, height, -depth]}
+        color={NEON_MAGENTA}
+        intensity={2}
+        distance={80}
+      />
+      <pointLight
+        position={[width * 2, -height, -depth * 2]}
+        color={NEON_PINK}
+        intensity={1.5}
+        distance={60}
+      />
+      
+      {/* Center back light */}
+      <pointLight
+        position={[0, height * 2, -depth * 3]}
+        color="#6644aa"
+        intensity={1}
+        distance={100}
+      />
+      
+      {/* Floor reflection lights */}
+      <pointLight
+        position={[-width * 2, -height * 2, -depth]}
+        color={NEON_CYAN}
+        intensity={0.8}
+        distance={40}
+      />
+      <pointLight
+        position={[width * 2, -height * 2, -depth]}
+        color={NEON_PINK}
+        intensity={0.8}
+        distance={40}
+      />
+    </group>
+  );
+}
+
+// Floating neon wireframe boxes
+function FloatingNeonBoxes() {
+  const { depth } = ARENA_SIZE;
+  
+  const boxes = useMemo(() => {
+    const random = seededRandom(555);
+    const items: {
+      position: [number, number, number];
+      scale: [number, number, number];
+      rotation: [number, number, number];
+      color: string;
+    }[] = [];
+    
+    const colors = [NEON_CYAN, NEON_MAGENTA, NEON_PINK, NEON_BLUE];
+    
+    for (let i = 0; i < 25; i++) {
+      items.push({
+        position: [
+          (random() - 0.5) * 60,
+          (random() - 0.5) * 30,
+          -depth - random() * 50,
+        ],
+        scale: [
+          2 + random() * 4,
+          2 + random() * 5,
+          2 + random() * 3,
+        ],
+        rotation: [
+          random() * Math.PI,
+          random() * Math.PI,
+          random() * Math.PI * 0.3,
+        ],
+        color: colors[Math.floor(random() * colors.length)],
+      });
+    }
+    
+    return items;
+  }, [depth]);
+  
+  const geometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
+  const edgesGeometry = useMemo(() => new THREE.EdgesGeometry(geometry), [geometry]);
+  
+  return (
+    <group>
+      {boxes.map((box, i) => (
+        <group key={`neon-box-${i}`} position={box.position} rotation={box.rotation} scale={box.scale}>
+          <lineSegments geometry={edgesGeometry}>
+            <lineBasicMaterial color={box.color} />
+          </lineSegments>
+          {/* Inner glow */}
+          <mesh geometry={geometry}>
+            <meshBasicMaterial color={box.color} transparent opacity={0.05} />
+          </mesh>
+        </group>
+      ))}
     </group>
   );
 }
 
 export function GeometricBackground() {
-  const { width, height, depth } = ARENA_SIZE;
-
-  // Generate shapes in a large area around the arena
-  const backgroundRadius = Math.max(width, height, depth) * 8;
-  const shapes = useMemo(() => generateShapes(150, backgroundRadius, 42), [backgroundRadius]);
-
-  // Create floor grid for neon reflections effect
-  const gridSize = backgroundRadius * 2;
-  const gridDivisions = 50;
+  // Generate building walls on both sides
+  const leftWall = useMemo(() => generateBuildingWall('left', 123), []);
+  const rightWall = useMemo(() => generateBuildingWall('right', 456), []);
+  const floatingBoxes = useMemo(() => generateFloatingBoxes(80, 789), []);
 
   return (
     <group>
-      {/* Dark environment fog */}
-      <fog attach="fog" args={['#0a0a1a', 30, 150]} />
-
-      {/* Floor with grid - reflective surface effect */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -height * 3, 0]} receiveShadow>
-        <planeGeometry args={[gridSize, gridSize]} />
-        <meshStandardMaterial
-          color="#0a0a1a"
-          metalness={0.9}
-          roughness={0.1}
-          envMapIntensity={0.5}
-        />
-      </mesh>
-
-      {/* Grid lines on floor */}
-      <gridHelper
-        args={[gridSize, gridDivisions, '#1a1a3e', '#0d0d2e']}
-        position={[0, -height * 3 + 0.01, 0]}
-      />
-
-      {/* Central neon cube frame */}
+      {/* Dark atmospheric fog */}
+      <fog attach="fog" args={['#050510', 20, 120]} />
+      
+      {/* Reflective floor with neon tints */}
+      <ReflectiveFloor />
+      
+      {/* Floor debris */}
+      <FloorDebris />
+      
+      {/* Central neon cube frame - the main visual element */}
       <CentralNeonFrame />
-
-      {/* Scattered geometric shapes */}
-      {shapes.map((shape, index) => (
-        <BackgroundShape key={index} shape={shape} />
+      
+      {/* Dense building walls on left side */}
+      {leftWall.map((block, i) => (
+        <BuildingBlockMesh key={`left-${i}`} block={block} />
       ))}
-
-      {/* Additional floating neon edge boxes in mid-distance */}
-      {Array.from({ length: 20 }).map((_, i) => {
-        const angle = (i / 20) * Math.PI * 2;
-        const radius = 25 + (i % 3) * 10;
-        const y = (i % 5 - 2) * 8;
-        return (
-          <NeonEdgeBox
-            key={`edge-${i}`}
-            position={[
-              Math.cos(angle) * radius,
-              y,
-              Math.sin(angle) * radius - depth,
-            ]}
-            scale={[2 + (i % 3), 3 + (i % 4), 1.5 + (i % 2)]}
-            rotation={[(i * 0.5) % Math.PI, (i * 0.3) % Math.PI, 0]}
-            color={NEON_COLORS[i % NEON_COLORS.length]}
-          />
-        );
-      })}
-
-      {/* Tall structures on the sides like buildings */}
-      {Array.from({ length: 30 }).map((_, i) => {
-        const side = i % 2 === 0 ? -1 : 1;
-        const zOffset = (i - 15) * 3;
-        const heightVar = 5 + (i % 7) * 4;
-        return (
-          <mesh
-            key={`tower-${i}`}
-            position={[side * (width * 2 + 5 + (i % 4) * 2), heightVar / 2 - 5, zOffset - depth]}
-          >
-            <boxGeometry args={[1.5 + (i % 3), heightVar, 1.5 + (i % 2)]} />
-            <meshStandardMaterial
-              color={DARK_COLORS[i % DARK_COLORS.length]}
-              metalness={0.7}
-              roughness={0.4}
-            />
-          </mesh>
-        );
-      })}
-
-      {/* Glowing accent lights on towers */}
-      {Array.from({ length: 15 }).map((_, i) => {
-        const side = i % 2 === 0 ? -1 : 1;
-        const zOffset = (i - 7) * 5;
-        return (
-          <pointLight
-            key={`light-${i}`}
-            position={[side * (width * 2 + 8), 5, zOffset - depth]}
-            color={NEON_COLORS[i % NEON_COLORS.length]}
-            intensity={0.3}
-            distance={20}
-          />
-        );
-      })}
+      
+      {/* Dense building walls on right side */}
+      {rightWall.map((block, i) => (
+        <BuildingBlockMesh key={`right-${i}`} block={block} />
+      ))}
+      
+      {/* Floating boxes in the background */}
+      {floatingBoxes.map((block, i) => (
+        <BuildingBlockMesh key={`float-${i}`} block={block} />
+      ))}
+      
+      {/* Floating neon wireframe boxes */}
+      <FloatingNeonBoxes />
+      
+      {/* Atmospheric neon lighting */}
+      <NeonLighting />
     </group>
   );
 }

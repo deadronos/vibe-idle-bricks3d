@@ -73,8 +73,8 @@ export function GameScene() {
         <GameContent />
         <EffectComposer>
           <Bloom
-            intensity={0.5}
-            luminanceThreshold={0.2}
+            intensity={1.2}
+            luminanceThreshold={0.1}
             luminanceSmoothing={0.9}
             mipmapBlur
           />
