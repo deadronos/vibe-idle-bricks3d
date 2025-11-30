@@ -61,6 +61,34 @@ describe('Rehydration - Ball Spawn Queue', () => {
     expect(hydrated.ballSpawnQueue).toBe(7);
   });
 
+  it('should apply rehydration synchronously (no wait)', async () => {
+    // Ensure persisted meta is applied immediately without relying on setTimeout
+    useGameStore.setState({
+      ballCount: 6,
+      ballDamage: 2,
+      ballSpeed: 0.14,
+      bricks: [],
+      balls: [],
+    });
+
+    useGameStore.setState(buildInitialState());
+    await useGameStore.persist?.rehydrate();
+
+    const state = useGameStore.getState();
+    // Should have 1 initial ball + 5 queued = 6 total planned
+    expect(state.ballCount).toBe(6);
+    expect(state.balls.length).toBe(1);
+    expect(state.ballSpawnQueue).toBe(5);
+    // lastBallSpawnTime should allow immediate spawning
+    expect(state.lastBallSpawnTime).toBe(0);
+
+    // Immediately attempt to process queue (simulate first frame)
+    useGameStore.getState().tryProcessBallSpawnQueue();
+    const after = useGameStore.getState();
+    expect(after.balls.length).toBeGreaterThanOrEqual(2);
+    expect(after.ballSpawnQueue).toBeLessThanOrEqual(4);
+  });
+
   it('should allow immediate queue processing after rehydration (regression test)', async () => {
     // This test ensures lastBallSpawnTime is set to allow immediate spawning
     // Previously, lastBallSpawnTime was set to Date.now() which blocked spawning

@@ -10,9 +10,12 @@ export function Ball({ ball }: BallProps) {
   const meshRef = useRef<Mesh>(null);
 
   useEffect(() => {
+    // Debug: log when a Ball component mounts/updates position
+    // Use console.debug to avoid interfering with tests that spy on console.log
+    console.debug('[Ball] render/mount', ball.id, ball.position);
     if (!meshRef.current) return;
     meshRef.current.position.set(ball.position[0], ball.position[1], ball.position[2]);
-  }, [ball.position]);
+  }, [ball.id, ball.position]);
 
   return (
     <mesh ref={meshRef} position={ball.position} castShadow>
