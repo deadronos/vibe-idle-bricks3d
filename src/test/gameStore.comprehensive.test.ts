@@ -29,6 +29,13 @@ const resetToKnownState = (overrides: Partial<GameState> = {}) => {
   });
 };
 
+/**
+ * Helper to wait for setTimeout(0) in onRehydrateStorage to complete.
+ * The rehydration fix uses setTimeout to avoid "Cannot access 'useGameStore'
+ * before initialization" errors, so tests need to wait for it.
+ */
+const waitForRehydrationFix = () => new Promise((resolve) => setTimeout(resolve, 10));
+
 // Helper to create a predictable brick for testing
 const createTestBrick = (overrides: Partial<Brick> = {}): Brick => ({
   id: `test-brick-${Math.random().toString(36).substring(2, 9)}`,
@@ -908,6 +915,10 @@ describe('Game Store - Comprehensive Tests', () => {
 
       useGameStore.setState(buildInitialState());
       await useGameStore.persist?.rehydrate();
+      await waitForRehydrationFix(); // Wait for setTimeout(0) in onRehydrateStorage
+
+      // Process ball spawn queue to spawn all queued balls (for testing)
+      useGameStore.getState().forceProcessAllQueuedBalls();
 
       const hydrated = useGameStore.getState();
       expect(hydrated.score).toBe(500);
@@ -1002,6 +1013,52 @@ describe('Game Store - Integration Tests', () => {
     expect(useGameStore.getState().score).toBe(expectedScore);
     expect(useGameStore.getState().wave).toBe(initialWave + 1);
     expect(useGameStore.getState().maxWaveReached).toBeGreaterThanOrEqual(initialWave + 1);
+  });
+
+  it('should restore correct number of balls after reloading with 8+ purchased balls (regression test)', async () => {
+    const storageKey = 'idle-bricks3d:game:v1';
+
+    // Simulate user with 8 purchased balls
+    useGameStore.setState({
+      score: 1000,
+      bricksDestroyed: 10,
+      wave: 1,
+      maxWaveReached: 1,
+      ballDamage: 2,
+      ballSpeed: 0.14,
+      ballCount: 8,
+      unlockedAchievements: [],
+      bricks: [],
+      balls: [], // This gets rebuilt on rehydrate
+    });
+
+    // Verify 8 balls were in the state
+    expect(useGameStore.getState().ballCount).toBe(8);
+    const raw = localStorage.getItem(storageKey);
+    expect(raw).toBeTruthy();
+
+    // Simulate page reload - reset store to initial state
+    // Since storage exists, buildInitialState returns empty balls (rehydration will rebuild)
+    useGameStore.setState(buildInitialState());
+    expect(useGameStore.getState().ballCount).toBe(1); // Back to default
+    expect(useGameStore.getState().balls.length).toBe(0); // Empty - rehydration will create correct balls
+
+    // Rehydrate from storage
+    await useGameStore.persist?.rehydrate();
+    await waitForRehydrationFix(); // Wait for setTimeout(0) in onRehydrateStorage
+
+    // Process ball spawn queue to spawn all queued balls (for testing)
+    useGameStore.getState().forceProcessAllQueuedBalls();
+
+    // After rehydration and processing spawn queue, should have 8 balls
+    const hydrated = useGameStore.getState();
+    expect(hydrated.ballCount).toBe(8);
+    expect(hydrated.balls.length).toBe(8); // THE KEY TEST: balls array should have 8 items, not 1
+    
+    // Verify each ball has correct damage and speed
+    hydrated.balls.forEach((ball) => {
+      expect(ball.damage).toBe(2);
+    });
   });
 });
 
