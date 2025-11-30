@@ -96,7 +96,9 @@ type RehydrateDeps = {
 };
 
 export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDeps) => {
-  if (!state) return;
+  if (!state) {
+    return;
+  }
 
   const { checkAndUnlockAchievements, createInitialBall, createInitialBricks, useGameStore } = deps;
 
@@ -112,17 +114,6 @@ export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDep
     ? state.unlockedAchievements.filter((id): id is string => typeof id === 'string')
     : [];
   const settings = state.settings && typeof state.settings === 'object' ? state.settings : {};
-
-  // Log rehydrated values for debugging
-  console.log('[GameStore] Rehydrated state:', {
-    ballCount,
-    ballDamage,
-    ballSpeed,
-    wave,
-    score,
-    bricksDestroyed,
-    unlockedAchievements: unlockedAchievements.length,
-  });
 
   // We'll attempt to apply rehydration synchronously when possible to avoid
   // extra frame delay. However, in some initialization orders the store
@@ -140,8 +131,6 @@ export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDep
     ) {
       throw new Error('Missing dependencies for rehydration');
     }
-
-    console.log('[GameStore] Applying rehydration fix (applyRehydrate)...');
 
     const achievementSafeState = {
       ...useGameStore.getState(),
@@ -170,14 +159,6 @@ export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDep
     const initialBall = createInitialBall(ballSpeed, ballDamage);
     const ballsToQueue = Math.max(0, ballCount - 1); // -1 because we have the initial ball
 
-    console.log('[GameStore] Ball spawn plan:', {
-      initialBalls: 1,
-      queuedBalls: ballsToQueue,
-      total: ballCount,
-      ballSpeed,
-      ballDamage,
-    });
-
     useGameStore.setState({
       score,
       bricksDestroyed,
@@ -194,13 +175,6 @@ export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDep
       // Set to past time so queue processing can start immediately
       lastBallSpawnTime: 0,
       settings,
-    });
-
-    console.log('[GameStore] State after rehydration fix:', {
-      balls: useGameStore.getState().balls.length,
-      ballSpawnQueue: useGameStore.getState().ballSpawnQueue,
-      ballCount: useGameStore.getState().ballCount,
-      firstBallVelocity: useGameStore.getState().balls[0]?.velocity,
     });
   };
 
@@ -235,9 +209,16 @@ export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDep
         try {
           const current = useGameStore.getState();
           if (current.ballCount > 0 && (!Array.isArray(current.balls) || current.balls.length === 0)) {
-            console.warn('[GameStore] No balls present after rehydrate — forcing spawn of queued balls.');
-            if (typeof current.forceProcessAllQueuedBalls === 'function') {
-              current.forceProcessAllQueuedBalls();
+            console.warn('[GameStore] No balls present after rehydrate — forcing spawn of all balls via setState.');
+            try {
+              // Create all balls immediately to ensure runtime shows them.
+              const allBalls = Array.from({ length: current.ballCount }, () =>
+                createInitialBall(current.ballSpeed, current.ballDamage)
+              );
+              // Overwrite balls and clear queue so rendering shows entities immediately
+              useGameStore.setState({ balls: allBalls, ballSpawnQueue: 0, lastBallSpawnTime: Date.now() });
+            } catch (spawnErr) {
+              console.error('[GameStore] Error forcing spawn via setState:', spawnErr);
             }
           }
         } catch (e) {
@@ -252,13 +233,6 @@ export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDep
   // Revalidate stats after a frame
   setTimeout(() => {
     const currentState = useGameStore.getState();
-    console.log('[GameStore] Post-rehydration validation:', {
-      ballCount: currentState.ballCount,
-      actualBalls: currentState.balls.length,
-      ballDamage: currentState.ballDamage,
-      ballSpeed: currentState.ballSpeed,
-      ballSpawnQueue: currentState.ballSpawnQueue,
-    });
 
     // Verify ball stats match store config
     const ballStatMismatch = currentState.balls.some(

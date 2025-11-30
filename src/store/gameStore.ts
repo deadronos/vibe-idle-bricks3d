@@ -293,13 +293,28 @@ export const useGameStore = create<GameState>()(
         unlockedAchievements: state.unlockedAchievements,
         settings: state.settings,
       }),
-      onRehydrateStorage: () => (state) =>
-        handleRehydrate(state, {
-          checkAndUnlockAchievements,
-          createInitialBall,
-          createInitialBricks,
-          useGameStore,
-        }),
+      onRehydrateStorage: () => {
+        return (state) => {
+          // CRITICAL: Defer rehydration to next tick to ensure useGameStore is initialized.
+          // The onRehydrateStorage callback runs during store creation, so useGameStore
+          // is not yet available as a reference. We must defer to allow the create() call
+          // to complete and assign useGameStore.
+          // Capture state NOW before it might change.
+          const capturedState = state;
+          setTimeout(() => {
+            try {
+              handleRehydrate(capturedState, {
+                checkAndUnlockAchievements,
+                createInitialBall,
+                createInitialBricks,
+                useGameStore,
+              });
+            } catch (e) {
+              console.error('[GameStore] handleRehydrate error:', e);
+            }
+          }, 0);
+        };
+      },
       storage: createMetaStorage(),
     }
   )

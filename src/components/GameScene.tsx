@@ -24,7 +24,6 @@ function GameContent() {
 
   return (
     <>
-      {console.debug('[GameContent] render - balls length', balls.length)}
       {/* Camera */}
       <PerspectiveCamera makeDefault position={[0, 0, 20]} fov={50} />
       <OrbitControls
