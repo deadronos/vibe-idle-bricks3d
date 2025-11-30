@@ -2,7 +2,7 @@
 
 **Status:** In Progress
 **Added:** 2025-11-29
-**Updated:** 2025-11-29
+**Updated:** 2025-11-30
 
 ## Original Request
 
@@ -42,9 +42,18 @@ Key changes:
    - Verify picking accuracy with `tests/e2e/picking.spec.ts`.
    - Verify performance targets with the harness.
 
+## Error Handling Matrix
+
+| Scenario | Detection | Response |
+| --- | --- | --- |
+| Pointer events report `instanceId` as `null`/`undefined` | `ThreeEvent.instanceId` guard fires | Call `clearHoveredInstance()` so no stale highlight remains |
+| Hovered brick is destroyed while highlighted | Hover id not found inside bricks array during layout effect | Drop refs + skip recoloring so removed meshes do not throw |
+| Picking helper receives out-of-range index | `getBrickFromInstance` bounds checks | Return `null`; tests/e2e verify behavior |
+| Perf harness detects physics drift | Harness expect failures | Inspect `stepBallFrame` for regression before shipping |
+
 ## Progress Tracking
 
-**Overall Status:** In Progress - 60%
+**Overall Status:** In Progress - 80%
 
 ### Subtasks
 
@@ -54,9 +63,9 @@ Key changes:
 | 2.1 | Create FrameManager & collision engine           | Complete     | 2025-11-29 | Centralized physics loop + helpers |
 | 2.2 | Refactor Ball to render-only component           | Complete     | 2025-11-29 | Driven by FrameManager |
 | 3.1 | Create BricksInstanced component                 | Complete     | 2025-11-29 | InstancedMesh renderer |
-| 3.2 | Implement batch updates & picking                | In Progress  | 2025-11-29 | Batched instanced updates with hover picking |
+| 3.2 | Implement batch updates & picking                | Complete     | 2025-11-30 | Hover state now imperatively updates single instances |
 | 4.1 | Add UI a11y (aria-live, keyboard shortcuts)      | Complete     | 2025-11-29 | Space, U keys + live region |
-| 5.1 | Validation tests (picking & perf)                | In Progress  | 2025-11-29 | Perf harness added; picking test pending |
+| 5.1 | Validation tests (picking & perf)                | Complete     | 2025-11-30 | Added tests/e2e/picking.spec.ts (plus perf harness) |
 
 ## Progress Log
 
@@ -71,3 +80,10 @@ Key changes:
 - Implemented FrameManager with centralized collision step and refactored Ball into a render-only mesh.
 - Added InstancedMesh-based brick renderer with instance picking hover, plus PerfOverlay toggle via `?perf=1`.
 - Introduced perf harness test scaffold for collision loop; added UI aria-live announcements and keyboard shortcuts (Space pause, U upgrade).
+
+### 2025-11-30
+
+- Reworked `BricksInstanced` batching so pointer hover only updates the targeted instance color and persists correctly across store changes.
+- Added guards for destroyed bricks to avoid stale highlights and reuse a single highlight color buffer per frame.
+- Created `tests/e2e/picking.spec.ts` to validate `getBrickFromInstance` mapping and ran `npm run test:run` (115 tests passing).
+- Observed that enabling `vertexColors` zeroed lighting (geometry lacks per-vertex color buffer), so we standardized on `instanceColor`-only materials until a gradient buffer exists.

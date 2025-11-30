@@ -37,6 +37,7 @@ flowchart LR
 - **FrameManager**: Owns the render loop (`useFrame`). Calculates physics, updates `InstancedMesh` matrices in bulk, and syncs to Zustand store at a throttled rate (e.g., 200ms) or on critical events (brick destruction).
 - **BricksInstanced**: Renders all bricks via one draw call. Updates are pushed by `FrameManager`.
 - **Picking**: Uses `raycaster.intersectObjects` on the `InstancedMesh` to get `instanceId`, mapping back to brick data.
+- **Material Handling**: Rely on `instanceColor` attributes only; keep `vertexColors` off until we add per-vertex color buffers to avoid black bricks.
 
 ## Detailed Implementation Plan
 
@@ -73,3 +74,4 @@ flowchart LR
 - **Use InstancedMesh**: Essential for reducing draw calls with high brick counts.
 - **Batch Updates**: Updating uniforms/attributes individually is too slow; bulk update + single commit flag is required.
 - **Raycast Picking**: Native GPU-accelerated (or BVH-accelerated) picking via Three.js is preferred over maintaining a duplicate CPU collider set for pointers.
+- **Vertex Colors Deferred**: Leave `vertexColors` disabled on instanced materials because our box geometry lacks per-vertex color attributes; re-enable only after extending the geometry buffers.

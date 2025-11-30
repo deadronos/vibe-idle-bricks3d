@@ -9,6 +9,7 @@
 ## Key technical decisions
 
 - Keep game logic (ball physics, scoring, upgrades) separated from rendering components
+- Instanced meshes rely on per-instance colors only; `vertexColors` stays disabled until geometry provides its own color attribute to prevent black materials
 
 ## Design patterns
 

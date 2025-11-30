@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef } from 'react';
 import { Object3D, Color, type InstancedMesh } from 'three';
 import type { ThreeEvent } from '@react-three/fiber';
 import type { Brick } from '../store/gameStore';
@@ -21,9 +21,49 @@ interface BricksInstancedProps {
 
 export function BricksInstanced({ bricks }: BricksInstancedProps) {
   const meshRef = useRef<InstancedMesh>(null);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const hoveredIndexRef = useRef<number | null>(null);
+  const hoveredBrickIdRef = useRef<string | null>(null);
 
-  useEffect(() => {
+  const applyInstanceColor = useCallback((index: number, brick: Brick, isHovered: boolean) => {
+    if (!meshRef.current) return;
+    tempColor.set(getDamageColor(brick, isHovered));
+    meshRef.current.setColorAt(index, tempColor);
+    if (meshRef.current.instanceColor) {
+      meshRef.current.instanceColor.needsUpdate = true;
+    }
+  }, []);
+
+  const clearHoveredInstance = useCallback(() => {
+    const hoveredId = hoveredBrickIdRef.current;
+    if (!hoveredId) {
+      hoveredIndexRef.current = null;
+      return;
+    }
+
+    let targetIndex = -1;
+    if (hoveredIndexRef.current !== null) {
+      const maybeBrick = bricks[hoveredIndexRef.current];
+      if (maybeBrick?.id === hoveredId) {
+        targetIndex = hoveredIndexRef.current;
+      }
+    }
+
+    if (targetIndex === -1) {
+      targetIndex = bricks.findIndex((brick) => brick.id === hoveredId);
+    }
+
+    hoveredBrickIdRef.current = null;
+    hoveredIndexRef.current = null;
+
+    if (targetIndex !== -1) {
+      const brick = bricks[targetIndex];
+      if (brick) {
+        applyInstanceColor(targetIndex, brick, false);
+      }
+    }
+  }, [applyInstanceColor, bricks]);
+
+  useLayoutEffect(() => {
     if (!meshRef.current) return;
     const mesh = meshRef.current;
 
@@ -34,7 +74,7 @@ export function BricksInstanced({ bricks }: BricksInstancedProps) {
       tempObject.updateMatrix();
       mesh.setMatrixAt(index, tempObject.matrix);
 
-      tempColor.set(getDamageColor(brick, brick.id === hoveredId));
+      tempColor.set(getDamageColor(brick, false));
       mesh.setColorAt(index, tempColor);
     });
 
@@ -42,18 +82,52 @@ export function BricksInstanced({ bricks }: BricksInstancedProps) {
     if (mesh.instanceColor) {
       mesh.instanceColor.needsUpdate = true;
     }
-  }, [bricks, hoveredId]);
+  }, [bricks]);
 
-  const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
-    const brick = getBrickFromInstance(bricks, event.instanceId);
-    if (brick) {
-      setHoveredId(brick.id);
+  useLayoutEffect(() => {
+    const hoveredId = hoveredBrickIdRef.current;
+    if (!hoveredId) return;
+
+    const nextIndex = bricks.findIndex((brick) => brick.id === hoveredId);
+    if (nextIndex === -1) {
+      hoveredBrickIdRef.current = null;
+      hoveredIndexRef.current = null;
+      return;
     }
-  };
 
-  const handlePointerOut = () => {
-    setHoveredId(null);
-  };
+    hoveredIndexRef.current = nextIndex;
+    applyInstanceColor(nextIndex, bricks[nextIndex], true);
+  }, [applyInstanceColor, bricks]);
+
+  const handlePointerMove = useCallback(
+    (event: ThreeEvent<PointerEvent>) => {
+      const instanceId = event.instanceId;
+      if (instanceId === null || instanceId === undefined) {
+        clearHoveredInstance();
+        return;
+      }
+
+      const brick = getBrickFromInstance(bricks, instanceId);
+      if (!brick) {
+        clearHoveredInstance();
+        return;
+      }
+
+      if (hoveredBrickIdRef.current === brick.id) {
+        return;
+      }
+
+      clearHoveredInstance();
+      applyInstanceColor(instanceId, brick, true);
+      hoveredIndexRef.current = instanceId;
+      hoveredBrickIdRef.current = brick.id;
+    },
+    [applyInstanceColor, bricks, clearHoveredInstance]
+  );
+
+  const handlePointerOut = useCallback(() => {
+    clearHoveredInstance();
+  }, [clearHoveredInstance]);
 
   return (
     <instancedMesh
@@ -70,7 +144,6 @@ export function BricksInstanced({ bricks }: BricksInstancedProps) {
         metalness={0.3}
         roughness={0.7}
         transparent
-        vertexColors
       />
     </instancedMesh>
   );
