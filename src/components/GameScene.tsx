@@ -4,7 +4,7 @@ import { Arena } from './Arena';
 import { useGameStore } from '../store/gameStore';
 import { useEffect } from 'react';
 import { Ball } from './Ball';
-import { BricksInstanced } from './BricksInstanced';
+import { BricksInstanced } from './bricks/BricksInstanced';
 import { FrameManager } from '../engine/FrameManager';
 
 function GameContent() {

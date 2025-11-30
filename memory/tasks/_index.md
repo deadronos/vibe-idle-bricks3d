@@ -2,7 +2,7 @@
 
 ## PENDING
 
-- [TASK003] Investigate Persist/Rehydrate Race - Investigate failing rehydrate test behavior and propose fix
+- _None_
 
 ## IN PROGRESS
 
@@ -12,6 +12,7 @@
 
 - [TASK001] Wave & Meta Progression Implementation - Implemented waves, achievements, partial persistence (meta-only), and UI updates (see tests and store updates)
 - [TASK003] Investigate Persist/Rehydrate Race - Investigated and implemented companion metadata fix; tests updated and passing
+- [TASK004] Refactor: Modularize `src/` (Store & Components) - Modularized store, BricksInstanced, and UI without behavior change
 
 ## ABANDONED
 
