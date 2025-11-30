@@ -23,14 +23,14 @@ The current store and key components mix types, constants, helpers, rendering lo
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 15%
+**Overall Status:** In Progress - 30%
 
 ### Subtasks
 
 | ID  | Description                                                      | Status       | Updated    | Notes |
 | --- | ---------------------------------------------------------------- | ------------ | ---------- | ----- |
 | 1.1 | Extract store types/constants and update imports                 | Completed    | 2025-11-30 | Created `src/store/types.ts` and `constants.ts`; updated `gameStore.ts` imports/exports and re-ran typecheck |
-| 2.1 | Extract createInitials/achievements with unit tests              | Not Started  | 2025-11-30 |  |
+| 2.1 | Extract createInitials/achievements with unit tests              | Completed    | 2025-11-30 | Added `src/store/createInitials.ts`, `src/store/achievements.ts`, updated store imports/exports, and added `src/test/achievements.test.ts` |
 | 3.1 | Extract persistence helpers and keep STORAGE_KEY/partialize same | Not Started  | 2025-11-30 |  |
 | 4.1 | Slim `gameStore.ts` actions while keeping API stable             | Not Started  | 2025-11-30 |  |
 | 5.1 | Split BricksInstanced into hook/utils + add tests                | Not Started  | 2025-11-30 |  |
@@ -41,4 +41,6 @@ The current store and key components mix types, constants, helpers, rendering lo
 ### 2025-11-30
 
 - Task created from DESIGN003 to track modularization of store, BricksInstanced, and UI with matching tests and unchanged behavior/persistence.
+- Extracted store types/constants into dedicated modules and updated `gameStore.ts` imports/exports; confirmed `npm run typecheck` passes.
+- Split store creation helpers and achievement logic into `createInitials.ts`/`achievements.ts`, added `achievements` unit tests, and re-ran `npm run typecheck` and `npm run test:run` (all green).
 - Extracted store types/constants into dedicated modules and updated `gameStore.ts` imports/exports; confirmed `npm run typecheck` passes.
