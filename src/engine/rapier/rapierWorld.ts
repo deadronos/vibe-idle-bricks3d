@@ -2,11 +2,14 @@ import { BRICK_HALF_SIZE } from '../collision/constants';
 import type { Ball, Brick } from '../../store/types';
 
 type Vec3 = [number, number, number];
+type Quat = [number, number, number, number];
 
 export interface BallState {
   id: string;
   position: Vec3;
   velocity: Vec3;
+  rotation?: Quat;
+  angularVelocity?: Vec3;
 }
 
 type RapierWorldRuntime = {
@@ -24,6 +27,9 @@ type RapierBody = {
   setLinvel?: (x: number, y: number, z: number) => unknown;
   translation?: () => { x?: number; y?: number; z?: number } | number[];
   linvel?: () => { x?: number; y?: number; z?: number } | number[];
+  // Optional rotation / angular velocity accessors — various compat builds expose different shapes
+  rotation?: () => { x?: number; y?: number; z?: number; w?: number } | number[];
+  angvel?: () => { x?: number; y?: number; z?: number } | number[];
 };
 
 type RigidBodyDescBuilder = {
@@ -200,13 +206,15 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
     for (const [id, body] of ballBodies.entries()) {
       try {
         if (!body) {
-          out.push({ id, position: [0, 0, 0], velocity: [0, 0, 0] });
+          out.push({ id, position: [0, 0, 0], velocity: [0, 0, 0], rotation: [0, 0, 0, 1], angularVelocity: [0, 0, 0] });
           continue;
         }
 
         // Normalize translation/linvel shapes — some builds return objects, others arrays
         const tRaw = typeof body.translation === 'function' ? body.translation() : body.translation;
         const vRaw = typeof body.linvel === 'function' ? body.linvel() : body.linvel;
+        const qRaw = typeof body.rotation === 'function' ? body.rotation() : body.rotation;
+        const aRaw = typeof body.angvel === 'function' ? body.angvel() : body.angvel;
 
         const px = Array.isArray(tRaw) ? tRaw[0] ?? 0 : tRaw?.x ?? 0;
         const py = Array.isArray(tRaw) ? tRaw[1] ?? 0 : tRaw?.y ?? 0;
@@ -216,10 +224,34 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
         const vy = Array.isArray(vRaw) ? vRaw[1] ?? 0 : vRaw?.y ?? 0;
         const vz = Array.isArray(vRaw) ? vRaw[2] ?? 0 : vRaw?.z ?? 0;
 
-        out.push({ id, position: [px, py, pz], velocity: [vx, vy, vz] });
+        // Rotation: normalize to quaternion [x,y,z,w]
+        let qx = 0;
+        let qy = 0;
+        let qz = 0;
+        let qw = 1;
+        if (typeof qRaw !== 'undefined' && qRaw !== null) {
+          if (Array.isArray(qRaw)) {
+            qx = qRaw[0] ?? 0;
+            qy = qRaw[1] ?? 0;
+            qz = qRaw[2] ?? 0;
+            qw = qRaw[3] ?? 1;
+          } else {
+            qx = qRaw?.x ?? 0;
+            qy = qRaw?.y ?? 0;
+            qz = qRaw?.z ?? 0;
+            qw = qRaw?.w ?? 1;
+          }
+        }
+
+        // Angular velocity: normalize shape
+        const avx = Array.isArray(aRaw) ? aRaw[0] ?? 0 : aRaw?.x ?? 0;
+        const avy = Array.isArray(aRaw) ? aRaw[1] ?? 0 : aRaw?.y ?? 0;
+        const avz = Array.isArray(aRaw) ? aRaw[2] ?? 0 : aRaw?.z ?? 0;
+
+        out.push({ id, position: [px, py, pz], velocity: [vx, vy, vz], rotation: [qx, qy, qz, qw], angularVelocity: [avx, avy, avz] });
       } catch (e) {
         void e;
-        out.push({ id, position: [0, 0, 0], velocity: [0, 0, 0] });
+        out.push({ id, position: [0, 0, 0], velocity: [0, 0, 0], rotation: [0, 0, 0, 1], angularVelocity: [0, 0, 0] });
       }
     }
     return out;
