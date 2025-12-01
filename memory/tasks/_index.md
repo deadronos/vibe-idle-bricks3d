@@ -2,11 +2,15 @@
 
 ## PENDING
 
-- _None_
+- [TASK006] Rapier Integration — FrameManager & Store - Wire `rapierWorld.step(dt)` into the frame loop; add event forwarding and fallback controls
+- [TASK007] BallsInstanced & Rendering Swap - Implement instanced ball renderer and update `GameScene`/bricks lifecycle for Rapier-driven visuals
+- [TASK008] Rapier CI Smoke & Default Flip - Add Rapier init smoke job, gate default flip, and document rollback procedure
 
 ## IN PROGRESS
 
 - [TASK002] Performance Profiling & UX Polish - Profile rendering and optimize GameScene/Ball updates; polish UI
+
+- [TASK005] Rapier PoC — Rapier world + parity test - Implement `rapierInit`, `rapierWorld`, `BallsInstanced`, and add a tolerant parity test (eps ≈ 1e-2)
 
 ## COMPLETED
 
