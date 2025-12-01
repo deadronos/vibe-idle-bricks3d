@@ -8,6 +8,7 @@ const makeBrick = (overrides: Partial<Brick> = {}): Brick => ({
   health: 10,
   maxHealth: 10,
   color: '#123456',
+  type: 'normal',
   value: 10,
   ...overrides,
 });

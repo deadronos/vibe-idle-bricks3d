@@ -113,8 +113,10 @@ describe('Game Store', () => {
       const brick = state.bricks[0];
       const brickId = brick.id;
 
-      // Damage brick until destroyed
-      state.damageBrick(brickId, brick.health);
+      // Damage brick until destroyed — account for any armor reduction so the damage always kills.
+      const armor = brick.armorMultiplier ?? 0;
+      const requiredDamage = Math.ceil(brick.health / (1 - armor));
+      state.damageBrick(brickId, requiredDamage);
 
       const newState = useGameStore.getState();
       expect(newState.bricks.find((b) => b.id === brickId)).toBeUndefined();

@@ -11,10 +11,11 @@ import {
   MAX_BALL_COUNT,
   STORAGE_KEY,
 } from './constants';
+import { effectBus } from '../systems/EffectEventBus';
 import { checkAndUnlockAchievements, getBallSpeedLevel } from './achievements';
 import { createInitialBall, createInitialBricks } from './createInitials';
 import { createMetaStorage, handleRehydrate, hasExistingStorage } from './persistence';
-import type { Ball, GameDataState, GameEntitiesState, GameState, UpgradeState } from './types';
+import type { Ball, GameDataState, GameEntitiesState, GameSettings, GameState, UpgradeState } from './types';
 
 const rescaleVelocity = (velocity: Vector3Tuple, targetSpeed: number): Vector3Tuple => {
   const currentSpeed = Math.sqrt(
@@ -47,14 +48,27 @@ const updateBallSpeeds = (balls: Ball[], ballSpeed: number): Ball[] =>
  */
 const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState => {
   const storageExists = hasExistingStorage();
-  
+
   return {
     score: 0,
     bricksDestroyed: 0,
     wave: DEFAULT_WAVE,
     maxWaveReached: DEFAULT_WAVE,
     unlockedAchievements: [],
-    settings: {},
+    settings: {
+      enableBloom: true,
+      enableShadows: true,
+      enableSound: true,
+      enableParticles: true,
+    },
+    // Prestige system
+    vibeCrystals: 0,
+    prestigeLevel: 0,
+    prestigeMultiplier: 1,
+    // Combo system
+    comboCount: 0,
+    comboMultiplier: 1,
+    lastHitTime: 0,
     // If storage exists, start empty - rehydration will create correct balls/bricks
     // If no storage (new game), create defaults
     bricks: storageExists ? [] : createInitialBricks(DEFAULT_WAVE),
@@ -65,6 +79,11 @@ const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState =
     ballCount: DEFAULT_BALL_COUNT,
     ballSpawnQueue: 0,
     lastBallSpawnTime: 0,
+    lastSaveTime: Date.now(),
+    // Rapier integration runtime flags
+    useRapierPhysics: true,
+    rapierActive: false,
+    rapierInitError: null as string | null,
   };
 };
 
@@ -78,7 +97,9 @@ export const useGameStore = create<GameState>()(
 
         addScore: (amount) =>
           set((state) => {
-            const score = state.score + amount;
+            // Apply prestige multiplier to score gains
+            const multipliedAmount = Math.floor(amount * state.prestigeMultiplier);
+            const score = state.score + multipliedAmount;
             const unlockedAchievements = checkAndUnlockAchievements(state, { score });
             return {
               score,
@@ -114,10 +135,35 @@ export const useGameStore = create<GameState>()(
             const brick = state.bricks.find((b) => b.id === id);
             if (!brick) return state;
 
-            const newHealth = brick.health - damage;
+            // Apply combo multiplier to damage
+            let actualDamage = damage * state.comboMultiplier;
+
+            // Apply armor reduction if brick has armor
+            if (brick.armorMultiplier) {
+              actualDamage = actualDamage * (1 - brick.armorMultiplier);
+            }
+
+            const newHealth = brick.health - actualDamage;
+
+            // Emit hit effect
+            effectBus.emit({
+              type: 'brick_hit',
+              position: brick.position,
+              color: brick.color,
+              amount: actualDamage
+            });
 
             if (newHealth <= 0) {
-              const score = state.score + brick.value;
+              // Emit destroy effect
+              effectBus.emit({
+                type: 'brick_destroy',
+                position: brick.position,
+                color: brick.color
+              });
+
+              // Apply prestige multiplier to brick value
+              const scoreGain = Math.floor(brick.value * state.prestigeMultiplier);
+              const score = state.score + scoreGain;
               const bricksDestroyed = state.bricksDestroyed + 1;
               const unlockedAchievements = checkAndUnlockAchievements(state, { score, bricksDestroyed });
               return {
@@ -277,6 +323,80 @@ export const useGameStore = create<GameState>()(
               lastBallSpawnTime: Date.now(),
             };
           }),
+
+        toggleSetting: (key: keyof GameSettings) =>
+          set((state) => ({
+            settings: {
+              ...state.settings,
+              [key]: !state.settings[key as keyof GameSettings],
+            },
+          })),
+
+        // Prestige system
+        getPrestigeReward: () => {
+          const { maxWaveReached } = get();
+          // Formula: sqrt(maxWave - 1), minimum 0
+          return Math.max(0, Math.floor(Math.sqrt(maxWaveReached - 1)));
+        },
+
+        performPrestige: () =>
+          set((state) => {
+            const reward = get().getPrestigeReward();
+            if (reward <= 0) return state; // Don't prestige if no reward
+
+            const vibeCrystals = state.vibeCrystals + reward;
+            const prestigeLevel = state.prestigeLevel + 1;
+            // Each crystal gives +10% multiplier
+            const prestigeMultiplier = 1 + vibeCrystals * 0.1;
+
+            // Reset game but preserve prestige stats
+            // IMPORTANT: Create fresh ball and bricks explicitly since buildInitialState
+            // returns empty arrays when storage exists
+            return {
+              ...buildInitialState(),
+              vibeCrystals,
+              prestigeLevel,
+              prestigeMultiplier,
+              // Explicitly create fresh ball and bricks for active prestige
+              balls: [createInitialBall(DEFAULT_BALL_SPEED, DEFAULT_BALL_DAMAGE)],
+              bricks: createInitialBricks(DEFAULT_WAVE),
+            };
+          }),
+
+        // Combo system
+        resetCombo: () =>
+          set(() => ({
+            comboCount: 0,
+            comboMultiplier: 1,
+            lastHitTime: 0,
+          })),
+
+        // Rapier control APIs
+        setUseRapierPhysics: (enabled: boolean) =>
+          set(() => ({ useRapierPhysics: enabled })),
+
+        setRapierActive: (active: boolean) =>
+          set(() => ({ rapierActive: active, rapierInitError: active ? null : undefined })),
+
+        setRapierInitError: (msg: string | null) =>
+          set(() => ({ rapierInitError: msg })),
+
+        // Apply compact rapier hit events (e.g. {brickId, damage}) and update combo state
+        applyHits: (hits: Array<{ brickId: string; damage: number }>) => {
+          if (!hits || hits.length === 0) return;
+          // Apply damage to all hit bricks
+          for (const hit of hits) {
+            const fn = get().damageBrick;
+            if (fn) fn(hit.brickId, hit.damage);
+          }
+
+          if (hits.length >= 2) {
+            const state = get();
+            const newComboCount = state.comboCount + 1;
+            const newComboMultiplier = Math.min(1 + newComboCount * 0.05, 3);
+            set({ comboCount: newComboCount, comboMultiplier: newComboMultiplier, lastHitTime: Date.now() });
+          }
+        },
       };
     },
     {
@@ -292,14 +412,35 @@ export const useGameStore = create<GameState>()(
         ballCount: state.ballCount,
         unlockedAchievements: state.unlockedAchievements,
         settings: state.settings,
+        vibeCrystals: state.vibeCrystals,
+        prestigeLevel: state.prestigeLevel,
+        prestigeMultiplier: state.prestigeMultiplier,
+        lastSaveTime: Date.now(),
       }),
+      storage: createMetaStorage(),
       onRehydrateStorage: () => {
         return (state) => {
+          if (!state) return;
+
+          // Offline Progress
+          const now = Date.now();
+          const lastSave = state.lastSaveTime || now;
+          const secondsOffline = (now - lastSave) / 1000;
+
+          if (secondsOffline > 60) {
+            // Estimate DPS: balls * damage * speed * 0.5 (heuristic hit rate)
+            const dps = state.ballCount * state.ballDamage * state.ballSpeed * 0.5;
+            const offlineEarnings = Math.floor(dps * secondsOffline);
+
+            if (offlineEarnings > 0) {
+              state.score += offlineEarnings;
+              console.log(`[Offline Progress] Earned ${offlineEarnings} score over ${secondsOffline.toFixed(0)}s`);
+            }
+          }
+
+          state.lastSaveTime = now;
+
           // CRITICAL: Defer rehydration to next tick to ensure useGameStore is initialized.
-          // The onRehydrateStorage callback runs during store creation, so useGameStore
-          // is not yet available as a reference. We must defer to allow the create() call
-          // to complete and assign useGameStore.
-          // Capture state NOW before it might change.
           const capturedState = state;
           setTimeout(() => {
             try {
@@ -315,7 +456,6 @@ export const useGameStore = create<GameState>()(
           }, 0);
         };
       },
-      storage: createMetaStorage(),
     }
   )
 );

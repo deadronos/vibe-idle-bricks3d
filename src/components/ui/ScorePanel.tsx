@@ -1,6 +1,6 @@
 import { useGameStore } from '../../store/gameStore';
 
-export function ScorePanel() {
+export function ScorePanel({ onOpenSettings }: { onOpenSettings: () => void }) {
   const score = useGameStore((state) => state.score);
   const bricksDestroyed = useGameStore((state) => state.bricksDestroyed);
   const wave = useGameStore((state) => state.wave);
@@ -8,6 +8,13 @@ export function ScorePanel() {
 
   return (
     <div className="panel score-panel">
+      <button
+        className="gear-icon"
+        onClick={onOpenSettings}
+        aria-label="Settings"
+      >
+        ⚙️
+      </button>
       <h2>Score</h2>
       <div className="score-value">{score.toLocaleString()}</div>
       <div className="stat">

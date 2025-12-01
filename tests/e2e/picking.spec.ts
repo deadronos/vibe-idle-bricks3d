@@ -5,6 +5,7 @@ import { getBrickFromInstance } from '../../src/engine/picking';
 const sampleBricks: Brick[] = [
   {
     id: 'brick-1',
+    type: 'normal',
     position: [0, 0, 0],
     health: 3,
     maxHealth: 3,
@@ -13,6 +14,7 @@ const sampleBricks: Brick[] = [
   },
   {
     id: 'brick-2',
+    type: 'normal',
     position: [1, 0, 0],
     health: 5,
     maxHealth: 5,
