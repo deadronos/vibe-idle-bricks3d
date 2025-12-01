@@ -81,7 +81,7 @@ const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState =
     lastBallSpawnTime: 0,
     lastSaveTime: Date.now(),
     // Rapier integration runtime flags
-    useRapierPhysics: false,
+    useRapierPhysics: true,
     rapierActive: false,
     rapierInitError: null as string | null,
   };
