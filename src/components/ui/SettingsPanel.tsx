@@ -11,6 +11,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         enableShadows: 'Shadows',
         enableSound: 'Sound',
         enableParticles: 'Particles',
+        enableFullRigidPhysics: 'Full Rigid Physics (Rapier)',
     };
 
     return (
