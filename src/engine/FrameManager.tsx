@@ -5,6 +5,7 @@ import { useGameStore, ARENA_SIZE } from '../store/gameStore';
 import { stepBallFrame } from './collision';
 import { RapierPhysicsSystem } from './rapier/RapierPhysicsSystem';
 import type { RapierWorld, BallState } from './rapier/rapierWorld';
+import { handleContact } from '../systems/brickBehaviors';
 
 export function FrameManager() {
   const isPaused = useGameStore((state) => state.isPaused);
@@ -138,9 +139,10 @@ export function FrameManager() {
         // Step the world
         w.step(delta);
 
-        // Drain events and forward to the store
+        // Drain events and forward to the store; also notify behavior hooks.
         const events = w.drainContactEvents();
         if (events.length > 0) {
+          // Aggregate for damage/combo then call behavior hooks for visuals/impulses.
           const hitsForStore: { brickId: string; damage: number }[] = [];
           for (const e of events) {
             const by = balls.find((x) => x.id === e.ballId);
@@ -151,6 +153,16 @@ export function FrameManager() {
           if (hitsForStore.length > 0) {
             const apply = useGameStore.getState().applyHits;
             if (apply) apply(hitsForStore);
+          }
+
+          // Notify behaviors (do NOT re-apply damage here to avoid duplication)
+          for (const e of events) {
+            const by = balls.find((x) => x.id === e.ballId);
+            const point = by ? by.position : [0, 0, 0];
+            const relVel = by ? by.velocity : [0, 0, 0];
+            const speed = Math.sqrt(relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]);
+            const normal = speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
+            handleContact({ ballId: e.ballId, brickId: e.brickId, point, normal, relativeVelocity: relVel, impulse: by ? by.damage : 1 }, { applyDamage: false });
           }
         }
 
@@ -180,6 +192,7 @@ export function FrameManager() {
     }
 
     const hits: { brickId: string; damage: number }[] = [];
+    const contactInfos: any[] = [];
     const nextBalls = balls.map((ball) => {
       const { nextPosition, nextVelocity, hitBrickId } = stepBallFrame(
         ball,
@@ -190,6 +203,11 @@ export function FrameManager() {
 
       if (hitBrickId) {
         hits.push({ brickId: hitBrickId, damage: ball.damage });
+        // Build a best-effort contactInfo for non-rapier path
+        const relVel = ball.velocity;
+        const speed = Math.sqrt(relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]);
+        const normal = speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
+        contactInfos.push({ ballId: ball.id, brickId: hitBrickId, point: nextPosition, normal, relativeVelocity: relVel, impulse: ball.damage });
       }
 
       return {
@@ -214,6 +232,11 @@ export function FrameManager() {
           const newComboMultiplier = Math.min(1 + newComboCount * 0.05, 3);
           useGameStore.setState({ comboCount: newComboCount, comboMultiplier: newComboMultiplier, lastHitTime: Date.now() });
         }
+      }
+
+      // Notify behaviors (do not re-apply damage here)
+      for (const info of contactInfos) {
+        handleContact(info, { applyDamage: false });
       }
     }
 
