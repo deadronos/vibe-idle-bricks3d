@@ -1,107 +1,101 @@
-# DESIGN005 — Rapier3D Integration for Physics
+# DESIGN005 — Rapier3D Integration for Physics (default)
 
 Date: 2025-12-01
 Author: GitHub Copilot (on behalf of repo maintainers)
 
 Summary
 -------
-This design describes integrating Rapier3D (WASM) as the authoritative physics engine for ball movement, collisions with bricks, and arena boundaries. The goal is to replace the current O(balls * bricks) JS collision loop with Rapier's broad-/narrow-phase solver, reduce per-frame JS work, and eliminate per-frame React churn by rendering positions imperatively (instanced meshes).
+This design promotes Rapier3D (WASM) to be the project's default physics engine for ball movement, brick collisions, and arena boundaries. Rapier replaces the O(balls * bricks) JavaScript collision loop with a WASM-backed broad-/narrow-phase solver and contact resolution. Visual updates use imperative instanced updates to avoid React reconciliation.
 
 Goals
 -----
-- Reduce per-frame CPU from the JS collision loop and scale better with many balls.
-- Prevent React re-renders for position-only updates by using an imperative instanced renderer for balls.
-- Preserve gameplay feel (configurable Rapier parameters) and provide a fallback to the current engine.
-- Keep the migration incremental, testable, and gated behind a feature flag.
+- Make Rapier the default physics engine while preserving a robust runtime fallback.
+- Eliminate per-frame store writes for ball transforms and avoid per-frame React re-renders for position-only updates.
+- Preserve gameplay parity with the legacy engine within numeric tolerances and gate the default flip with a CI smoke job.
+- Keep rollout incremental, measurable, and quickly reversible.
 
 Requirements (EARS-style)
 ------------------------
-1. WHEN many balls are active (>= 10), THE SYSTEM SHALL use Rapier broad-phase to limit narrow-phase checks (Acceptance: average candidates per-ball <= 20 on harness).
-2. WHEN balls collide with bricks, THE SYSTEM SHALL produce contact normals and impulse data used to apply damage and effect logic (Acceptance: brick damage events match expectations across parity tests).
-3. WHEN ball positions update each frame, THE SYSTEM SHALL avoid full React re-renders of ball components (Acceptance: React profiler shows near-zero re-renders for position-only updates).
-4. WHEN the Rapier path is disabled, THE SYSTEM SHALL fall back to existing collision code with identical external events (Acceptance: existing tests pass with flag=false).
+1. WHEN the game runs in normal builds, THE SYSTEM SHALL use Rapier as the default physics engine for all collisions and movement.  
+   Acceptance: The default flip (`useRapierPhysics=true`) is applied only after a PoC and a passing Rapier init smoke CI job; PRs that flip the default must include the green smoke job.
+
+2. WHEN Rapier is active, THE SYSTEM SHALL drive transforms and collision events from `rapierWorld.step(dt)`.  
+   Acceptance: `FrameManager` calls `rapierWorld.step(dt)` each frame and per-frame writes of ball transform arrays to the store are removed.
+
+3. WHEN Rapier reports contacts, THE SYSTEM SHALL forward compact hit events (including contact normal and impulse) to the game store.  
+   Acceptance: Parity tests show semantic equality (damage counts, combo outcomes) and numeric comparisons within epsilon ≈ 1e-2.
+
+4. WHEN a PR flips the default, THE CI SHALL block merging if Rapier fails to initialize in the smoke job.  
+   Acceptance: The dedicated Rapier smoke job fails fast on `initRapier()` errors and prevents the default-flip merge.
+
+5. WHEN Rapier fails at runtime for a user, THE SYSTEM SHALL fall back to the legacy engine and continue the session.  
+   Acceptance: Runtime fallback is automatic when `initRapier()` rejects; telemetry/logs indicate fallback and gameplay continues.
+
+6. WHEN positions update each frame, THE SYSTEM SHALL update visuals imperatively (instanced) to avoid React re-renders.  
+   Acceptance: `BallsInstanced` updates instance matrices; React profiler reports near-zero reconcilations for ball transforms.
 
 Overview & Rationale
 --------------------
-The repo's current physics is a JS loop that checks each ball against many bricks (O(balls * bricks)) and writes ball arrays to the store each frame, causing allocation and React reconciliation. Rapier3D (compiled to WASM) provides a C/WASM-optimized solver with efficient broad-phase and native contact resolution; running it imperatively outside React can drastically reduce JS CPU and allow updating visuals via `InstancedMesh` without setState churn.
+The current JS collision loop is O(balls * bricks) and produces per-frame allocations and store writes that cause React reconciliation. Rapier (WASM) provides an efficient broad-phase and native contact resolution. Running Rapier imperatively outside React enables instanced rendering and reduces JS CPU, improving scalability and responsiveness.
 
-Integration Options
--------------------
-Option A — Imperative Rapier (recommended)
-- Implementation: async-load Rapier WASM, create one `World` instance in an engine module, map bricks → static colliders and balls → dynamic sphere bodies, step the world from `FrameManager` and read back transforms.
-- Pros: minimal React churn, good performance for many objects, full control over lifecycle and batching of game events.
-- Cons: more glue code, explicit lifecycle maintenance (create/destroy colliders), async WASM init.
+Integration Approach
+--------------------
+Recommend Option A — Imperative Rapier:
+- Dynamically import Rapier WASM on scene init, maintain one `World` inside `rapierWorld`, register static colliders for bricks and dynamic bodies for balls, step from `FrameManager`, and read back transforms.
+- Pros: scales well, minimal React churn, aligns with existing instanced brick primitives.
+- Cons: glue code, explicit lifecycle management, async init complexity (mitigated with CI smoke/gating and runtime fallback).
 
-Option B — `@react-three/rapier` (R3F bindings)
-- Implementation: declarative `<RigidBody>` / `<Collider>` components and hooks.
-- Pros: easier to prototype, declarative API.
-- Cons: each collider is a React node (bad at high brick counts), harder to keep instanced visuals and performance.
+PoC & Rollout Plan
+------------------
+Packages
+- `@dimforge/rapier3d-compat` (browser WASM entry).  
 
-Recommendation: Use Option A (imperative Rapier) to preserve instancing and minimize React re-renders.
+Vite/WASM
+- Add `assetsInclude: ['**/*.wasm']` to `vite.config.ts` or copy WASM to `public/` and use dynamic import patterns (`new URL(..., import.meta.url)`).
+- Lazy-init Rapier with `await initRapier()` during scene mount; do not top-level import Rapier.
 
-PoC Plan (minimal, safe)
------------------------
-Packages to install
-- Primary: `@dimforge/rapier3d-compat` (preferred WASM entry for browser).  
-- Optional for prototyping: `@react-three/rapier` (only for small-scale testing).
+Files to add (PoC)
+- `src/engine/rapier/rapierInit.ts` — dynamic WASM loader.
+- `src/engine/rapier/rapierWorld.ts` — wrapper API: `createWorld()`, `step(dt)`, `addBall()`, `removeBall()`, `addBrick()`, `removeBrick()`, `drainContactEvents()`, `getBallStates()`.
+- `src/components/BallsInstanced.tsx` — instanced mesh renderer updating instance matrices in `useFrame`.
+- `src/test/rapier.poc.test.ts` — parity PoC with tolerant numeric assertions.
 
-Vite/WASM notes
-- Add `assetsInclude: ['**/*.wasm']` to `vite.config.ts` or copy the `.wasm` to `public/`.  
-- Dynamically import and await the Rapier initializer at runtime (do not import top-level) to avoid blocking startup.
+Files to modify
+- `src/engine/FrameManager.tsx` — attempt `initRapier()` on mount (fallback to legacy if init fails) and call `rapierWorld.step(dt)` when active.
+- `src/components/GameScene.tsx` — render `BallsInstanced` when Rapier is active; keep legacy components for fallback.
+- `src/components/bricks/useInstancedBricks.ts` — call `rapierWorld.addBrick`/`removeBrick` and maintain `brickId→colliderId` mapping.
+- `src/store/gameStore.ts` — add `useRapierPhysics` flag (default flip controlled by CI gate) and APIs to receive compact Rapier events.
+- `vite.config.ts` — include `.wasm` in `assetsInclude`.
 
-Files to add
-- `src/engine/rapier/rapierInit.ts` — async Rapier WASM loader and initializer helper.  
-- `src/engine/rapier/rapierWorld.ts` — thin wrapper exposing `createWorld()`, `step(dt)`, `addBall(ballId, params)`, `removeBall(ballId)`, `addBrick(brickId, params)`, `removeBrick(brickId)`, and `pollContacts()` or `drainContactEvents()`.
-- `src/components/BallsInstanced.tsx` — InstancedMesh renderer that reads transforms from `rapierWorld.getBallStates()` under `useFrame` and updates instance matrices imperatively.
-- `src/test/rapier.poc.test.ts` — small parity PoC asserting collisions and contact normals.
+Minimal runtime flow
+1. `GameScene` mount: attempt `await initRapier()`. If resolved, call `rapierWorld.createWorld()`; if rejected, log and enable legacy fallback.
+2. Register bricks: `rapierWorld.addBrick(brickId, {position, size, isStatic: true})`.
+3. Spawn balls: `rapierWorld.addBall(ballId, {position, velocity, radius})`.
+4. Each frame: `rapierWorld.step(dt)`; `BallsInstanced` reads `getBallStates()` and updates instance matrices imperatively. `drainContactEvents()` yields hit events forwarded to `gameStore`.
+5. On destroy: `rapierWorld.removeBrick(brickId)` / `removeBall(ballId)`.
 
-Files to modify (minimal surface changes)
-- `src/engine/FrameManager.tsx` — initialize Rapier on mount, call `rapierWorld.step(dt)` when feature-flag enabled, and forward compact game events (brick hits) into `src/store/gameStore.ts` (no per-frame balls setState).
-- `src/components/GameScene.tsx` — conditionally render `<BallsInstanced />` when Rapier is enabled (feature-flag). Keep legacy render path as fallback.
-- `src/components/bricks/useInstancedBricks.ts` — maintain `brickId → colliderId` mapping and call `rapierWorld.addBrick`/`removeBrick` on lifecycle changes.
-- `src/store/gameStore.ts` — add `useRapierPhysics` flag and minimal APIs for event forwarding.
+Migration & CI gating
+1. PoC: implement Rapier modules + PoC parity test (keep flag default `false` for dev).  
+2. Add a dedicated CI smoke job that calls `initRapier()` and fails fast on errors. This job blocks the PR that flips the default.
+3. After PoC + smoke job green, open a small PR that flips `useRapierPhysics` default to `true`. The PR is gated by the smoke job.
+4. Monitor perf/behavior on staging; provide quick env override `RAPIER=false` for emergency rollback.
 
-Minimal runtime flow (PoC)
-1. On `GameScene` mount: `await initRapier()` then `rapierWorld.createWorld()`.
-2. On level/wave load: iterate bricks and call `rapierWorld.addBrick(brickId, {position, size, isStatic: true})`.
-3. When balls spawn: `rapierWorld.addBall(ballId, {position, velocity, radius})` (dynamic body).
-4. Each frame: `rapierWorld.step(dt)`; `BallsInstanced` reads `rapierWorld.getBallStates()` and updates `InstancedMesh` matrices imperatively. Collect contact events and forward compact events to `gameStore` for damage/effects.
-5. On brick destroy: call `rapierWorld.removeBrick(brickId)` and update instanced visuals.
+Tests & Acceptance (tolerant)
+- Use epsilon comparisons for numeric assertions. Recommended epsilon: `1e-2` for positions/velocities/contact normals in parity tests.
+- Prefer semantic assertions (damage counts, combo outcomes) wherever possible to avoid brittle float equality.
+- Add perf harness comparing Rapier vs legacy for ≥10 balls; acceptance: configurable CPU reduction (e.g., 25–40%).
 
-Migration Plan (high-level, 1 dev estimates)
------------------------------------------
-1. PoC Rapier world + single-ball parity test (1–2 days)
-   - Implement `rapierInit` and `rapierWorld`, test one ball vs one brick and verify contact event.
-2. Integrate stepping into `FrameManager` behind `useRapierPhysics` (1–2 days)
-   - Replace per-frame collision loop only when flag is on; keep legacy path untouched.
-3. Implement `BallsInstanced` and swap rendering (1 day)
-   - Remove per-frame `setState` for ball positions; render directly from Rapier transforms.
-4. Tune physics parameters and run perf harness (1–2 days)
-   - Adjust restitution/friction/CCD to match feel; tune time-step and event batching.
-5. Tests, CI and rollback validation (1–2 days)
-   - Add parity unit tests, perf harness comparisons, and ensure CI can run WASM tests or gate them separately.
+Risk Matrix & Mitigations
+- CI WASM init failure: mitigation — dedicated smoke job that blocks default flip; fallback: allow `RAPIER=false` env to run broader tests without blocking CI permanently.
+- Gameplay drift: mitigation — parity tests + parameter tuning + debug overlay for trajectory comparison.
+- Startup latency: mitigation — lazy init and optional legacy-run-until-ready swap.
+- High static collider count: mitigation — compound colliders, hybrid spatial-hash approach, and perf testing.
 
-Tests & Acceptance Criteria
---------------------------
-- Unit parity test: `src/test/rapier.poc.test.ts` — single-ball single-brick scenarios match reference outcomes within epsilon (positions/velocities/contact normals).
-- Integration perf test: `src/test/perf/rapier_vs_native.test.ts` — baseline vs Rapier for ≥10 balls; acceptance: JS CPU time reduced by a configurable threshold (e.g., 25–40%).
-- React render test: `tests/components/BallsInstanced.test.tsx` — assert that per-frame transforms do not cause React reconcilations of ball components.
-- Regression: all existing tests pass with `useRapierPhysics=false`.
-
-Risk Matrix & Rollback
-----------------------
-- Gameplay divergence (Medium likelihood, High impact): tune Rapier restitution/friction and provide debug overlay to compare trajectories; keep legacy path behind `useRapierPhysics` flag for rollback.
-- WASM bundling/CI issues (Low–Medium likelihood, High impact): ensure `.wasm` is included in Vite assets and add a smoke test; fallback: copy wasm into `public/`.
-- Startup latency (Medium likelihood): lazy-init Rapier on scene mount and optionally run legacy physics until ready.
-- High static collider count memory/time (Low–Medium): group static colliders into compounds or use a hybrid approach (spatial-hash for bricks + Rapier narrow-phase for tricky collisions).
-
-Fallback strategies
--------------------
-- Feature flag: `useRapierPhysics` toggles Rapier on/off. Default `false` until validated.
-- Hybrid: Use Rapier for broad-phase queries only, or for balls while keeping bricks handled in spatial-hash (intermediate step).
+Fallback & Operational Controls
+- Runtime toggle / env override: `RAPIER=false` to force legacy engine.
+- Keep legacy collision code compiled and test-covered as a rollback path and parity reference.
 
 File map (summary)
--------------------
 - Add: `src/engine/rapier/rapierInit.ts`
 - Add: `src/engine/rapier/rapierWorld.ts`
 - Add: `src/components/BallsInstanced.tsx`
@@ -110,15 +104,17 @@ File map (summary)
 - Modify: `src/components/GameScene.tsx`
 - Modify: `src/components/bricks/useInstancedBricks.ts`
 - Modify: `src/store/gameStore.ts`
+- Modify: `vite.config.ts`
 
 Decision log
 ------------
-- Imperative Rapier chosen because the repo already uses instanced bricks and needs minimal React churn.
-- Keep legacy collision code as a compatibility fallback and an executable reference for parity tests.
+- Use imperative Rapier for performance and compatibility with instanced rendering.
+- Require a passing Rapier init smoke CI job before flipping the default to `true` (CI-blocking policy).
 
 Next steps
 ----------
-1. If you want, I can implement the PoC scaffolding now: `rapierInit`, `rapierWorld`, and a single parity test.  
-2. Otherwise, merge this design into memory and we can schedule the PoC as a small patch.
+1. Implement PoC scaffolding (`rapierInit`, `rapierWorld`, `BallsInstanced`) and add tolerant parity tests (epsilon ≈ 1e-2).
+2. Add Rapier init smoke job in CI and validate across CI environments before merging the default-flip PR.
+3. After flip, run perf harness, monitor, and be ready to rollback via `RAPIER=false` if needed.
 
-If you'd like me to proceed with the PoC implementation, say "Implement PoC" and I'll start the patch set.
+If you'd like me to implement the PoC now, reply "Implement PoC" and I will scaffold the modules and tests.
