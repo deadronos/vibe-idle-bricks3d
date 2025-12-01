@@ -80,6 +80,10 @@ const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState =
     ballSpawnQueue: 0,
     lastBallSpawnTime: 0,
     lastSaveTime: Date.now(),
+    // Rapier integration runtime flags
+    useRapierPhysics: true,
+    rapierActive: false,
+    rapierInitError: null as string | null,
   };
 };
 
@@ -366,6 +370,33 @@ export const useGameStore = create<GameState>()(
             comboMultiplier: 1,
             lastHitTime: 0,
           })),
+
+        // Rapier control APIs
+        setUseRapierPhysics: (enabled: boolean) =>
+          set(() => ({ useRapierPhysics: enabled })),
+
+        setRapierActive: (active: boolean) =>
+          set(() => ({ rapierActive: active, rapierInitError: active ? null : undefined })),
+
+        setRapierInitError: (msg: string | null) =>
+          set(() => ({ rapierInitError: msg })),
+
+        // Apply compact rapier hit events (e.g. {brickId, damage}) and update combo state
+        applyHits: (hits: Array<{ brickId: string; damage: number }>) => {
+          if (!hits || hits.length === 0) return;
+          // Apply damage to all hit bricks
+          for (const hit of hits) {
+            const fn = get().damageBrick;
+            if (fn) fn(hit.brickId, hit.damage);
+          }
+
+          if (hits.length >= 2) {
+            const state = get();
+            const newComboCount = state.comboCount + 1;
+            const newComboMultiplier = Math.min(1 + newComboCount * 0.05, 3);
+            set({ comboCount: newComboCount, comboMultiplier: newComboMultiplier, lastHitTime: Date.now() });
+          }
+        },
       };
     },
     {

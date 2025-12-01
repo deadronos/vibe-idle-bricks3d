@@ -44,6 +44,7 @@ const createTestBrick = (overrides: Partial<Brick> = {}): Brick => ({
   maxHealth: 3,
   color: '#FF6B6B',
   value: 10,
+  type: 'normal',
   ...overrides,
 });
 
@@ -154,8 +155,14 @@ describe('Game Store - Comprehensive Tests', () => {
 
       const paired = wave1.map((brick, index) => [brick, wave3[index]]);
       paired.forEach(([base, scaled]) => {
+        // Health should monotonically scale with wave
         expect(scaled.health).toBeGreaterThanOrEqual(base.health);
-        expect(scaled.value).toBeGreaterThanOrEqual(base.value);
+
+        // Value may be influenced by special types (golden/armor) which are random,
+        // so only assert value scaling when both are normal bricks.
+        if (base.type === 'normal' && scaled.type === 'normal') {
+          expect(scaled.value).toBeGreaterThanOrEqual(base.value);
+        }
       });
     });
   });
@@ -390,6 +397,16 @@ describe('Game Store - Comprehensive Tests', () => {
   });
 
   describe('Brick Management', () => {
+    beforeEach(() => {
+      // Use deterministic, non-armor bricks for all brick-management tests
+      resetToKnownState({
+        bricks: [
+          createTestBrick({ health: 10, maxHealth: 10, value: 10 }),
+          createTestBrick({ health: 10, maxHealth: 10, value: 20 }),
+          createTestBrick({ health: 10, maxHealth: 10, value: 30 }),
+        ],
+      });
+    });
     describe('damageBrick', () => {
       it('should reduce brick health', () => {
         const state = useGameStore.getState();
@@ -945,10 +962,17 @@ describe('Game Store - Integration Tests', () => {
   });
 
   it('should simulate a game session: destroy bricks, earn score, upgrade', () => {
-    const state = useGameStore.getState();
+    // Use deterministic bricks for this simulation so results are predictable
+    useGameStore.setState({
+      bricks: [
+        createTestBrick({ value: 10, health: 3, maxHealth: 3 }),
+        createTestBrick({ value: 20, health: 3, maxHealth: 3 }),
+        createTestBrick({ value: 30, health: 3, maxHealth: 3 }),
+      ],
+    });
 
     // Simulate destroying some bricks
-    const bricksToDestroy = state.bricks.slice(0, 3);
+    const bricksToDestroy = useGameStore.getState().bricks.slice(0, 3);
     let expectedScore = 0;
 
     bricksToDestroy.forEach((brick) => {
@@ -996,9 +1020,11 @@ describe('Game Store - Integration Tests', () => {
     const totalValue = state.bricks.reduce((sum, brick) => sum + brick.value, 0);
     const initialWave = state.wave;
 
-    // Destroy all bricks
+    // Destroy all bricks — account for armor reduction so the damage always kills.
     state.bricks.forEach((brick) => {
-      useGameStore.getState().damageBrick(brick.id, brick.health);
+      const armor = brick.armorMultiplier ?? 0;
+      const requiredDamage = Math.ceil(brick.health / (1 - armor));
+      useGameStore.getState().damageBrick(brick.id, requiredDamage);
     });
 
     expect(useGameStore.getState().bricks.length).toBe(0);

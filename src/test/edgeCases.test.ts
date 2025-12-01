@@ -447,6 +447,7 @@ describe('Rehydration - Concurrent Operations', () => {
       wave: 1,
       bricks: Array(5).fill(null).map((_, i) => ({
         id: `brick-${i}`,
+        type: 'normal',
         position: [0, 0, 0] as const,
         health: 1,
         maxHealth: 1,

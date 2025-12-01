@@ -19,6 +19,7 @@ const createTestBrick = (overrides: Partial<Brick> = {}): Brick => ({
   maxHealth: 3,
   color: '#4ECDC4',
   value: 10,
+  type: 'normal',
   ...overrides,
 });
 

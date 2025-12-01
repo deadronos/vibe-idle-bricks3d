@@ -6,6 +6,7 @@ import { GeometricBackground } from './GeometricBackground';
 import { useGameStore } from '../store/gameStore';
 import { useEffect } from 'react';
 import { Ball } from './Ball';
+import BallsInstanced from './BallsInstanced';
 import { BricksInstanced } from './bricks/BricksInstanced';
 import { FrameManager } from '../engine/FrameManager';
 import { ParticleSystem } from './effects/ParticleSystem';
@@ -15,6 +16,7 @@ import { CameraRig } from './effects/CameraRig';
 function GameContent() {
   const balls = useGameStore((state) => state.balls);
   const bricks = useGameStore((state) => state.bricks);
+  const rapierActive = useGameStore((state) => state.rapierActive);
   const regenerateBricks = useGameStore((state) => state.regenerateBricks);
   const settings = useGameStore((state) => state.settings);
 
@@ -65,10 +67,8 @@ function GameContent() {
 
       <FrameManager />
 
-      {/* Balls */}
-      {balls.map((ball) => (
-        <Ball key={ball.id} ball={ball} />
-      ))}
+      {/* Balls: render instanced balls when Rapier is active to avoid per-ball React reconcilations */}
+      {rapierActive ? <BallsInstanced /> : balls.map((ball) => <Ball key={ball.id} ball={ball} />)}
 
       {/* Bricks */}
       <BricksInstanced bricks={bricks} />

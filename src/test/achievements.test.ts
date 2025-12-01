@@ -20,7 +20,15 @@ const makeState = (overrides: Partial<GameState> = {}): GameState => ({
   wave: DEFAULT_WAVE,
   maxWaveReached: DEFAULT_WAVE,
   unlockedAchievements: [],
-  settings: {},
+  settings: { enableBloom: true, enableShadows: true, enableSound: true, enableParticles: true },
+  // Prestige / meta
+  vibeCrystals: 0,
+  prestigeLevel: 0,
+  prestigeMultiplier: 1,
+  // Combo
+  comboCount: 0,
+  comboMultiplier: 1,
+  lastHitTime: 0,
   bricks: [],
   balls: [],
   isPaused: false,
@@ -48,6 +56,10 @@ const makeState = (overrides: Partial<GameState> = {}): GameState => ({
   queueBallSpawns: () => {},
   tryProcessBallSpawnQueue: () => {},
   forceProcessAllQueuedBalls: () => {},
+  toggleSetting: () => {},
+  performPrestige: () => {},
+  getPrestigeReward: () => 0,
+  resetCombo: () => {},
   ...overrides,
 });
 

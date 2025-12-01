@@ -75,6 +75,10 @@ export interface GameEntitiesState {
   ballSpawnQueue: number;
   lastBallSpawnTime: number;
   lastSaveTime?: number;
+  // Rapier runtime control
+  useRapierPhysics?: boolean;
+  rapierActive?: boolean;
+  rapierInitError?: string | null;
 }
 
 export interface UpgradeState {
@@ -109,6 +113,11 @@ export interface GameActions {
   getPrestigeReward: () => number;
   // Combo actions
   resetCombo: () => void;
+  // Rapier control APIs (runtime)
+  setUseRapierPhysics?: (enabled: boolean) => void;
+  setRapierActive?: (active: boolean) => void;
+  setRapierInitError?: (msg: string | null) => void;
+  applyHits?: (hits: Array<{ brickId: string; damage: number }>) => void;
 }
 
 export type GameState = GameDataState & GameEntitiesState & UpgradeState & GameActions;
