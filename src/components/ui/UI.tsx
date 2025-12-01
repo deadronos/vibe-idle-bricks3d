@@ -4,6 +4,7 @@ import { Controls } from './Controls';
 import { ScorePanel } from './ScorePanel';
 import { StatsPanel } from './StatsPanel';
 import { UpgradesPanel } from './UpgradesPanel';
+import { SettingsPanel } from './SettingsPanel';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 import './UI.css';
 
@@ -26,6 +27,7 @@ export function UI() {
       <StatsPanel />
       <UpgradesPanel />
       <AchievementsPanel />
+      <SettingsPanel />
       <Controls />
     </div>
   );

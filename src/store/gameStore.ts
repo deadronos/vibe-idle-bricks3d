@@ -11,10 +11,11 @@ import {
   MAX_BALL_COUNT,
   STORAGE_KEY,
 } from './constants';
+import { effectBus } from '../systems/EffectEventBus';
 import { checkAndUnlockAchievements, getBallSpeedLevel } from './achievements';
 import { createInitialBall, createInitialBricks } from './createInitials';
 import { createMetaStorage, handleRehydrate, hasExistingStorage } from './persistence';
-import type { Ball, GameDataState, GameEntitiesState, GameState, UpgradeState } from './types';
+import type { Ball, GameDataState, GameEntitiesState, GameSettings, GameState, UpgradeState } from './types';
 
 const rescaleVelocity = (velocity: Vector3Tuple, targetSpeed: number): Vector3Tuple => {
   const currentSpeed = Math.sqrt(
@@ -47,14 +48,19 @@ const updateBallSpeeds = (balls: Ball[], ballSpeed: number): Ball[] =>
  */
 const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState => {
   const storageExists = hasExistingStorage();
-  
+
   return {
     score: 0,
     bricksDestroyed: 0,
     wave: DEFAULT_WAVE,
     maxWaveReached: DEFAULT_WAVE,
     unlockedAchievements: [],
-    settings: {},
+    settings: {
+      enableBloom: true,
+      enableShadows: true,
+      enableSound: true,
+      enableParticles: true,
+    },
     // If storage exists, start empty - rehydration will create correct balls/bricks
     // If no storage (new game), create defaults
     bricks: storageExists ? [] : createInitialBricks(DEFAULT_WAVE),
@@ -65,6 +71,7 @@ const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState =
     ballCount: DEFAULT_BALL_COUNT,
     ballSpawnQueue: 0,
     lastBallSpawnTime: 0,
+    lastSaveTime: Date.now(),
   };
 };
 
@@ -116,7 +123,22 @@ export const useGameStore = create<GameState>()(
 
             const newHealth = brick.health - damage;
 
+            // Emit hit effect
+            effectBus.emit({
+              type: 'brick_hit',
+              position: brick.position,
+              color: brick.color,
+              amount: damage
+            });
+
             if (newHealth <= 0) {
+              // Emit destroy effect
+              effectBus.emit({
+                type: 'brick_destroy',
+                position: brick.position,
+                color: brick.color
+              });
+
               const score = state.score + brick.value;
               const bricksDestroyed = state.bricksDestroyed + 1;
               const unlockedAchievements = checkAndUnlockAchievements(state, { score, bricksDestroyed });
@@ -277,6 +299,14 @@ export const useGameStore = create<GameState>()(
               lastBallSpawnTime: Date.now(),
             };
           }),
+
+        toggleSetting: (key: keyof GameSettings) =>
+          set((state) => ({
+            settings: {
+              ...state.settings,
+              [key]: !state.settings[key as keyof GameSettings],
+            },
+          })),
       };
     },
     {
@@ -292,14 +322,32 @@ export const useGameStore = create<GameState>()(
         ballCount: state.ballCount,
         unlockedAchievements: state.unlockedAchievements,
         settings: state.settings,
+        lastSaveTime: Date.now(),
       }),
+      storage: createMetaStorage(),
       onRehydrateStorage: () => {
         return (state) => {
+          if (!state) return;
+
+          // Offline Progress
+          const now = Date.now();
+          const lastSave = state.lastSaveTime || now;
+          const secondsOffline = (now - lastSave) / 1000;
+
+          if (secondsOffline > 60) {
+            // Estimate DPS: balls * damage * speed * 0.5 (heuristic hit rate)
+            const dps = state.ballCount * state.ballDamage * state.ballSpeed * 0.5;
+            const offlineEarnings = Math.floor(dps * secondsOffline);
+
+            if (offlineEarnings > 0) {
+              state.score += offlineEarnings;
+              console.log(`[Offline Progress] Earned ${offlineEarnings} score over ${secondsOffline.toFixed(0)}s`);
+            }
+          }
+
+          state.lastSaveTime = now;
+
           // CRITICAL: Defer rehydration to next tick to ensure useGameStore is initialized.
-          // The onRehydrateStorage callback runs during store creation, so useGameStore
-          // is not yet available as a reference. We must defer to allow the create() call
-          // to complete and assign useGameStore.
-          // Capture state NOW before it might change.
           const capturedState = state;
           setTimeout(() => {
             try {
@@ -315,7 +363,6 @@ export const useGameStore = create<GameState>()(
           }, 0);
         };
       },
-      storage: createMetaStorage(),
     }
   )
 );

@@ -30,8 +30,10 @@ export interface Upgrade {
 }
 
 export interface GameSettings {
-  // Placeholder for future toggles (audio, accessibility, etc.)
-  [key: string]: unknown;
+  enableBloom: boolean;
+  enableShadows: boolean;
+  enableSound: boolean;
+  enableParticles: boolean;
 }
 
 export type AchievementType = 'score' | 'bricks' | 'wave' | 'upgrade';
@@ -60,6 +62,7 @@ export interface GameEntitiesState {
   isPaused: boolean;
   ballSpawnQueue: number;
   lastBallSpawnTime: number;
+  lastSaveTime?: number;
 }
 
 export interface UpgradeState {
@@ -88,6 +91,7 @@ export interface GameActions {
   queueBallSpawns: (count: number) => void;
   tryProcessBallSpawnQueue: () => void;
   forceProcessAllQueuedBalls: () => void;
+  toggleSetting: (key: keyof GameSettings) => void;
 }
 
 export type GameState = GameDataState & GameEntitiesState & UpgradeState & GameActions;
