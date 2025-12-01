@@ -10,6 +10,8 @@ export default defineConfig({
   // so assets are referenced under /<repo>/ instead of the domain root.
   base: isGitHubPages ? `/${repoName}/` : '/',
   plugins: [react()],
+  // Ensure WASM assets from dependencies are included by Vite when building/tests
+  assetsInclude: ['**/*.wasm'],
   test: {
     globals: true,
     watch: false,
