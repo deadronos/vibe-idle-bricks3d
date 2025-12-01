@@ -1,6 +1,7 @@
 import React from 'react';
 import { ACHIEVEMENTS, useGameStore } from '../../store/gameStore';
 import { AchievementsPanel } from './AchievementsPanel';
+import { ComboDisplay } from './ComboDisplay';
 import { Controls } from './Controls';
 import { ScorePanel } from './ScorePanel';
 import { StatsPanel } from './StatsPanel';
@@ -25,6 +26,7 @@ export function UI() {
         {liveMessage}
       </div>
 
+      <ComboDisplay />
       <ScorePanel onOpenSettings={() => setShowSettings(true)} />
       <StatsPanel />
       <UpgradesPanel />

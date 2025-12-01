@@ -1,5 +1,7 @@
 import type { Vector3Tuple } from 'three';
 
+export type BrickType = 'normal' | 'golden' | 'armor';
+
 export interface Brick {
   id: string;
   position: Vector3Tuple;
@@ -7,6 +9,8 @@ export interface Brick {
   maxHealth: number;
   color: string;
   value: number;
+  type: BrickType;
+  armorMultiplier?: number; // For armor bricks (damage reduction, e.g., 0.5 = 50% reduction)
 }
 
 export interface Ball {
@@ -54,6 +58,14 @@ export interface GameDataState {
   maxWaveReached: number;
   unlockedAchievements: string[];
   settings: GameSettings;
+  // Prestige system
+  vibeCrystals: number;
+  prestigeLevel: number;
+  prestigeMultiplier: number;
+  // Combo system
+  comboCount: number;
+  comboMultiplier: number;
+  lastHitTime: number;
 }
 
 export interface GameEntitiesState {
@@ -92,6 +104,11 @@ export interface GameActions {
   tryProcessBallSpawnQueue: () => void;
   forceProcessAllQueuedBalls: () => void;
   toggleSetting: (key: keyof GameSettings) => void;
+  // Prestige actions
+  performPrestige: () => void;
+  getPrestigeReward: () => number;
+  // Combo actions
+  resetCombo: () => void;
 }
 
 export type GameState = GameDataState & GameEntitiesState & UpgradeState & GameActions;

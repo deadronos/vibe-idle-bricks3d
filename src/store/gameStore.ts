@@ -61,6 +61,14 @@ const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState =
       enableSound: true,
       enableParticles: true,
     },
+    // Prestige system
+    vibeCrystals: 0,
+    prestigeLevel: 0,
+    prestigeMultiplier: 1,
+    // Combo system
+    comboCount: 0,
+    comboMultiplier: 1,
+    lastHitTime: 0,
     // If storage exists, start empty - rehydration will create correct balls/bricks
     // If no storage (new game), create defaults
     bricks: storageExists ? [] : createInitialBricks(DEFAULT_WAVE),
@@ -85,7 +93,9 @@ export const useGameStore = create<GameState>()(
 
         addScore: (amount) =>
           set((state) => {
-            const score = state.score + amount;
+            // Apply prestige multiplier to score gains
+            const multipliedAmount = Math.floor(amount * state.prestigeMultiplier);
+            const score = state.score + multipliedAmount;
             const unlockedAchievements = checkAndUnlockAchievements(state, { score });
             return {
               score,
@@ -121,14 +131,22 @@ export const useGameStore = create<GameState>()(
             const brick = state.bricks.find((b) => b.id === id);
             if (!brick) return state;
 
-            const newHealth = brick.health - damage;
+            // Apply combo multiplier to damage
+            let actualDamage = damage * state.comboMultiplier;
+
+            // Apply armor reduction if brick has armor
+            if (brick.armorMultiplier) {
+              actualDamage = actualDamage * (1 - brick.armorMultiplier);
+            }
+
+            const newHealth = brick.health - actualDamage;
 
             // Emit hit effect
             effectBus.emit({
               type: 'brick_hit',
               position: brick.position,
               color: brick.color,
-              amount: damage
+              amount: actualDamage
             });
 
             if (newHealth <= 0) {
@@ -139,7 +157,9 @@ export const useGameStore = create<GameState>()(
                 color: brick.color
               });
 
-              const score = state.score + brick.value;
+              // Apply prestige multiplier to brick value
+              const scoreGain = Math.floor(brick.value * state.prestigeMultiplier);
+              const score = state.score + scoreGain;
               const bricksDestroyed = state.bricksDestroyed + 1;
               const unlockedAchievements = checkAndUnlockAchievements(state, { score, bricksDestroyed });
               return {
@@ -307,6 +327,45 @@ export const useGameStore = create<GameState>()(
               [key]: !state.settings[key as keyof GameSettings],
             },
           })),
+
+        // Prestige system
+        getPrestigeReward: () => {
+          const { maxWaveReached } = get();
+          // Formula: sqrt(maxWave - 1), minimum 0
+          return Math.max(0, Math.floor(Math.sqrt(maxWaveReached - 1)));
+        },
+
+        performPrestige: () =>
+          set((state) => {
+            const reward = get().getPrestigeReward();
+            if (reward <= 0) return state; // Don't prestige if no reward
+
+            const vibeCrystals = state.vibeCrystals + reward;
+            const prestigeLevel = state.prestigeLevel + 1;
+            // Each crystal gives +10% multiplier
+            const prestigeMultiplier = 1 + vibeCrystals * 0.1;
+
+            // Reset game but preserve prestige stats
+            // IMPORTANT: Create fresh ball and bricks explicitly since buildInitialState
+            // returns empty arrays when storage exists
+            return {
+              ...buildInitialState(),
+              vibeCrystals,
+              prestigeLevel,
+              prestigeMultiplier,
+              // Explicitly create fresh ball and bricks for active prestige
+              balls: [createInitialBall(DEFAULT_BALL_SPEED, DEFAULT_BALL_DAMAGE)],
+              bricks: createInitialBricks(DEFAULT_WAVE),
+            };
+          }),
+
+        // Combo system
+        resetCombo: () =>
+          set(() => ({
+            comboCount: 0,
+            comboMultiplier: 1,
+            lastHitTime: 0,
+          })),
       };
     },
     {
@@ -322,6 +381,9 @@ export const useGameStore = create<GameState>()(
         ballCount: state.ballCount,
         unlockedAchievements: state.unlockedAchievements,
         settings: state.settings,
+        vibeCrystals: state.vibeCrystals,
+        prestigeLevel: state.prestigeLevel,
+        prestigeMultiplier: state.prestigeMultiplier,
         lastSaveTime: Date.now(),
       }),
       storage: createMetaStorage(),

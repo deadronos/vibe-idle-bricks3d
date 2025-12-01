@@ -1,5 +1,5 @@
 import { BRICK_COLORS, DEFAULT_BALL_DAMAGE, DEFAULT_BALL_SPEED, WAVE_SCALE_FACTOR } from './constants';
-import type { Ball, Brick } from './types';
+import type { Ball, Brick, BrickType } from './types';
 
 const generateBrickId = () => `brick-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 const generateBallId = () => `ball-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -19,6 +19,27 @@ export const createInitialBricks = (wave: number): Brick[] => {
       for (let col = 0; col < cols; col++) {
         const baseHealth = (layer + 1) * 3;
         const health = scaleForWave(baseHealth, wave);
+        const baseValue = scaleForWave((layer + 1) * 10, wave);
+
+        // Determine brick type
+        const rand = Math.random();
+        let type: BrickType = 'normal';
+        let color = BRICK_COLORS[(row + col + layer) % BRICK_COLORS.length];
+        let value = baseValue;
+        let armorMultiplier: number | undefined = undefined;
+
+        if (rand < 0.05) {
+          // 5% chance for Golden Brick
+          type = 'golden';
+          color = '#FFD700'; // Gold color
+          value = baseValue * 10; // 10x score
+        } else if (rand < 0.15) {
+          // 10% chance for Armor Brick (5-15% range)
+          type = 'armor';
+          color = '#B0C4DE'; // Steel blue
+          armorMultiplier = 0.5; // 50% damage reduction
+        }
+
         bricks.push({
           id: generateBrickId(),
           position: [
@@ -28,8 +49,10 @@ export const createInitialBricks = (wave: number): Brick[] => {
           ],
           health,
           maxHealth: health,
-          color: BRICK_COLORS[(row + col + layer) % BRICK_COLORS.length],
-          value: scaleForWave((layer + 1) * 10, wave),
+          color,
+          value,
+          type,
+          armorMultiplier,
         });
       }
     }
