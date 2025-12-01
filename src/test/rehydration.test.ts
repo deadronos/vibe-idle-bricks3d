@@ -476,7 +476,7 @@ describe('Rehydration - Storage & Persistence', () => {
   });
 
   it('should preserve settings', () => {
-    const customSettings = { audioEnabled: false, accessibility: true };
+    const customSettings = { enableBloom: false, enableShadows: true, enableSound: false, enableParticles: true };
 
     useGameStore.setState({
       settings: customSettings,

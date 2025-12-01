@@ -4,7 +4,7 @@
  * or a namespace directly; handle both shapes and cache the result.
  */
 
-export type RapierModule = any;
+export type RapierModule = unknown;
 
 let cached: RapierModule | null = null;
 
@@ -16,32 +16,35 @@ export async function initRapier(): Promise<RapierModule> {
     const mod = await import('@dimforge/rapier3d-compat');
 
     // The compat entry sometimes exports an initializer function
-    const initializer: any = typeof mod === 'function' ? mod : mod.default || mod.init;
+    const initializer: unknown =
+      typeof mod === 'function' ? mod : (mod as { default?: unknown; init?: unknown }).default ?? (mod as { default?: unknown; init?: unknown }).init;
 
     if (typeof initializer === 'function') {
+      const initFn = initializer as (...args: unknown[]) => Promise<unknown> | unknown;
       // Call initializer if available — some builds return the runtime namespace
       // while others populate the module and return undefined.
       // When running under Node (tests/CI), provide a locateFile helper so WASM
       // can be resolved from the package folder. In browsers bundlers generally
       // take care of WASM assets automatically.
-      let maybe: any;
+      let maybe: unknown;
       try {
-        if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+        const globalProc = globalThis as unknown as { process?: { versions?: { node?: unknown } } };
+        if (typeof globalProc.process !== 'undefined' && globalProc.process.versions && globalProc.process.versions.node) {
           // node environment — use createRequire to resolve the package-relative wasm path
           // Import dynamically so bundlers don't try to polyfill it.
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
+           
           const { createRequire } = await import('module');
           const req = createRequire(import.meta.url);
-          maybe = await initializer({ locateFile: (f: string) => req.resolve(`@dimforge/rapier3d-compat/${f}`) });
+          maybe = await initFn({ locateFile: (f: string) => req.resolve(`@dimforge/rapier3d-compat/${f}`) });
         } else {
           maybe = await initializer();
         }
-      } catch (err) {
-        // Retry without options if the above pattern isn't supported by this build
-        maybe = await initializer();
+        } catch {
+          // Retry without options if the above pattern isn't supported by this build
+          maybe = await initFn();
       }
 
-      cached = maybe || mod;
+      cached = (maybe ?? mod) as RapierModule;
     } else {
       cached = mod;
     }

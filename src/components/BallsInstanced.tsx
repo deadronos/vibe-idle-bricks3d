@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { RapierWorld, BallState } from '../engine/rapier/rapierWorld';
@@ -10,7 +10,7 @@ interface BallsInstancedProps {
   radius?: number;
 }
 
-export const BallsInstanced: React.FC<BallsInstancedProps> = ({ world, maxInstances = 128, radius = 0.25 }) => {
+export function BallsInstanced({ world, maxInstances = 128, radius = 0.25 }: BallsInstancedProps) {
   const meshRef = useRef<THREE.InstancedMesh | null>(null);
   const idToIndex = useRef<Map<string, number>>(new Map());
   const tmpMat = useMemo(() => new THREE.Matrix4(), []);
@@ -37,7 +37,7 @@ export const BallsInstanced: React.FC<BallsInstancedProps> = ({ world, maxInstan
     }
 
     // Update instance matrices
-    let any = false;
+    let updated = false;
     for (const s of states) {
       const idx = idToIndex.current.get(s.id);
       if (idx === undefined) continue;
@@ -48,16 +48,16 @@ export const BallsInstanced: React.FC<BallsInstancedProps> = ({ world, maxInstan
       tmpMat.scale(new THREE.Vector3(radius, radius, radius));
 
       meshRef.current.setMatrixAt(idx, tmpMat);
-      any = true;
+      updated = true;
     }
 
-    if (any) {
+    if (updated) {
       meshRef.current.instanceMatrix.needsUpdate = true;
     }
   });
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined as any, undefined as any, maxInstances]}>
+    <instancedMesh ref={meshRef} args={[undefined as unknown as THREE.BufferGeometry, undefined as unknown as THREE.Material, maxInstances]}>
       <sphereGeometry args={[radius, 8, 8]} />
       <meshStandardMaterial color="white" />
     </instancedMesh>

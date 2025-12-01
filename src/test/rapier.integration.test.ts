@@ -1,11 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useGameStore, buildInitialState } from '../store/gameStore';
+import type { Brick } from '../store/types';
 
 describe('Rapier integration helpers (store)', () => {
   beforeEach(() => {
     // Reset store to a clean state
     try {
-      (useGameStore as any).persist?.clearStorage?.();
+      // persist is an optional middleware property on the store
+      const storeAny = useGameStore as unknown as { persist?: { clearStorage?: () => void } };
+      storeAny.persist?.clearStorage?.();
     } catch {
       // ignore
     }
@@ -13,7 +16,7 @@ describe('Rapier integration helpers (store)', () => {
   });
 
   it('applyHits reduces brick health and does not increment combo for single hit', () => {
-    const brick = { id: 'b1', position: [0, 0, 0] as any, health: 3, maxHealth: 3, color: '#fff', value: 5, type: 'normal' } as any;
+    const brick: Brick = { id: 'b1', position: [0, 0, 0], health: 3, maxHealth: 3, color: '#fff', value: 5, type: 'normal' };
 
     useGameStore.setState({ bricks: [brick], comboCount: 0, comboMultiplier: 1 });
 
@@ -27,9 +30,9 @@ describe('Rapier integration helpers (store)', () => {
   });
 
   it('applyHits increments combo when multiple bricks are hit in same frame', () => {
-    const bricks = [
-      { id: 'b1', position: [0, 0, 0] as any, health: 3, maxHealth: 3, color: '#fff', value: 5, type: 'normal' } as any,
-      { id: 'b2', position: [1, 0, 0] as any, health: 3, maxHealth: 3, color: '#fff', value: 5, type: 'normal' } as any,
+    const bricks: Brick[] = [
+      { id: 'b1', position: [0, 0, 0], health: 3, maxHealth: 3, color: '#fff', value: 5, type: 'normal' },
+      { id: 'b2', position: [1, 0, 0], health: 3, maxHealth: 3, color: '#fff', value: 5, type: 'normal' },
     ];
 
     useGameStore.setState({ bricks, comboCount: 0, comboMultiplier: 1 });

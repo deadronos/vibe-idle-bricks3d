@@ -1,9 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import type { Ball } from '../store/types';
 import { useGameStore, ARENA_SIZE } from '../store/gameStore';
 import { stepBallFrame } from './collision';
 import { initRapier, resetRapier } from './rapier/rapierInit';
 import { createWorld } from './rapier/rapierWorld';
+import type { RapierWorld, BallState } from './rapier/rapierWorld';
 import { setWorld, resetAll, setModule } from './rapier/rapierRuntime';
 
 export function FrameManager() {
@@ -13,7 +15,7 @@ export function FrameManager() {
   const resetCombo = useGameStore((state) => state.resetCombo);
 
   // Refs for Rapier runtime when enabled
-  const rapierWorldRef = useRef<any | null>(null);
+  const rapierWorldRef = useRef<RapierWorld | null>(null);
   const regBallIds = useRef<Set<string>>(new Set());
   const regBrickIds = useRef<Set<string>>(new Set());
 
@@ -23,8 +25,8 @@ export function FrameManager() {
       if (rapierWorldRef.current) {
         try {
           rapierWorldRef.current.destroy();
-        } catch {
-          // ignore
+        } catch (e) {
+          void e;
         }
         rapierWorldRef.current = null;
       }
@@ -61,21 +63,21 @@ export function FrameManager() {
               setWorld(w);
 
               // Register existing bricks and balls
-              for (const b of bricks) {
-                try {
-                  w.addBrick(b);
-                  regBrickIds.current.add(b.id);
-                } catch {
-                  // ignore registration failure
-                }
+                      for (const b of bricks) {
+                        try {
+                          w.addBrick(b);
+                          regBrickIds.current.add(b.id);
+                        } catch (e) {
+                          void e;
+                        }
               }
 
               for (const b of balls) {
                 try {
                   w.addBall(b);
                   regBallIds.current.add(b.id);
-                } catch {
-                  // ignore
+                } catch (e) {
+                  void e;
                 }
               }
 
@@ -98,7 +100,9 @@ export function FrameManager() {
           if (!regBallIds.current.has(b.id)) {
             try {
               w.addBall(b);
-            } catch {}
+            } catch (e) {
+              void e;
+            }
             regBallIds.current.add(b.id);
           }
         }
@@ -108,7 +112,9 @@ export function FrameManager() {
           if (!ballIds.has(id)) {
             try {
               w.removeBall(id);
-            } catch {}
+            } catch (e) {
+              void e;
+            }
             regBallIds.current.delete(id);
           }
         }
@@ -119,7 +125,9 @@ export function FrameManager() {
           if (!regBrickIds.current.has(br.id)) {
             try {
               w.addBrick(br);
-            } catch {}
+            } catch (e) {
+              void e;
+            }
             regBrickIds.current.add(br.id);
           }
         }
@@ -128,7 +136,9 @@ export function FrameManager() {
           if (!brickIds.has(id)) {
             try {
               w.removeBrick(id);
-            } catch {}
+            } catch (e) {
+              void e;
+            }
             regBrickIds.current.delete(id);
           }
         }
@@ -154,17 +164,23 @@ export function FrameManager() {
 
         // Read back ball states and update store so UI/legacy consumers stay consistent
         try {
-          const states = w.getBallStates();
+          const states: BallState[] = w.getBallStates();
           if (states && states.length) {
-            const next = balls.map((b) => {
-              const s = states.find((x: any) => x.id === b.id);
+            const next: Ball[] = balls.map((b) => {
+              const s = states.find((x) => x.id === b.id);
               if (!s) return b;
-              return { ...b, position: [s.position[0], s.position[1], s.position[2]], velocity: [s.velocity[0], s.velocity[1], s.velocity[2]] };
+
+              return {
+                ...b,
+                position: [s.position[0], s.position[1], s.position[2]] as [number, number, number],
+                velocity: [s.velocity[0], s.velocity[1], s.velocity[2]] as [number, number, number],
+              };
             });
+
             useGameStore.setState({ balls: next });
           }
         } catch {
-          // ignore
+          // best-effort; ignore transform reading errors
         }
       }
 

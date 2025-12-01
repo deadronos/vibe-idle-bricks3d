@@ -68,8 +68,7 @@ export function ParticleSystem() {
     useFrame((_state, delta) => {
         if (!meshRef.current) return;
 
-        let activeCount = 0;
-
+        // track active particles if needed (not currently used)
         particles.current.forEach((particle, i) => {
             if (!particle.active) {
                 // Hide inactive particles
@@ -87,7 +86,7 @@ export function ParticleSystem() {
             if (particle.life <= 0) {
                 particle.active = false;
             } else {
-                activeCount++;
+                // (count intentionally not tracked)
                 dummy.position.copy(particle.position);
                 const scale = particle.scale * (particle.life / PARTICLE_LIFE);
                 dummy.scale.setScalar(scale);

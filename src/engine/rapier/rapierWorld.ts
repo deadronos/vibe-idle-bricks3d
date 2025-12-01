@@ -9,7 +9,45 @@ export interface BallState {
   velocity: Vec3;
 }
 
-export type RapierModule = any;
+type RapierWorldRuntime = {
+  createRigidBody: (desc: unknown) => unknown;
+  createCollider: (colliderDesc: unknown, parent?: unknown) => unknown;
+  removeRigidBody?: (obj: unknown) => void;
+  step?: () => void;
+  free?: () => void;
+};
+
+type RapierBody = {
+  handle?: unknown;
+  setTranslation?: (x: number, y: number, z: number) => unknown;
+  setTranslationRaw?: (x: number, y: number, z: number) => unknown;
+  setLinvel?: (x: number, y: number, z: number) => unknown;
+  translation?: () => { x?: number; y?: number; z?: number } | number[];
+  linvel?: () => { x?: number; y?: number; z?: number } | number[];
+};
+
+type RigidBodyDescBuilder = {
+  setTranslation: (x: number, y: number, z: number) => RigidBodyDescBuilder;
+  setLinvel?: (x: number, y: number, z: number) => RigidBodyDescBuilder;
+  setTranslationRaw?: (x: number, y: number, z: number) => RigidBodyDescBuilder;
+};
+
+type ColliderDescBuilder = {
+  setRestitution: (n: number) => ColliderDescBuilder;
+  setFriction: (n: number) => ColliderDescBuilder;
+};
+
+export type RapierModule = {
+  World: new (gravity: { x: number; y: number; z: number }) => RapierWorldRuntime;
+  RigidBodyDesc: {
+    dynamic: () => RigidBodyDescBuilder;
+    fixed: () => RigidBodyDescBuilder;
+  };
+  ColliderDesc: {
+    ball: (r: number) => ColliderDescBuilder;
+    cuboid: (x: number, y: number, z: number) => ColliderDescBuilder;
+  };
+};
 
 export interface RapierWorld {
   addBall: (b: Ball) => void;
@@ -25,8 +63,9 @@ export interface RapierWorld {
 // Minimal wrapper around the rapier runtime. The implementation deliberately
 // keeps types loose and falls back to a simple overlap detector if the
 // runtime doesn't expose contact event APIs in an environment-dependent way.
-export function createWorld(rapier: RapierModule, gravity = { x: 0, y: 0, z: 0 }): RapierWorld {
-  let world: any;
+export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }): RapierWorld {
+  const rapier = rapierParam as RapierModule;
+  let world: RapierWorldRuntime | undefined;
   try {
     world = new rapier.World(gravity);
   } catch (err) {
@@ -34,38 +73,47 @@ export function createWorld(rapier: RapierModule, gravity = { x: 0, y: 0, z: 0 }
     throw new Error(`Failed to create Rapier World — runtime may not be initialized or WASM failed to load: ${(err as Error).message}`);
   }
 
-  const ballBodies = new Map<string, any>();
-  const brickBodies = new Map<string, { body: any; size: { x: number; y: number; z: number } }>();
+  if (!world) throw new Error('Failed to initialize Rapier world');
+  const runtime = world as RapierWorldRuntime;
+
+  const ballBodies = new Map<string, RapierBody | undefined>();
+  const brickBodies = new Map<string, { body: RapierBody | undefined; size: { x: number; y: number; z: number } }>();
 
   function addBall(b: Ball) {
     if (ballBodies.has(b.id)) {
       // Update existing body's transform and velocity if possible
       const existing = ballBodies.get(b.id);
       try {
-        if (existing.setTranslation) existing.setTranslation(b.position[0], b.position[1], b.position[2]);
-        else if (existing.setTranslationRaw) existing.setTranslationRaw(b.position[0], b.position[1], b.position[2]);
-        if (existing.setLinvel) existing.setLinvel(b.velocity[0], b.velocity[1], b.velocity[2]);
-      } catch {
-        // best-effort — ignore if not supported
+        const ex = existing ?? undefined;
+        if (ex && typeof ex.setTranslation === 'function') ex.setTranslation(b.position[0], b.position[1], b.position[2]);
+        else if (ex && typeof ex.setTranslationRaw === 'function') ex.setTranslationRaw(b.position[0], b.position[1], b.position[2]);
+        if (ex && typeof ex.setLinvel === 'function') ex.setLinvel(b.velocity[0], b.velocity[1], b.velocity[2]);
+      } catch (e) {
+        void e;
       }
       return;
     }
-    const desc = rapier.RigidBodyDesc.dynamic()
-      .setTranslation(b.position[0], b.position[1], b.position[2])
-      .setLinvel(b.velocity[0], b.velocity[1], b.velocity[2]);
+    const descBuilder = rapier.RigidBodyDesc!.dynamic();
+    descBuilder.setTranslation(b.position[0], b.position[1], b.position[2]);
+    if (typeof descBuilder.setLinvel === 'function') {
+      descBuilder.setLinvel(b.velocity[0], b.velocity[1], b.velocity[2]);
+    }
 
-    const body = world.createRigidBody(desc);
+    const body = runtime.createRigidBody(descBuilder) as RapierBody | undefined;
 
-    const collider = rapier.ColliderDesc.ball(b.radius).setRestitution(1).setFriction(0);
+    const collider = rapier.ColliderDesc!.ball(b.radius).setRestitution(1).setFriction(0);
     // createCollider accepts a parent body handle or the body object depending on build
     try {
-      if (body.handle !== undefined) world.createCollider(collider, body.handle);
-      else world.createCollider(collider, body);
-    } catch {
+      const bAs = body as { handle?: unknown } | undefined;
+      if (bAs && bAs.handle !== undefined) runtime.createCollider(collider, bAs.handle);
+      else runtime.createCollider(collider, body);
+    } catch (e) {
       // Some builds may return a plain handle instead — tolerate both styles.
+      void e;
       try {
-        world.createCollider(collider, body);
-      } catch {
+        runtime.createCollider(collider, body);
+      } catch (innerErr) {
+        void innerErr;
         // ignore; collider is optional for the PoC step (we'll still be able to read transforms)
       }
     }
@@ -78,7 +126,8 @@ export function createWorld(rapier: RapierModule, gravity = { x: 0, y: 0, z: 0 }
     if (!b) return;
     try {
       // World exposes removeRigidBody in several builds
-      if (typeof world.removeRigidBody === 'function') world.removeRigidBody(b.handle ?? b);
+      const bAs = b as { handle?: unknown } | undefined;
+      if (typeof runtime.removeRigidBody === 'function') runtime.removeRigidBody(bAs?.handle ?? b);
     } catch {
       // ignore
     }
@@ -92,30 +141,34 @@ export function createWorld(rapier: RapierModule, gravity = { x: 0, y: 0, z: 0 }
       if (info) {
         try {
           const b = info.body;
-          if (b.setTranslation) b.setTranslation(brick.position[0], brick.position[1], brick.position[2]);
-          else if (b.setTranslationRaw) b.setTranslationRaw(brick.position[0], brick.position[1], brick.position[2]);
-        } catch {
-          // ignore
+          if (b && typeof b.setTranslation === 'function') b.setTranslation(brick.position[0], brick.position[1], brick.position[2]);
+          else if (b && typeof b.setTranslationRaw === 'function') b.setTranslationRaw(brick.position[0], brick.position[1], brick.position[2]);
+        } catch (e) {
+          void e;
         }
       }
       return;
     }
-    const desc = rapier.RigidBodyDesc.fixed().setTranslation(brick.position[0], brick.position[1], brick.position[2]);
-    const body = world.createRigidBody(desc);
+    const descBuilder = rapier.RigidBodyDesc!.fixed();
+    descBuilder.setTranslation(brick.position[0], brick.position[1], brick.position[2]);
+    const body = runtime.createRigidBody(descBuilder) as RapierBody | undefined;
 
     const halfX = BRICK_HALF_SIZE.x;
     const halfY = BRICK_HALF_SIZE.y;
     const halfZ = BRICK_HALF_SIZE.z;
 
-    const collider = rapier.ColliderDesc.cuboid(halfX, halfY, halfZ).setRestitution(1).setFriction(0);
+    const collider = rapier.ColliderDesc!.cuboid(halfX, halfY, halfZ).setRestitution(1).setFriction(0);
 
     try {
-      if (body.handle !== undefined) world.createCollider(collider, body.handle);
-      else world.createCollider(collider, body);
-    } catch {
+      const bAs = body as { handle?: unknown } | undefined;
+      if (bAs && bAs.handle !== undefined) runtime.createCollider(collider, bAs.handle);
+      else runtime.createCollider(collider, body);
+    } catch (e) {
+      void e;
       try {
-        world.createCollider(collider, body);
-      } catch {
+        runtime.createCollider(collider, body);
+      } catch (innerErr) {
+        void innerErr;
         // ignore
       }
     }
@@ -127,9 +180,10 @@ export function createWorld(rapier: RapierModule, gravity = { x: 0, y: 0, z: 0 }
     const info = brickBodies.get(id);
     if (!info) return;
     try {
-      if (typeof world.removeRigidBody === 'function') world.removeRigidBody(info.body.handle ?? info.body);
-    } catch {
-      // ignore
+      const bAs = info.body as { handle?: unknown } | undefined;
+      if (typeof runtime.removeRigidBody === 'function') runtime.removeRigidBody(bAs?.handle ?? info.body);
+    } catch (e) {
+      void e;
     }
     brickBodies.delete(id);
   }
@@ -137,19 +191,34 @@ export function createWorld(rapier: RapierModule, gravity = { x: 0, y: 0, z: 0 }
   function step(_dt?: number) {
     // Most compat builds expose a simple step() helper; call without args.
     // We deliberately ignore _dt here — tests will step the world repeatedly to emulate fixed-step integration.
-    if (typeof world.step === 'function') world.step();
+    void _dt;
+    if (typeof runtime.step === 'function') runtime.step();
   }
 
   function getBallStates(): BallState[] {
     const out: BallState[] = [];
     for (const [id, body] of ballBodies.entries()) {
       try {
-        // Some bindings expose translation() / linvel() methods
-        const t = body.translation?.() ?? body.translation ?? { x: 0, y: 0, z: 0 };
-        const v = body.linvel?.() ?? body.linvel ?? { x: 0, y: 0, z: 0 };
+        if (!body) {
+          out.push({ id, position: [0, 0, 0], velocity: [0, 0, 0] });
+          continue;
+        }
 
-        out.push({ id, position: [t.x ?? t[0] ?? 0, t.y ?? t[1] ?? 0, t.z ?? t[2] ?? 0], velocity: [v.x ?? v[0] ?? 0, v.y ?? v[1] ?? 0, v.z ?? v[2] ?? 0] });
-      } catch {
+        // Normalize translation/linvel shapes — some builds return objects, others arrays
+        const tRaw = typeof body.translation === 'function' ? body.translation() : body.translation;
+        const vRaw = typeof body.linvel === 'function' ? body.linvel() : body.linvel;
+
+        const px = Array.isArray(tRaw) ? tRaw[0] ?? 0 : tRaw?.x ?? 0;
+        const py = Array.isArray(tRaw) ? tRaw[1] ?? 0 : tRaw?.y ?? 0;
+        const pz = Array.isArray(tRaw) ? tRaw[2] ?? 0 : tRaw?.z ?? 0;
+
+        const vx = Array.isArray(vRaw) ? vRaw[0] ?? 0 : vRaw?.x ?? 0;
+        const vy = Array.isArray(vRaw) ? vRaw[1] ?? 0 : vRaw?.y ?? 0;
+        const vz = Array.isArray(vRaw) ? vRaw[2] ?? 0 : vRaw?.z ?? 0;
+
+        out.push({ id, position: [px, py, pz], velocity: [vx, vy, vz] });
+      } catch (e) {
+        void e;
         out.push({ id, position: [0, 0, 0], velocity: [0, 0, 0] });
       }
     }
@@ -166,9 +235,16 @@ export function createWorld(rapier: RapierModule, gravity = { x: 0, y: 0, z: 0 }
 
     for (const ball of ballStates) {
       for (const [brickId, info] of brickBodies.entries()) {
-        const dx = ball.position[0] - (info.body.translation?.().x ?? info.body.translation?.[0] ?? 0);
-        const dy = ball.position[1] - (info.body.translation?.().y ?? info.body.translation?.[1] ?? 0);
-        const dz = ball.position[2] - (info.body.translation?.().z ?? info.body.translation?.[2] ?? 0);
+        const b = info.body;
+        // read translation safely
+        const tRaw = b ? (typeof b.translation === 'function' ? b.translation() : b.translation) : undefined;
+        const bx = Array.isArray(tRaw) ? tRaw[0] ?? 0 : tRaw?.x ?? 0;
+        const by = Array.isArray(tRaw) ? tRaw[1] ?? 0 : tRaw?.y ?? 0;
+        const bz = Array.isArray(tRaw) ? tRaw[2] ?? 0 : tRaw?.z ?? 0;
+
+        const dx = ball.position[0] - bx;
+        const dy = ball.position[1] - by;
+        const dz = ball.position[2] - bz;
 
         // closest point on AABB
         const cx = Math.max(-info.size.x / 2, Math.min(info.size.x / 2, dx));
@@ -196,7 +272,7 @@ export function createWorld(rapier: RapierModule, gravity = { x: 0, y: 0, z: 0 }
     ballBodies.clear();
     brickBodies.clear();
     try {
-      if (typeof world.free === 'function') world.free();
+      if (typeof runtime.free === 'function') runtime.free();
     } catch {
       // ignore
     }

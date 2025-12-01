@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { initRapier, resetRapier } from '../engine/rapier/rapierInit';
 import { createWorld } from '../engine/rapier/rapierWorld';
+import type { BallState, RapierWorld } from '../engine/rapier/rapierWorld';
 import { stepBallFrame } from '../engine/collision';
 import type { Ball, Brick } from '../store/types';
 
@@ -15,10 +16,6 @@ describe('Rapier PoC — init and single-ball vs single-brick parity', () => {
       const R = await initRapier();
       expect(R).toBeTruthy();
       ok = true;
-    } catch (err) {
-      // Initialization may fail in constrained CI or environments — fail with a helpful message.
-      // The PoC suite should not throw here; let the test fail so CI can be configured (assetsInclude or env).
-      throw err;
     } finally {
       resetRapier();
     }
@@ -51,10 +48,9 @@ describe('Rapier PoC — init and single-ball vs single-brick parity', () => {
     // Baseline: compute using stepBallFrame until the first hit.
     const baselineBall: Ball = JSON.parse(JSON.stringify(ball));
     let baselineHitAt = -1;
-    let baselineSteps = 0;
 
     for (let i = 0; i < 120; i++) {
-      baselineSteps++;
+      // step counter (not used) intentionally omitted
       const r = stepBallFrame(baselineBall, delta, { width: 100, height: 100, depth: 100 }, [brick]);
       baselineBall.position = r.nextPosition as [number, number, number];
       baselineBall.velocity = r.nextVelocity as [number, number, number];
@@ -68,7 +64,7 @@ describe('Rapier PoC — init and single-ball vs single-brick parity', () => {
 
     // PoC world: attempt to initialize rapier and simulate using the wrapper.
     const R = await initRapier();
-    let w: any;
+    let w: RapierWorld | undefined;
     try {
       w = createWorld(R, { x: 0, y: 0, z: 0 });
     } catch (err) {
@@ -84,11 +80,10 @@ describe('Rapier PoC — init and single-ball vs single-brick parity', () => {
     w.addBall(ball);
 
     let rapierHitAt = -1;
-    let rapierSteps = 0;
     const maxSteps = 120;
 
     for (let i = 0; i < maxSteps; i++) {
-      rapierSteps++;
+      // step counter (not used) intentionally omitted
       w.step(delta);
       const events = w.drainContactEvents();
       if (events.length) {
@@ -100,7 +95,7 @@ describe('Rapier PoC — init and single-ball vs single-brick parity', () => {
     // Even if rapier didn't produce an event via the wrapper fallback,
     // read ball states and check for changes consistent with a bounce.
     const states = w.getBallStates();
-    const s = states.find((x) => x.id === ball.id);
+    const s = states.find((x: BallState) => x.id === ball.id);
     expect(baselineHitAt).toBeGreaterThanOrEqual(0);
     // Ensure Rapier detected a collision (either via events or because the velocity sign flipped)
     const rapierDetected = rapierHitAt >= 0 || (s ? s.velocity[2] < 0 : false);

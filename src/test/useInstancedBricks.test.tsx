@@ -1,10 +1,10 @@
-import React from 'react';
+import type { Brick } from '../store/types';
 import { render } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { useInstancedBricks } from '../components/bricks/useInstancedBricks';
 import { setWorld, resetAll } from '../engine/rapier/rapierRuntime';
 
-function HookTest({ bricks }: { bricks: any[] }) {
+function HookTest({ bricks }: { bricks: Brick[] }) {
   // use the hook; it triggers useLayoutEffect which performs registration
   useInstancedBricks(bricks);
   return <div data-testid="hook" />;
@@ -17,13 +17,13 @@ describe('useInstancedBricks registration to rapier world', () => {
     const fakeWorld = {
       addBrick: add,
       removeBrick: remove,
-    } as any;
+    } as unknown as import('../engine/rapier/rapierWorld').RapierWorld;
 
     setWorld(fakeWorld);
 
-    const bricks = [
-      { id: 'b1', position: [0, 0, 0] },
-      { id: 'b2', position: [1, 0, 0] },
+    const bricks: Brick[] = [
+      { id: 'b1', position: [0, 0, 0] as [number, number, number], health: 1, maxHealth: 1, color: '#fff', value: 1, type: 'normal' },
+      { id: 'b2', position: [1, 0, 0] as [number, number, number], health: 1, maxHealth: 1, color: '#fff', value: 1, type: 'normal' },
     ];
 
     const r = render(<HookTest bricks={bricks} />);

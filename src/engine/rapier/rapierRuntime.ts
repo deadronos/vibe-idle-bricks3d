@@ -1,7 +1,7 @@
 import type { RapierWorld as RW } from './rapierWorld';
 
 let runtimeWorld: RW | null = null;
-let runtimeModule: any = null;
+let runtimeModule: unknown | undefined = undefined;
 
 export function setWorld(w: RW | null) {
   runtimeWorld = w;
@@ -15,16 +15,16 @@ export function resetWorld() {
   runtimeWorld = null;
 }
 
-export function setModule(m: any) {
+export function setModule(m: unknown) {
   runtimeModule = m;
 }
 
-export function getModule() {
+export function getModule(): unknown | undefined {
   return runtimeModule;
 }
 
 export function resetModule() {
-  runtimeModule = null;
+  runtimeModule = undefined;
 }
 
 export function resetAll() {

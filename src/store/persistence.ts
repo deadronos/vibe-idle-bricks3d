@@ -113,7 +113,9 @@ export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDep
   const unlockedAchievements = Array.isArray(state.unlockedAchievements)
     ? state.unlockedAchievements.filter((id): id is string => typeof id === 'string')
     : [];
-  const settings = state.settings && typeof state.settings === 'object' ? state.settings : {};
+  const settings = state.settings && typeof state.settings === 'object'
+    ? (state.settings as GameState['settings'])
+    : { enableBloom: true, enableShadows: true, enableSound: true, enableParticles: true };
 
   // We'll attempt to apply rehydration synchronously when possible to avoid
   // extra frame delay. However, in some initialization orders the store

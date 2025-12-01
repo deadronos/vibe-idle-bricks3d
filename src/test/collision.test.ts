@@ -28,6 +28,7 @@ describe('stepBallFrame - walls and bricks', () => {
 
     const brick: Brick = {
       id: 'brick-1',
+      type: 'normal',
       position: [0, 0, 0],
       health: 10,
       maxHealth: 10,
