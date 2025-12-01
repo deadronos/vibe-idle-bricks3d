@@ -3,10 +3,8 @@ import { useFrame } from '@react-three/fiber';
 import type { Ball } from '../store/types';
 import { useGameStore, ARENA_SIZE } from '../store/gameStore';
 import { stepBallFrame } from './collision';
-import { initRapier, resetRapier } from './rapier/rapierInit';
-import { createWorld } from './rapier/rapierWorld';
+import { RapierPhysicsSystem } from './rapier/RapierPhysicsSystem';
 import type { RapierWorld, BallState } from './rapier/rapierWorld';
-import { setWorld, resetAll, setModule } from './rapier/rapierRuntime';
 
 export function FrameManager() {
   const isPaused = useGameStore((state) => state.isPaused);
@@ -22,16 +20,12 @@ export function FrameManager() {
   useEffect(() => {
     // Clean up rapier resources on unmount
     return () => {
-      if (rapierWorldRef.current) {
-        try {
-          rapierWorldRef.current.destroy();
-        } catch (e) {
-          void e;
-        }
-        rapierWorldRef.current = null;
+      try {
+        RapierPhysicsSystem.destroy();
+      } catch (e) {
+        void e;
       }
-      resetAll();
-      resetRapier();
+      rapierWorldRef.current = null;
     };
   }, []);
 
@@ -54,22 +48,19 @@ export function FrameManager() {
     if (useRapierPhysics) {
       // Initialize Rapier lazily if toggle was enabled but not initialized yet
       if (!rapierWorldRef.current && state.useRapierPhysics) {
-        initRapier()
-          .then((R) => {
+        RapierPhysicsSystem.init()
+          .then((w) => {
             try {
-              const w = createWorld(R, { x: 0, y: 0, z: 0 });
               rapierWorldRef.current = w;
-              setModule(R);
-              setWorld(w);
 
               // Register existing bricks and balls
-                      for (const b of bricks) {
-                        try {
-                          w.addBrick(b);
-                          regBrickIds.current.add(b.id);
-                        } catch (e) {
-                          void e;
-                        }
+              for (const b of bricks) {
+                try {
+                  w.addBrick(b);
+                  regBrickIds.current.add(b.id);
+                } catch (e) {
+                  void e;
+                }
               }
 
               for (const b of balls) {
@@ -80,19 +71,20 @@ export function FrameManager() {
                   void e;
                 }
               }
-
-              // Mark rapier active
-              useGameStore.setState({ rapierActive: true, rapierInitError: null });
             } catch (err) {
-              useGameStore.setState({ useRapierPhysics: false, rapierActive: false, rapierInitError: (err as Error).message });
+              try {
+                useGameStore.setState({ useRapierPhysics: false, rapierActive: false, rapierInitError: (err as Error).message });
+              } catch {
+                /* ignore */
+              }
             }
           })
-          .catch((err) => {
-            useGameStore.setState({ useRapierPhysics: false, rapierActive: false, rapierInitError: (err as Error).message });
+          .catch(() => {
+            // RapierPhysicsSystem.init handles store state on error
           });
       }
 
-      const w = rapierWorldRef.current;
+      const w = RapierPhysicsSystem.getWorld();
       if (w) {
         // Sync newly-added balls
         const ballIds = new Set(balls.map((b) => b.id));
