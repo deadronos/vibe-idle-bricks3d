@@ -148,6 +148,26 @@ export const RapierPhysicsSystem = {
       return [];
     }
   },
+
+  applyImpulse(ballId: string, impulse: [number, number, number], point?: [number, number, number]) {
+    const w = _getWorld();
+    if (!w || typeof (w as any).applyImpulseToBall !== 'function') return false;
+    try {
+      return (w as any).applyImpulseToBall(ballId, impulse, point);
+    } catch {
+      return false;
+    }
+  },
+
+  applyTorque(ballId: string, torque: [number, number, number]) {
+    const w = _getWorld();
+    if (!w || typeof (w as any).applyTorqueToBall !== 'function') return false;
+    try {
+      return (w as any).applyTorqueToBall(ballId, torque);
+    } catch {
+      return false;
+    }
+  },
 };
 
 export type RapierPhysicsSystemType = typeof RapierPhysicsSystem;

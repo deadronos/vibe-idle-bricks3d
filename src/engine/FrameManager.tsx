@@ -167,6 +167,15 @@ export function FrameManager() {
             })();
             const impulse = (e as any).impulse ?? (by ? by.damage : 1);
 
+            // Apply physical impulse/torque to the ball if the runtime supports it.
+            try {
+              // Prefer applying an impulse at contact point (world space) so Rapier generates torque naturally
+              const impVec: [number, number, number] = [ (normal as number[])[0] * (impulse as number), (normal as number[])[1] * (impulse as number), (normal as number[])[2] * (impulse as number) ];
+              RapierPhysicsSystem.applyImpulse(e.ballId, impVec as [number, number, number], point as [number, number, number]);
+            } catch {
+              /* ignore failures */
+            }
+
             handleContact({ ballId: e.ballId, brickId: e.brickId, point, normal, relativeVelocity: relVel, impulse }, { applyDamage: false });
           }
         }

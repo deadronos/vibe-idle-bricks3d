@@ -1,7 +1,7 @@
 import { BRICK_HALF_SIZE } from '../collision/constants';
 import type { Ball, Brick } from '../../store/types';
 
-type Vec3 = [number, number, number];
+export type Vec3 = [number, number, number];
 type Quat = [number, number, number, number];
 
 export type ContactEvent = {
@@ -72,6 +72,8 @@ export interface RapierWorld {
   step: (dt?: number) => void;
   drainContactEvents: () => ContactEvent[];
   getBallStates: () => BallState[];
+  applyImpulseToBall?: (id: string, impulse: Vec3, point?: Vec3) => boolean;
+  applyTorqueToBall?: (id: string, torque: Vec3) => boolean;
   destroy: () => void;
 }
 
@@ -501,6 +503,124 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
     } catch {
       // ignore
     }
+  }
+
+  function applyImpulseToBall(id: string, impulse: Vec3, point?: Vec3) {
+    const b = ballBodies.get(id);
+    if (!b) return false;
+    try {
+      const impObj = { x: impulse[0], y: impulse[1], z: impulse[2] };
+
+      // Try common Rapier runtime method shapes
+      const anyB: any = b as any;
+      if (typeof anyB.applyImpulse === 'function') {
+        try {
+          anyB.applyImpulse(impObj, true);
+          return true;
+        } catch {
+          try {
+            anyB.applyImpulse(impulse, true);
+            return true;
+          } catch {
+            // continue to other fallbacks
+          }
+        }
+      }
+
+      if (typeof anyB.applyImpulseAtPoint === 'function' && point) {
+        try {
+          anyB.applyImpulseAtPoint(impObj, { x: point[0], y: point[1], z: point[2] }, true);
+          return true;
+        } catch {
+          try {
+            anyB.applyImpulseAtPoint(impulse, point, true);
+            return true;
+          } catch {
+            // continue
+          }
+        }
+      }
+
+      // Fallback: nudge linear velocity
+      const vRaw = typeof anyB.linvel === 'function' ? anyB.linvel() : anyB.linvel;
+      let vx = Array.isArray(vRaw) ? vRaw[0] ?? 0 : vRaw?.x ?? 0;
+      let vy = Array.isArray(vRaw) ? vRaw[1] ?? 0 : vRaw?.y ?? 0;
+      let vz = Array.isArray(vRaw) ? vRaw[2] ?? 0 : vRaw?.z ?? 0;
+
+      // Heuristic scale so impulses remain reasonable
+      const scale = 0.5;
+      vx += impulse[0] * scale;
+      vy += impulse[1] * scale;
+      vz += impulse[2] * scale;
+
+      if (typeof anyB.setLinvel === 'function') {
+        try {
+          anyB.setLinvel(vx, vy, vz);
+          return true;
+        } catch {
+          // ignore
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    return false;
+  }
+
+  function applyTorqueToBall(id: string, torque: Vec3) {
+    const b = ballBodies.get(id);
+    if (!b) return false;
+    try {
+      const anyB: any = b as any;
+
+      if (typeof anyB.applyTorque === 'function') {
+        try {
+          anyB.applyTorque({ x: torque[0], y: torque[1], z: torque[2] }, true);
+          return true;
+        } catch {
+          try {
+            anyB.applyTorque(torque, true);
+            return true;
+          } catch {
+            // continue
+          }
+        }
+      }
+
+      if (typeof anyB.setAngvel === 'function') {
+        try {
+          anyB.setAngvel(torque[0], torque[1], torque[2]);
+          return true;
+        } catch {
+          // ignore
+        }
+      }
+
+      // Fallback: attempt to nudge angular velocity if accessor exists
+      const avRaw = typeof anyB.angvel === 'function' ? anyB.angvel() : anyB.angvel;
+      let avx = Array.isArray(avRaw) ? avRaw[0] ?? 0 : avRaw?.x ?? 0;
+      let avy = Array.isArray(avRaw) ? avRaw[1] ?? 0 : avRaw?.y ?? 0;
+      let avz = Array.isArray(avRaw) ? avRaw[2] ?? 0 : avRaw?.z ?? 0;
+
+      const scale = 0.5;
+      avx += torque[0] * scale;
+      avy += torque[1] * scale;
+      avz += torque[2] * scale;
+
+      if (typeof anyB.setAngvel === 'function') {
+        try {
+          anyB.setAngvel(avx, avy, avz);
+          return true;
+        } catch {
+          // ignore
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    return false;
   }
 
   return { addBall, removeBall, addBrick, removeBrick, step, drainContactEvents, getBallStates, destroy };
