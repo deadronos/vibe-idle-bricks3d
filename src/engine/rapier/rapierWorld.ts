@@ -93,6 +93,8 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
 
   const ballBodies = new Map<string, RapierBody | undefined>();
   const brickBodies = new Map<string, { body: RapierBody | undefined; size: { x: number; y: number; z: number } }>();
+  // Map of runtime handles (body or collider handles) -> game entity info { type, id }
+  const handleToEntity = new Map<any, { type: 'ball' | 'brick'; id: string }>();
 
   function addBall(b: Ball) {
     if (ballBodies.has(b.id)) {
@@ -118,19 +120,33 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
 
     const collider = rapier.ColliderDesc!.ball(b.radius).setRestitution(1).setFriction(0);
     // createCollider accepts a parent body handle or the body object depending on build
+    let createdCollider: unknown | undefined;
     try {
       const bAs = body as { handle?: unknown } | undefined;
-      if (bAs && bAs.handle !== undefined) runtime.createCollider(collider, bAs.handle);
-      else runtime.createCollider(collider, body);
+      if (bAs && bAs.handle !== undefined) {
+        createdCollider = runtime.createCollider(collider, bAs.handle);
+      } else {
+        createdCollider = runtime.createCollider(collider, body);
+      }
     } catch (e) {
-      // Some builds may return a plain handle instead — tolerate both styles.
+      // Some builds may return a plain handle or throw — tolerate both styles.
       void e;
       try {
-        runtime.createCollider(collider, body);
+        createdCollider = runtime.createCollider(collider, body);
       } catch (innerErr) {
         void innerErr;
         // ignore; collider is optional for the PoC step (we'll still be able to read transforms)
       }
+    }
+
+    // Attempt to capture runtime handles for mapping contact events back to game ids
+    try {
+      const bodyKey = (body as any)?.handle ?? body;
+      if (typeof bodyKey !== 'undefined' && bodyKey !== null) handleToEntity.set(bodyKey, { type: 'ball', id: b.id });
+      const collKey = (createdCollider as any)?.handle ?? createdCollider;
+      if (typeof collKey !== 'undefined' && collKey !== null) handleToEntity.set(collKey, { type: 'ball', id: b.id });
+    } catch {
+      /* ignore */
     }
 
     ballBodies.set(b.id, body);
@@ -142,9 +158,20 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
     try {
       // World exposes removeRigidBody in several builds
       const bAs = b as { handle?: unknown } | undefined;
-      if (typeof runtime.removeRigidBody === 'function') runtime.removeRigidBody(bAs?.handle ?? b);
+      const bodyKey = bAs?.handle ?? b;
+      if (typeof runtime.removeRigidBody === 'function') runtime.removeRigidBody(bodyKey);
+      // remove potential mappings
+      try {
+        handleToEntity.delete(bodyKey);
+      } catch {
+        /* ignore */
+      }
     } catch {
       // ignore
+    }
+    // Also remove any collider mappings that referenced this ball id
+    for (const [h, info] of Array.from(handleToEntity.entries())) {
+      if (info.type === 'ball' && info.id === id) handleToEntity.delete(h);
     }
     ballBodies.delete(id);
   }
@@ -174,18 +201,31 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
 
     const collider = rapier.ColliderDesc!.cuboid(halfX, halfY, halfZ).setRestitution(1).setFriction(0);
 
+    let createdCollider: unknown | undefined;
     try {
       const bAs = body as { handle?: unknown } | undefined;
-      if (bAs && bAs.handle !== undefined) runtime.createCollider(collider, bAs.handle);
-      else runtime.createCollider(collider, body);
+      if (bAs && bAs.handle !== undefined) {
+        createdCollider = runtime.createCollider(collider, bAs.handle);
+      } else {
+        createdCollider = runtime.createCollider(collider, body);
+      }
     } catch (e) {
       void e;
       try {
-        runtime.createCollider(collider, body);
+        createdCollider = runtime.createCollider(collider, body);
       } catch (innerErr) {
         void innerErr;
-        // ignore
       }
+    }
+
+    // Capture runtime handles for mapping
+    try {
+      const bodyKey = (body as any)?.handle ?? body;
+      if (typeof bodyKey !== 'undefined' && bodyKey !== null) handleToEntity.set(bodyKey, { type: 'brick', id: brick.id });
+      const collKey = (createdCollider as any)?.handle ?? createdCollider;
+      if (typeof collKey !== 'undefined' && collKey !== null) handleToEntity.set(collKey, { type: 'brick', id: brick.id });
+    } catch {
+      /* ignore */
     }
 
     brickBodies.set(brick.id, { body, size: { x: halfX * 2, y: halfY * 2, z: halfZ * 2 } });
@@ -196,9 +236,18 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
     if (!info) return;
     try {
       const bAs = info.body as { handle?: unknown } | undefined;
-      if (typeof runtime.removeRigidBody === 'function') runtime.removeRigidBody(bAs?.handle ?? info.body);
+      const bodyKey = bAs?.handle ?? info.body;
+      if (typeof runtime.removeRigidBody === 'function') runtime.removeRigidBody(bodyKey);
+      try {
+        handleToEntity.delete(bodyKey);
+      } catch {
+        /* ignore */
+      }
     } catch (e) {
       void e;
+    }
+    for (const [h, entry] of Array.from(handleToEntity.entries())) {
+      if (entry.type === 'brick' && entry.id === id) handleToEntity.delete(h);
     }
     brickBodies.delete(id);
   }
@@ -267,10 +316,122 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
   }
 
   function drainContactEvents() {
-    // Attempt to drain contacts from world if an event API exists.
-    // Many runtime builds expose narrow-phase / event queues — but shapes differ.
-    // For this PoC we fallback to a simple sphere-box overlap detector but
-    // include richer information (contact point, normal, relativeVelocity, impulse).
+    // Try to extract runtime-provided contact events (several rapier builds expose different APIs).
+    try {
+      const runtimeAny = runtime as any;
+
+      const tryCollect = (candidate: any): any[] | null => {
+        if (!candidate) return null;
+        try {
+          if (typeof candidate === 'function') {
+            const res = candidate();
+            if (res == null) return null;
+            if (Array.isArray(res)) return res;
+            // If res is iterable
+            if (typeof res[Symbol.iterator] === 'function') return Array.from(res as Iterable<any>);
+            return [res];
+          }
+          if (Array.isArray(candidate)) return candidate;
+          if (typeof candidate.drain === 'function') return candidate.drain();
+          if (typeof candidate.drainEvents === 'function') return candidate.drainEvents();
+          if (typeof candidate.getEvents === 'function') return candidate.getEvents();
+          if (typeof candidate.getContactEvents === 'function') return candidate.getContactEvents();
+          return null;
+        } catch {
+          return null;
+        }
+      };
+
+      // Candidate sources on the world object
+      const candidates = [
+        runtimeAny.getContactEvents,
+        runtimeAny.contactEvents,
+        runtimeAny.contactEventQueue,
+        runtimeAny.eventQueue,
+        runtimeAny.events,
+        runtimeAny.narrowPhase,
+        runtimeAny.getNarrowPhase,
+      ];
+
+      for (const cand of candidates) {
+        const evs = tryCollect(typeof cand === 'function' ? cand.bind(runtimeAny) : cand);
+        if (evs && evs.length) {
+          // Convert raw runtime events to ContactEvent[] using handleToEntity map
+          const out: ContactEvent[] = [];
+          for (const ev of evs) {
+            try {
+              // Heuristic: find handles on the event object
+              const possibleHandleKeys = ['collider1', 'collider2', 'colliderA', 'colliderB', 'body1', 'body2', 'bodyA', 'bodyB', 'rigidBody1', 'rigidBody2', 'a', 'b', 'object1', 'object2', 'handle1', 'handle2'];
+              let h1: any = undefined;
+              let h2: any = undefined;
+              for (let i = 0; i < possibleHandleKeys.length; i += 2) {
+                const k1 = possibleHandleKeys[i];
+                const k2 = possibleHandleKeys[i + 1];
+                if (ev[k1] !== undefined && ev[k2] !== undefined) {
+                  h1 = ev[k1];
+                  h2 = ev[k2];
+                  break;
+                }
+              }
+
+              // Fallback: look for numeric pair in array-like event
+              if (h1 === undefined && Array.isArray(ev) && ev.length >= 2) {
+                h1 = ev[0];
+                h2 = ev[1];
+              }
+
+              const unpack = (x: any) => (x && (x.handle !== undefined ? x.handle : x));
+              const key1 = unpack(h1);
+              const key2 = unpack(h2);
+
+              const e1 = key1 == null ? null : handleToEntity.get(key1) ?? handleToEntity.get(h1);
+              const e2 = key2 == null ? null : handleToEntity.get(key2) ?? handleToEntity.get(h2);
+
+              if (!e1 || !e2) continue;
+
+              let ballId: string | undefined;
+              let brickId: string | undefined;
+              if (e1.type === 'ball' && e2.type === 'brick') {
+                ballId = e1.id;
+                brickId = e2.id;
+              } else if (e2.type === 'ball' && e1.type === 'brick') {
+                ballId = e2.id;
+                brickId = e1.id;
+              } else {
+                // Not a ball-brick contact
+                continue;
+              }
+
+              const extractVec = (obj: any, keys: string[]) => {
+                for (const k of keys) {
+                  const v = obj?.[k];
+                  if (v === undefined) continue;
+                  if (Array.isArray(v)) return [v[0] ?? 0, v[1] ?? 0, v[2] ?? 0] as Vec3;
+                  if (typeof v === 'object' && v !== null && ('x' in v || 'y' in v || 'z' in v)) return [v.x ?? 0, v.y ?? 0, v.z ?? 0] as Vec3;
+                }
+                return undefined;
+              };
+
+              const point = extractVec(ev, ['point', 'contactPoint', 'worldPoint', 'p', 'pt', 'position']) ?? [0, 0, 0];
+              const normal = extractVec(ev, ['normal', 'contactNormal', 'n']) ?? undefined;
+              const relVel = extractVec(ev, ['relativeVelocity', 'relative_vel', 'vel', 'relativeVelocityWorld']) ?? undefined;
+              const impulse = (ev && (ev.impulse ?? ev.totalImpulse ?? ev.impulseMagnitude ?? ev.normalImpulse)) ?? undefined;
+
+              out.push({ ballId, brickId, point, normal: normal ?? [0, 0, 1], impulse, relativeVelocity: relVel });
+            } catch {
+              // ignore single-event failures
+              continue;
+            }
+          }
+
+          if (out.length) return out;
+        }
+      }
+    } catch {
+      // ignore runtime probing errors and fall back to overlap detector
+    }
+
+    // Many runtime builds don't expose a simple array — fall back to geometric overlap detection
     const out: ContactEvent[] = [];
 
     const ballStates = getBallStates();
