@@ -38,6 +38,18 @@ export function createWorld(rapier: RapierModule, gravity = { x: 0, y: 0, z: 0 }
   const brickBodies = new Map<string, { body: any; size: { x: number; y: number; z: number } }>();
 
   function addBall(b: Ball) {
+    if (ballBodies.has(b.id)) {
+      // Update existing body's transform and velocity if possible
+      const existing = ballBodies.get(b.id);
+      try {
+        if (existing.setTranslation) existing.setTranslation(b.position[0], b.position[1], b.position[2]);
+        else if (existing.setTranslationRaw) existing.setTranslationRaw(b.position[0], b.position[1], b.position[2]);
+        if (existing.setLinvel) existing.setLinvel(b.velocity[0], b.velocity[1], b.velocity[2]);
+      } catch {
+        // best-effort — ignore if not supported
+      }
+      return;
+    }
     const desc = rapier.RigidBodyDesc.dynamic()
       .setTranslation(b.position[0], b.position[1], b.position[2])
       .setLinvel(b.velocity[0], b.velocity[1], b.velocity[2]);
@@ -74,6 +86,20 @@ export function createWorld(rapier: RapierModule, gravity = { x: 0, y: 0, z: 0 }
   }
 
   function addBrick(brick: Brick) {
+    if (brickBodies.has(brick.id)) {
+      // Update transform if available
+      const info = brickBodies.get(brick.id);
+      if (info) {
+        try {
+          const b = info.body;
+          if (b.setTranslation) b.setTranslation(brick.position[0], brick.position[1], brick.position[2]);
+          else if (b.setTranslationRaw) b.setTranslationRaw(brick.position[0], brick.position[1], brick.position[2]);
+        } catch {
+          // ignore
+        }
+      }
+      return;
+    }
     const desc = rapier.RigidBodyDesc.fixed().setTranslation(brick.position[0], brick.position[1], brick.position[2]);
     const body = world.createRigidBody(desc);
 

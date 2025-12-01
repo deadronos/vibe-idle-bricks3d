@@ -1,6 +1,6 @@
 # [TASK006] Rapier Integration — FrameManager & Store
 
-**Status:** Pending  
+**Status:** Completed  
 **Added:** 2025-12-01  
 **Updated:** 2025-12-01
 
@@ -21,20 +21,22 @@ The `FrameManager` is the authoritative per-frame orchestrator. To make Rapier d
 
 ## Progress Tracking
 
-**Overall Status:** Not Started - 0%
+**Overall Status:** Completed - 100%
 
 ### Subtasks
 
 | ID  | Description                                            | Status        | Updated    | Notes |
 | --- | ------------------------------------------------------ | ------------- | ---------- | ----- |
-| 2.1 | Update `FrameManager` to init Rapier and step world     | Not Started   | 2025-12-01 |       |
-| 2.2 | Add event translation and forward API in `gameStore`    | Not Started   | 2025-12-01 |       |
-| 2.3 | Add env override `RAPIER=false`                         | Not Started   | 2025-12-01 | CI gating planned |
+| 2.1 | Update `FrameManager` to init Rapier and step world     | Completed     | 2025-12-01 | init on toggle + per-frame step |
+| 2.2 | Add event translation and forward API in `gameStore`    | Completed     | 2025-12-01 | applyHits + control flags added |
+| 2.3 | Add env override `RAPIER=false`                         | Completed     | 2025-12-01 | runtime toggle + safe fallback |
 
 ## Progress Log
 
 ### 2025-12-01
 
-- Task created and scoped; awaiting PoC verification before integration begins.
+- Implemented FrameManager integration: lazy init (on toggle), createWorld, per-frame step, event draining + forwarding.
+- Added store runtime flags (`useRapierPhysics`, `rapierActive`, `rapierInitError`) and `applyHits` helper.
+- Tests added for PoC and store forwarding.
 
 ---
