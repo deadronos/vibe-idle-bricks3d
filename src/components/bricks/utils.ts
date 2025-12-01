@@ -1,4 +1,4 @@
-import type { Brick } from '../../store/gameStore';
+import type { Brick } from '../../store/types';
 
 export const getDamageColor = (brick: Brick, isHovered: boolean) => {
   if (isHovered) return '#FFFFFF';

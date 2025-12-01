@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getDamageColor } from '../components/bricks/utils';
-import type { Brick } from '../store/gameStore';
+import type { Brick } from '../store/types';
 
 const makeBrick = (overrides: Partial<Brick> = {}): Brick => ({
   id: 'brick-1',
