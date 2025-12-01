@@ -1,6 +1,6 @@
 import { initRapier, resetRapier } from './rapierInit';
 import { createWorld } from './rapierWorld';
-import type { RapierWorld } from './rapierWorld';
+import type { RapierWorld, ContactEvent } from './rapierWorld';
 import { setModule, setWorld, getWorld as _getWorld, resetAll } from './rapierRuntime';
 import { useGameStore } from '../../store/gameStore';
 import type { Ball, Brick } from '../../store/types';
@@ -129,7 +129,7 @@ export const RapierPhysicsSystem = {
     }
   },
 
-  drainContactEvents(): Array<{ ballId: string; brickId: string }> {
+  drainContactEvents(): ContactEvent[] {
     const w = _getWorld();
     if (!w || typeof w.drainContactEvents !== 'function') return [];
     try {

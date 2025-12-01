@@ -4,6 +4,15 @@ import type { Ball, Brick } from '../../store/types';
 type Vec3 = [number, number, number];
 type Quat = [number, number, number, number];
 
+export type ContactEvent = {
+  ballId: string;
+  brickId: string;
+  point: Vec3;
+  normal: Vec3;
+  impulse?: number;
+  relativeVelocity?: Vec3;
+};
+
 export interface BallState {
   id: string;
   position: Vec3;
@@ -61,7 +70,7 @@ export interface RapierWorld {
   addBrick: (brick: Brick) => void;
   removeBrick: (id: string) => void;
   step: (dt?: number) => void;
-  drainContactEvents: () => Array<{ ballId: string; brickId: string }>; // minimal event shape
+  drainContactEvents: () => ContactEvent[];
   getBallStates: () => BallState[];
   destroy: () => void;
 }
@@ -260,8 +269,9 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
   function drainContactEvents() {
     // Attempt to drain contacts from world if an event API exists.
     // Many runtime builds expose narrow-phase / event queues — but shapes differ.
-    // For this PoC we fallback to a simple sphere-box overlap detector.
-    const hits: Array<{ ballId: string; brickId: string }> = [];
+    // For this PoC we fallback to a simple sphere-box overlap detector but
+    // include richer information (contact point, normal, relativeVelocity, impulse).
+    const out: ContactEvent[] = [];
 
     const ballStates = getBallStates();
 
@@ -278,7 +288,7 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
         const dy = ball.position[1] - by;
         const dz = ball.position[2] - bz;
 
-        // closest point on AABB
+        // closest point on AABB (local dx/dy/dz clamped to half-sizes)
         const cx = Math.max(-info.size.x / 2, Math.min(info.size.x / 2, dx));
         const cy = Math.max(-info.size.y / 2, Math.min(info.size.y / 2, dy));
         const cz = Math.max(-info.size.z / 2, Math.min(info.size.z / 2, dz));
@@ -291,12 +301,34 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
 
         // A tiny epsilon to be forgiving of numeric differences
         if (distance <= 0.5001) {
-          hits.push({ ballId: ball.id, brickId });
+          // Contact point on brick in world coordinates
+          const contactPoint: Vec3 = [bx + cx, by + cy, bz + cz];
+
+          // Normal: from contact point toward ball center
+          let nx = ball.position[0] - contactPoint[0];
+          let ny = ball.position[1] - contactPoint[1];
+          let nz = ball.position[2] - contactPoint[2];
+          const nlen = Math.sqrt(nx * nx + ny * ny + nz * nz);
+          if (nlen > 1e-6) {
+            nx /= nlen;
+            ny /= nlen;
+            nz /= nlen;
+          } else {
+            nx = 0; ny = 0; nz = 1;
+          }
+
+          const relVel: Vec3 = [ball.velocity[0], ball.velocity[1], ball.velocity[2]];
+          const speed = Math.sqrt(relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]);
+
+          // Heuristic impulse estimate: relative speed (no mass info available here)
+          const impulse = speed;
+
+          out.push({ ballId: ball.id, brickId, point: contactPoint, normal: [nx, ny, nz], impulse, relativeVelocity: relVel });
         }
       }
     }
 
-    return hits;
+    return out;
   }
 
   function destroy() {

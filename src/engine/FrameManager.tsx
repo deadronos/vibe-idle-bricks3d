@@ -158,11 +158,16 @@ export function FrameManager() {
           // Notify behaviors (do NOT re-apply damage here to avoid duplication)
           for (const e of events) {
             const by = balls.find((x) => x.id === e.ballId);
-            const point = by ? by.position : [0, 0, 0];
-            const relVel = by ? by.velocity : [0, 0, 0];
-            const speed = Math.sqrt(relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]);
-            const normal = speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
-            handleContact({ ballId: e.ballId, brickId: e.brickId, point, normal, relativeVelocity: relVel, impulse: by ? by.damage : 1 }, { applyDamage: false });
+            const point = (e as any).point ?? (by ? by.position : [0, 0, 0]);
+            const relVel = (e as any).relativeVelocity ?? (by ? by.velocity : [0, 0, 0]);
+            const normal = (e as any).normal ?? (() => {
+              const rv = relVel;
+              const speed = Math.sqrt(rv[0] * rv[0] + rv[1] * rv[1] + rv[2] * rv[2]);
+              return speed > 1e-6 ? [rv[0] / speed, rv[1] / speed, rv[2] / speed] : [0, 0, 1];
+            })();
+            const impulse = (e as any).impulse ?? (by ? by.damage : 1);
+
+            handleContact({ ballId: e.ballId, brickId: e.brickId, point, normal, relativeVelocity: relVel, impulse }, { applyDamage: false });
           }
         }
 
