@@ -4,6 +4,7 @@ import { useGameStore, ARENA_SIZE } from '../store/gameStore';
 import { stepBallFrame } from './collision';
 import { initRapier, resetRapier } from './rapier/rapierInit';
 import { createWorld } from './rapier/rapierWorld';
+import { setWorld, resetAll, setModule } from './rapier/rapierRuntime';
 
 export function FrameManager() {
   const isPaused = useGameStore((state) => state.isPaused);
@@ -27,6 +28,7 @@ export function FrameManager() {
         }
         rapierWorldRef.current = null;
       }
+      resetAll();
       resetRapier();
     };
   }, []);
@@ -55,6 +57,8 @@ export function FrameManager() {
             try {
               const w = createWorld(R, { x: 0, y: 0, z: 0 });
               rapierWorldRef.current = w;
+              setModule(R);
+              setWorld(w);
 
               // Register existing bricks and balls
               for (const b of bricks) {

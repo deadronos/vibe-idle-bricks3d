@@ -4,6 +4,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { getBrickFromInstance } from '../../engine/picking';
 import type { Brick } from '../../store/types';
 import { getDamageColor } from './utils';
+import { getWorld as getRapierWorld } from '../../engine/rapier/rapierRuntime';
 
 const tempObject = new Object3D();
 const tempColor = new Color();
@@ -71,6 +72,34 @@ export const useInstancedBricks = (bricks: Brick[]) => {
     if (mesh.instanceColor) {
       mesh.instanceColor.needsUpdate = true;
     }
+  }, [bricks]);
+
+  // Register bricks with rapier runtime if available so colliders exist immediately
+  useLayoutEffect(() => {
+    const world = getRapierWorld();
+    if (!world) return;
+
+    // Track which bricks we've registered
+    const registered = new Set<string>();
+
+    for (const b of bricks) {
+      try {
+        world.addBrick(b);
+        registered.add(b.id);
+      } catch {
+        // ignore
+      }
+    }
+
+    return () => {
+      for (const id of registered) {
+        try {
+          world.removeBrick(id);
+        } catch {
+          // ignore
+        }
+      }
+    };
   }, [bricks]);
 
   useLayoutEffect(() => {

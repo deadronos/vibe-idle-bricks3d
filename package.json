@@ -12,6 +12,7 @@
     "typecheck": "tsc -b --noEmit",
     "preview": "vite preview",
     "test": "vitest",
+    "test:rapier-smoke": "vitest run src/test/rapier.smoke.test.ts",
     "test:ui": "vitest --ui",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",

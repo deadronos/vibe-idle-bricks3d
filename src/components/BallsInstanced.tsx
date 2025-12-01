@@ -2,6 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { RapierWorld, BallState } from '../engine/rapier/rapierWorld';
+import { getWorld as getRapierWorld } from '../engine/rapier/rapierRuntime';
 
 interface BallsInstancedProps {
   world?: RapierWorld | null;
@@ -15,9 +16,11 @@ export const BallsInstanced: React.FC<BallsInstancedProps> = ({ world, maxInstan
   const tmpMat = useMemo(() => new THREE.Matrix4(), []);
 
   useFrame(() => {
-    if (!world || !meshRef.current) return;
+    // If caller didn't pass a world instance, try the shared runtime registry
+    const w = world ?? getRapierWorld();
+    if (!w || !meshRef.current) return;
 
-    const states: BallState[] = world.getBallStates();
+    const states: BallState[] = w.getBallStates();
 
     // Assign each ball an instance index (first-seen)
     for (const s of states) {
