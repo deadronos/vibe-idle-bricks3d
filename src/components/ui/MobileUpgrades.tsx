@@ -53,7 +53,9 @@ export function MobileUpgrades() {
     if (!open) return;
     const root = drawerRef.current;
     if (!root) return;
-    const focusables = root.querySelectorAll<HTMLElement>('a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])');
+    const focusables = root.querySelectorAll<HTMLElement>(
+      'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
+    );
     const first = focusables[0];
     const last = focusables[focusables.length - 1];
     if (first) first.focus();
@@ -153,25 +155,43 @@ export function MobileUpgrades() {
                 onClick={() => setOpen(false)}
               />
               <h3 id="mobile-upgrades-heading">Upgrades</h3>
-              <button className="close-button" onClick={() => setOpen(false)} aria-label="Close upgrades">✕</button>
+              <button
+                className="close-button"
+                onClick={() => setOpen(false)}
+                aria-label="Close upgrades"
+              >
+                ✕
+              </button>
             </div>
 
             <div className="mobile-upgrades-content">
-              <button className="upgrade-button" onClick={upgradeBallDamage} disabled={score < damageCost}>
+              <button
+                className="upgrade-button"
+                onClick={upgradeBallDamage}
+                disabled={score < damageCost}
+              >
                 <div className="upgrade-info">
                   <span className="upgrade-name">⚔️ Ball Damage +1</span>
                   <span className="upgrade-cost">{damageCost.toLocaleString()} pts</span>
                 </div>
               </button>
 
-              <button className="upgrade-button" onClick={upgradeBallSpeed} disabled={score < speedCost}>
+              <button
+                className="upgrade-button"
+                onClick={upgradeBallSpeed}
+                disabled={score < speedCost}
+              >
                 <div className="upgrade-info">
                   <span className="upgrade-name">💨 Ball Speed +2%</span>
                   <span className="upgrade-cost">{speedCost.toLocaleString()} pts</span>
                 </div>
               </button>
 
-              <button className="upgrade-button" onClick={upgradeBallCount} disabled={score < ballCost || ballCount >= 20}>
+              <button
+                className="upgrade-button"
+                onClick={upgradeBallCount}
+                disabled={score < ballCost || ballCount >= 20}
+              >
                 <div className="upgrade-info">
                   <span className="upgrade-name">🔮 New Ball</span>
                   <span className="upgrade-cost">{ballCost.toLocaleString()} pts</span>
@@ -180,7 +200,10 @@ export function MobileUpgrades() {
 
               <div className="spacer" />
               <div className="prestige-section">
-                <button className={`prestige-trigger ${vibeCrystals > 0 ? 'available' : ''}`} onClick={() => setShowPrestige(true)}>
+                <button
+                  className={`prestige-trigger ${vibeCrystals > 0 ? 'available' : ''}`}
+                  onClick={() => setShowPrestige(true)}
+                >
                   <span className="prestige-icon">🌟</span>
                   <span className="prestige-label">Prestige</span>
                   {vibeCrystals > 0 && <span className="prestige-crystals">{vibeCrystals} 💎</span>}
@@ -197,7 +220,15 @@ export function MobileUpgrades() {
 
 // Implement pointer drag behavior via a lightweight hook on mount
 // to avoid re-creating handlers when not open.
-function useDrawerDrag({ open, setOpen, drawerRef, headerRef, translateY, setTranslateY, setIsDragging }: {
+function useDrawerDrag({
+  open,
+  setOpen,
+  drawerRef,
+  headerRef,
+  translateY,
+  setTranslateY,
+  setIsDragging,
+}: {
   open: boolean;
   setOpen: (v: boolean) => void;
   drawerRef: React.RefObject<HTMLDivElement | null>;

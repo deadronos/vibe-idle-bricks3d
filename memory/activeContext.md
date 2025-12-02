@@ -17,6 +17,7 @@
 **Solution:** Wrapped the `handleRehydrate` call in `setTimeout(0)` to defer execution until after store initialization. The state is captured synchronously and passed to the deferred function.
 
 **Files Modified:**
+
 1. `src/store/gameStore.ts` - Added setTimeout(0) deferral in onRehydrateStorage
 2. `src/store/persistence.ts` - Cleaned up debug logging
 3. `src/engine/FrameManager.tsx` - Cleaned up debug logging
@@ -26,6 +27,7 @@
 **Verification:** All 212 tests pass, TypeScript/ESLint clean, browser testing confirms fix.
 
 ### Previous: Gradual ball spawning system
+
 - When reloading with 8+ purchased balls, balls spawn every 0.5s instead of all at once
 - Added `ballSpawnQueue` and `lastBallSpawnTime` to track pending spawns
 - Added `tryProcessBallSpawnQueue()` in FrameManager

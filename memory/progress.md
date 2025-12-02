@@ -4,15 +4,15 @@
 
 ## What works
 
-- Project scaffolding, core components, and store present in src/  
-- Wave-based progression, achievements, and meta-only persistence implemented and covered by tests (`gameStore`).  
+- Project scaffolding, core components, and store present in src/
+- Wave-based progression, achievements, and meta-only persistence implemented and covered by tests (`gameStore`).
 - UI exposes wave stats and unlocked achievements.
 - Ball count persistence and rehydration working correctly (fixed in latest session)
 
 ## What's left
 
-- Performance profiling and optimization of `GameScene` and `Ball` updates for large numbers of entities.  
-- UX polish and accessibility improvements for HUD and achievements.  
+- Performance profiling and optimization of `GameScene` and `Ball` updates for large numbers of entities.
+- UX polish and accessibility improvements for HUD and achievements.
 - More achievements and progression tune-ups based on playtesting.
 
 ## Current status

@@ -10,10 +10,10 @@ Introduce explicit wave-based progression, a small achievement system, and meta-
 
 ## Requirements (EARS)
 
-1. WHEN all bricks in the current wave are destroyed, THE SYSTEM SHALL increment a wave index and regenerate a new wave of bricks with gently increased health and value.  
-2. WHEN a new wave starts, THE SYSTEM SHALL preserve the player score and upgrades while scaling brick difficulty linearly with the wave number.  
-3. WHEN the player reaches specific score, bricks-destroyed, wave, or upgrade thresholds, THE SYSTEM SHALL unlock corresponding achievements and expose them for display in the UI.  
-4. WHEN the player reloads the game on the same device, THE SYSTEM SHALL restore meta progression (score, bricks destroyed, wave, upgrades, and unlocked achievements) from localStorage, reconstructing a fresh wave and balls for the current progression state.  
+1. WHEN all bricks in the current wave are destroyed, THE SYSTEM SHALL increment a wave index and regenerate a new wave of bricks with gently increased health and value.
+2. WHEN a new wave starts, THE SYSTEM SHALL preserve the player score and upgrades while scaling brick difficulty linearly with the wave number.
+3. WHEN the player reaches specific score, bricks-destroyed, wave, or upgrade thresholds, THE SYSTEM SHALL unlock corresponding achievements and expose them for display in the UI.
+4. WHEN the player reloads the game on the same device, THE SYSTEM SHALL restore meta progression (score, bricks destroyed, wave, upgrades, and unlocked achievements) from localStorage, reconstructing a fresh wave and balls for the current progression state.
 5. WHEN persistence fails (e.g., localStorage unavailable or corrupted), THE SYSTEM SHALL fall back to a safe default new run without crashing.
 
 ## High-Level Design
@@ -110,38 +110,37 @@ Introduce explicit wave-based progression, a small achievement system, and meta-
 
 ## Implementation Plan
 
-1. Extend `GameState` with `wave`, `maxWaveReached`, `unlockedAchievements`, and `settings`; initialize them and wire `createInitialBricks(1)` for the initial brick grid.  
-2. Refactor `createInitialBricks` to take `wave` and apply gentle linear scaling to brick health and value; update all call sites (initialization and regeneration).  
-3. Update `regenerateBricks` to increment `wave`, maintain `maxWaveReached`, and regenerate bricks using the new wave-aware generator (plus an optional wave-clear bonus).  
-4. Introduce the static `ACHIEVEMENTS` list and `checkAndUnlockAchievements` helper, and integrate achievement checks into `damageBrick`, `regenerateBricks`, and upgrade actions.  
-5. Add new selectors to `UI` for `wave`, `maxWaveReached`, and `unlockedAchievements`, and update HUD components to display wave and a compact achievements summary.  
-6. Wrap `useGameStore` with Zustand `persist`, configuring key, partialize, and migration; on hydrate, reconstruct bricks and balls from persisted meta progression.  
+1. Extend `GameState` with `wave`, `maxWaveReached`, `unlockedAchievements`, and `settings`; initialize them and wire `createInitialBricks(1)` for the initial brick grid.
+2. Refactor `createInitialBricks` to take `wave` and apply gentle linear scaling to brick health and value; update all call sites (initialization and regeneration).
+3. Update `regenerateBricks` to increment `wave`, maintain `maxWaveReached`, and regenerate bricks using the new wave-aware generator (plus an optional wave-clear bonus).
+4. Introduce the static `ACHIEVEMENTS` list and `checkAndUnlockAchievements` helper, and integrate achievement checks into `damageBrick`, `regenerateBricks`, and upgrade actions.
+5. Add new selectors to `UI` for `wave`, `maxWaveReached`, and `unlockedAchievements`, and update HUD components to display wave and a compact achievements summary.
+6. Wrap `useGameStore` with Zustand `persist`, configuring key, partialize, and migration; on hydrate, reconstruct bricks and balls from persisted meta progression.
 7. Add and update unit tests in `src/test` to cover wave scaling, achievements, and persistence behavior.
 
 ## Implementation Summary
 
-- Implemented `wave`, `maxWaveReached`, `unlockedAchievements`, and `settings` in `src/store/gameStore.ts`.  
-- Added wave-aware brick generation with scaling and wave advancement via `regenerateBricks`.  
-- Introduced an `ACHIEVEMENTS` list and `checkAndUnlockAchievements` helper; integrated unlock checks into `addScore`, `damageBrick`, `regenerateBricks`, and upgrade actions.  
-- Integrated Zustand `persist` (partialized storage) to persist only meta progression under the `idle-bricks3d:game:v1` key and rehydrate runtime entities on load.  
-- Exposed wave and achievements in HUD via `src/components/UI.tsx`.  
+- Implemented `wave`, `maxWaveReached`, `unlockedAchievements`, and `settings` in `src/store/gameStore.ts`.
+- Added wave-aware brick generation with scaling and wave advancement via `regenerateBricks`.
+- Introduced an `ACHIEVEMENTS` list and `checkAndUnlockAchievements` helper; integrated unlock checks into `addScore`, `damageBrick`, `regenerateBricks`, and upgrade actions.
+- Integrated Zustand `persist` (partialized storage) to persist only meta progression under the `idle-bricks3d:game:v1` key and rehydrate runtime entities on load.
+- Exposed wave and achievements in HUD via `src/components/UI.tsx`.
 - Added comprehensive tests in `src/test/gameStore.test.ts` and `src/test/gameStore.comprehensive.test.ts` covering scaling, achievements, upgrades, and persistence.
 
 ## Validation
 
-- Unit and integration tests confirm wave and achievement behaviors; tests verify persistence partialization and successful rehydrate into runtime state.  
-- UI surfaces wave and unlocked achievements and remains lightweight.  
+- Unit and integration tests confirm wave and achievement behaviors; tests verify persistence partialization and successful rehydrate into runtime state.
+- UI surfaces wave and unlocked achievements and remains lightweight.
 - Persistence guards in `onRehydrateStorage` handle malformed data and fallback to safe defaults.
 
 ## Next Steps
 
-- Tune the `WAVE_SCALE_FACTOR` and achievement thresholds based on playtesting telemetry and feedback.  
-- Add more achievement milestones and optionally per-achievement progress tracking.  
+- Tune the `WAVE_SCALE_FACTOR` and achievement thresholds based on playtesting telemetry and feedback.
+- Add more achievement milestones and optionally per-achievement progress tracking.
 - Perform performance profiling and UI polish for clarity and accessibility.
 
 ## Open Questions
 
-- Exact linear factor for wave scaling (starting with 0.2 per wave, to be tuned via playtesting).  
-- Exact thresholds and labels for initial achievements, and whether any should be hidden until unlocked.  
+- Exact linear factor for wave scaling (starting with 0.2 per wave, to be tuned via playtesting).
+- Exact thresholds and labels for initial achievements, and whether any should be hidden until unlocked.
 - Whether to show per-achievement progress (e.g., `73 / 100 bricks`) in the UI or keep the first version binary (locked/unlocked).
-

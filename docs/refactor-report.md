@@ -60,4 +60,5 @@ Next steps
 - If you want, I can start an incremental change: extract `types` and `constants` from `src/store/gameStore.ts` into `src/store/types.ts` and `src/store/constants.ts`, update imports, and run tests. This is a low-risk, high-value first PR.
 
 ---
+
 Report generated from a quick static scan of `src/` on 2025-11-30.

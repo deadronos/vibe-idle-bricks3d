@@ -92,7 +92,9 @@ describe('achievements helpers', () => {
   });
 
   it('meets upgrade achievements for ball speed based on level thresholds', () => {
-    const speedAchievement = ACHIEVEMENTS.find((achievement) => achievement.id === 'upgrade-speed-5');
+    const speedAchievement = ACHIEVEMENTS.find(
+      (achievement) => achievement.id === 'upgrade-speed-5'
+    );
     expect(speedAchievement).toBeDefined();
     if (!speedAchievement) return;
 

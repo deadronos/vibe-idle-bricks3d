@@ -1,4 +1,9 @@
-import { BRICK_COLORS, DEFAULT_BALL_DAMAGE, DEFAULT_BALL_SPEED, WAVE_SCALE_FACTOR } from './constants';
+import {
+  BRICK_COLORS,
+  DEFAULT_BALL_DAMAGE,
+  DEFAULT_BALL_SPEED,
+  WAVE_SCALE_FACTOR,
+} from './constants';
 import type { Ball, Brick, BrickType } from './types';
 
 const generateBrickId = () => `brick-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -67,7 +72,10 @@ export const createInitialBricks = (wave: number): Brick[] => {
   return bricks;
 };
 
-export const createInitialBall = (speed: number = DEFAULT_BALL_SPEED, damage: number = DEFAULT_BALL_DAMAGE): Ball => {
+export const createInitialBall = (
+  speed: number = DEFAULT_BALL_SPEED,
+  damage: number = DEFAULT_BALL_DAMAGE
+): Ball => {
   const angle = Math.random() * Math.PI * 2;
   const elevation = (Math.random() - 0.5) * Math.PI * 0.5;
 

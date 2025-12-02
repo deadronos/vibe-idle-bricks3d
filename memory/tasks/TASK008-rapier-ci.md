@@ -25,11 +25,11 @@ Because WASM initialization can fail on CI or specific platforms, we must gate t
 
 ### Subtasks
 
-| ID  | Description                                            | Status        | Updated    | Notes |
-| --- | ------------------------------------------------------ | ------------- | ---------- | ----- |
-| 4.1 | Create `rapier-init-smoke` CI job                       | Completed     | 2025-12-01 | GitHub Actions workflow added |
-| 4.2 | Add minimal Vitest smoke test (`src/test/rapier.smoke.test.ts`) | Completed     | 2025-12-01 | Fast smoke test added |
-| 4.3 | Update PR checklist / CONTRIBUTING.md                   | Completed     | 2025-12-01 | CONTRIBUTING note added and README updated |
+| ID  | Description                                                     | Status    | Updated    | Notes                                      |
+| --- | --------------------------------------------------------------- | --------- | ---------- | ------------------------------------------ |
+| 4.1 | Create `rapier-init-smoke` CI job                               | Completed | 2025-12-01 | GitHub Actions workflow added              |
+| 4.2 | Add minimal Vitest smoke test (`src/test/rapier.smoke.test.ts`) | Completed | 2025-12-01 | Fast smoke test added                      |
+| 4.3 | Update PR checklist / CONTRIBUTING.md                           | Completed | 2025-12-01 | CONTRIBUTING note added and README updated |
 
 ## Progress Log
 
@@ -38,7 +38,7 @@ Because WASM initialization can fail on CI or specific platforms, we must gate t
 - Added `src/test/rapier.smoke.test.ts` — CI-facing smoke test verifying `initRapier()` and `createWorld()` succeed.
 - Added GitHub Actions workflow `.github/workflows/rapier-init-smoke.yml` which runs the smoke test and fails fast on init errors.
 - Added `test:rapier-smoke` npm script for local smoke testing.
-  
+
 Notes: The smoke job is gated by CI — PRs that flip `useRapierPhysics` default to `true` should require this smoke job to pass. A temporary override `RAPIER=false` can be used in CI environment variables to bypass the smoke test when diagnosing platform-specific WASM issues.
 
 ---

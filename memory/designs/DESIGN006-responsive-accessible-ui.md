@@ -203,4 +203,3 @@ Small steps with minimal risk: implement in 3-5 incremental PRs.
 - Added CSS rules to `UI.css` to support safe-area insets, touch targets, and motion-reduced transitions.
 
 -- End Design
-

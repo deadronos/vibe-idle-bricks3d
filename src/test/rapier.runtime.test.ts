@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { setWorld, getWorld, resetWorld, setModule, getModule, resetAll } from '../engine/rapier/rapierRuntime';
+import {
+  setWorld,
+  getWorld,
+  resetWorld,
+  setModule,
+  getModule,
+  resetAll,
+} from '../engine/rapier/rapierRuntime';
 import type { RapierWorld } from '../engine/rapier/rapierWorld';
 
 describe('rapierRuntime registry', () => {

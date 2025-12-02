@@ -34,11 +34,7 @@ export const stepBallFrame = (
   bricks: Brick[]
 ): BallFrameResult => {
   const frameScale = clampDelta(delta) * 60;
-  const velocity: Vector3Tuple = [
-    ball.velocity[0],
-    ball.velocity[1],
-    ball.velocity[2],
-  ];
+  const velocity: Vector3Tuple = [ball.velocity[0], ball.velocity[1], ball.velocity[2]];
 
   let nextX = ball.position[0] + velocity[0] * frameScale;
   let nextY = ball.position[1] + velocity[1] * frameScale;

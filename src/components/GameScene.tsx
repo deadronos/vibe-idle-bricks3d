@@ -90,12 +90,7 @@ export function GameScene() {
         <GameContent />
         {enableBloom && (
           <EffectComposer>
-            <Bloom
-              intensity={1.5}
-              luminanceThreshold={0.15}
-              luminanceSmoothing={0.9}
-              mipmapBlur
-            />
+            <Bloom intensity={1.5} luminanceThreshold={0.15} luminanceSmoothing={0.9} mipmapBlur />
           </EffectComposer>
         )}
       </Canvas>

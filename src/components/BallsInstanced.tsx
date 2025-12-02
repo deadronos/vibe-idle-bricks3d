@@ -57,11 +57,18 @@ export function BallsInstanced({ world, maxInstances = 128, radius = 0.25 }: Bal
   });
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined as unknown as THREE.BufferGeometry, undefined as unknown as THREE.Material, maxInstances]}>
+    <instancedMesh
+      ref={meshRef}
+      args={[
+        undefined as unknown as THREE.BufferGeometry,
+        undefined as unknown as THREE.Material,
+        maxInstances,
+      ]}
+    >
       <sphereGeometry args={[radius, 8, 8]} />
       <meshStandardMaterial color="white" />
     </instancedMesh>
   );
-};
+}
 
 export default BallsInstanced;

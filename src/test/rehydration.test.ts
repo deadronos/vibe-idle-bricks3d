@@ -280,7 +280,7 @@ describe('Rehydration - Stat Validation', () => {
     // Verify state has correct damage and speed set
     expect(state.ballDamage).toBe(3);
     expect(state.ballSpeed).toBe(0.15);
-    
+
     // Verify we have at least the initial ball
     expect(state.balls.length).toBeGreaterThan(0);
   });
@@ -476,7 +476,12 @@ describe('Rehydration - Storage & Persistence', () => {
   });
 
   it('should preserve settings', () => {
-    const customSettings = { enableBloom: false, enableShadows: true, enableSound: false, enableParticles: true };
+    const customSettings = {
+      enableBloom: false,
+      enableShadows: true,
+      enableSound: false,
+      enableParticles: true,
+    };
 
     useGameStore.setState({
       settings: customSettings,

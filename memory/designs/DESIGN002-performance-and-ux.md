@@ -67,7 +67,7 @@ flowchart LR
 - **Risk**: `InstancedMesh` picking complexity.
   - **Mitigation**: Use Three.js built-in instance raycasting first. If performance is poor, implement a simple CPU spatial hash for pointer checks.
 - **Risk**: State desync between `FrameManager` and Store.
-  - **Mitigation**: `FrameManager` is the source of truth for *position/velocity*; Store is source of truth for *existence/score*. Sync is one-way (Manager -> Store) for display, except for initial load.
+  - **Mitigation**: `FrameManager` is the source of truth for _position/velocity_; Store is source of truth for _existence/score_. Sync is one-way (Manager -> Store) for display, except for initial load.
 
 ## Decision Records
 

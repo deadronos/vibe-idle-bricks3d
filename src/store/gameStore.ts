@@ -15,12 +15,17 @@ import { effectBus } from '../systems/EffectEventBus';
 import { checkAndUnlockAchievements, getBallSpeedLevel } from './achievements';
 import { createInitialBall, createInitialBricks } from './createInitials';
 import { createMetaStorage, handleRehydrate, hasExistingStorage } from './persistence';
-import type { Ball, GameDataState, GameEntitiesState, GameSettings, GameState, UpgradeState } from './types';
+import type {
+  Ball,
+  GameDataState,
+  GameEntitiesState,
+  GameSettings,
+  GameState,
+  UpgradeState,
+} from './types';
 
 const rescaleVelocity = (velocity: Vector3Tuple, targetSpeed: number): Vector3Tuple => {
-  const currentSpeed = Math.sqrt(
-    velocity[0] ** 2 + velocity[1] ** 2 + velocity[2] ** 2
-  );
+  const currentSpeed = Math.sqrt(velocity[0] ** 2 + velocity[1] ** 2 + velocity[2] ** 2);
   const scale = currentSpeed > 0 ? targetSpeed / currentSpeed : 1;
   return [velocity[0] * scale, velocity[1] * scale, velocity[2] * scale];
 };
@@ -51,22 +56,57 @@ const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState =
   // Device heuristics - only when in browser context
   const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
   const nav = isBrowser ? (navigator as Navigator & { deviceMemory?: number }) : undefined;
-  const deviceMemory = isBrowser ? nav?.deviceMemory ?? undefined : undefined;
-  const hardwareConcurrency = isBrowser ? navigator.hardwareConcurrency ?? undefined : undefined;
-  const prefersReducedMotion = isBrowser ? !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) : false;
+  const deviceMemory = isBrowser ? (nav?.deviceMemory ?? undefined) : undefined;
+  const hardwareConcurrency = isBrowser ? (navigator.hardwareConcurrency ?? undefined) : undefined;
+  const prefersReducedMotion = isBrowser
+    ? !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    : false;
   const smallScreen = isBrowser ? window.innerWidth <= 768 : false;
-  const lowPowerDevice = Boolean((deviceMemory && deviceMemory <= 2) || (hardwareConcurrency && hardwareConcurrency <= 2) || prefersReducedMotion || smallScreen);
+  const lowPowerDevice = Boolean(
+    (deviceMemory && deviceMemory <= 2) ||
+    (hardwareConcurrency && hardwareConcurrency <= 2) ||
+    prefersReducedMotion ||
+    smallScreen
+  );
 
   type GraphicsQuality = 'auto' | 'low' | 'medium' | 'high';
   const defaultGraphicsQuality: GraphicsQuality = 'auto';
   const computeDefaults = (quality: GraphicsQuality) => {
-    if (quality === 'low') return { enableBloom: false, enableShadows: false, enableParticles: false, enableFullRigidPhysics: false } as GameSettings;
-    if (quality === 'medium') return { enableBloom: true, enableShadows: true, enableParticles: false, enableFullRigidPhysics: true } as GameSettings;
-    if (quality === 'high') return { enableBloom: true, enableShadows: true, enableParticles: true, enableFullRigidPhysics: true } as GameSettings;
+    if (quality === 'low')
+      return {
+        enableBloom: false,
+        enableShadows: false,
+        enableParticles: false,
+        enableFullRigidPhysics: false,
+      } as GameSettings;
+    if (quality === 'medium')
+      return {
+        enableBloom: true,
+        enableShadows: true,
+        enableParticles: false,
+        enableFullRigidPhysics: true,
+      } as GameSettings;
+    if (quality === 'high')
+      return {
+        enableBloom: true,
+        enableShadows: true,
+        enableParticles: true,
+        enableFullRigidPhysics: true,
+      } as GameSettings;
     // 'auto'
     return lowPowerDevice
-      ? { enableBloom: false, enableShadows: false, enableParticles: false, enableFullRigidPhysics: false } as GameSettings
-      : { enableBloom: true, enableShadows: true, enableParticles: true, enableFullRigidPhysics: true } as GameSettings;
+      ? ({
+          enableBloom: false,
+          enableShadows: false,
+          enableParticles: false,
+          enableFullRigidPhysics: false,
+        } as GameSettings)
+      : ({
+          enableBloom: true,
+          enableShadows: true,
+          enableParticles: true,
+          enableFullRigidPhysics: true,
+        } as GameSettings);
   };
 
   const defaultSettings = computeDefaults(defaultGraphicsQuality);
@@ -175,7 +215,7 @@ export const useGameStore = create<GameState>()(
               type: 'brick_hit',
               position: brick.position,
               color: brick.color,
-              amount: actualDamage
+              amount: actualDamage,
             });
 
             if (newHealth <= 0) {
@@ -183,14 +223,17 @@ export const useGameStore = create<GameState>()(
               effectBus.emit({
                 type: 'brick_destroy',
                 position: brick.position,
-                color: brick.color
+                color: brick.color,
               });
 
               // Apply prestige multiplier to brick value
               const scoreGain = Math.floor(brick.value * state.prestigeMultiplier);
               const score = state.score + scoreGain;
               const bricksDestroyed = state.bricksDestroyed + 1;
-              const unlockedAchievements = checkAndUnlockAchievements(state, { score, bricksDestroyed });
+              const unlockedAchievements = checkAndUnlockAchievements(state, {
+                score,
+                bricksDestroyed,
+              });
               return {
                 bricks: state.bricks.filter((b) => b.id !== id),
                 score,
@@ -375,20 +418,62 @@ export const useGameStore = create<GameState>()(
           set((state) => {
             // compute flags for quality
             const compute = (quality: 'auto' | 'low' | 'medium' | 'high') => {
-              if (quality === 'low') return { enableBloom: false, enableShadows: false, enableParticles: false, enableFullRigidPhysics: false } as GameSettings;
-              if (quality === 'medium') return { enableBloom: true, enableShadows: true, enableParticles: false, enableFullRigidPhysics: true } as GameSettings;
-              if (quality === 'high') return { enableBloom: true, enableShadows: true, enableParticles: true, enableFullRigidPhysics: true } as GameSettings;
+              if (quality === 'low')
+                return {
+                  enableBloom: false,
+                  enableShadows: false,
+                  enableParticles: false,
+                  enableFullRigidPhysics: false,
+                } as GameSettings;
+              if (quality === 'medium')
+                return {
+                  enableBloom: true,
+                  enableShadows: true,
+                  enableParticles: false,
+                  enableFullRigidPhysics: true,
+                } as GameSettings;
+              if (quality === 'high')
+                return {
+                  enableBloom: true,
+                  enableShadows: true,
+                  enableParticles: true,
+                  enableFullRigidPhysics: true,
+                } as GameSettings;
               // auto: keep existing heuristics - use small screen and device heuristics to fallback
               const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
-              const nav = isBrowser ? (navigator as Navigator & { deviceMemory?: number }) : undefined;
-              const deviceMemory = isBrowser ? nav?.deviceMemory ?? undefined : undefined;
-              const hardwareConcurrency = isBrowser ? navigator.hardwareConcurrency ?? undefined : undefined;
-              const prefersReducedMotion = isBrowser ? !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) : false;
+              const nav = isBrowser
+                ? (navigator as Navigator & { deviceMemory?: number })
+                : undefined;
+              const deviceMemory = isBrowser ? (nav?.deviceMemory ?? undefined) : undefined;
+              const hardwareConcurrency = isBrowser
+                ? (navigator.hardwareConcurrency ?? undefined)
+                : undefined;
+              const prefersReducedMotion = isBrowser
+                ? !!(
+                    window.matchMedia &&
+                    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                  )
+                : false;
               const smallScreen = isBrowser ? window.innerWidth <= 768 : false;
-              const lowPower = Boolean((deviceMemory && deviceMemory <= 2) || (hardwareConcurrency && hardwareConcurrency <= 2) || prefersReducedMotion || smallScreen);
+              const lowPower = Boolean(
+                (deviceMemory && deviceMemory <= 2) ||
+                (hardwareConcurrency && hardwareConcurrency <= 2) ||
+                prefersReducedMotion ||
+                smallScreen
+              );
               return lowPower
-                ? { enableBloom: false, enableShadows: false, enableParticles: false, enableFullRigidPhysics: false } as GameSettings
-                : { enableBloom: true, enableShadows: true, enableParticles: true, enableFullRigidPhysics: true } as GameSettings;
+                ? ({
+                    enableBloom: false,
+                    enableShadows: false,
+                    enableParticles: false,
+                    enableFullRigidPhysics: false,
+                  } as GameSettings)
+                : ({
+                    enableBloom: true,
+                    enableShadows: true,
+                    enableParticles: true,
+                    enableFullRigidPhysics: true,
+                  } as GameSettings);
             };
 
             const nextSettingsPartial = compute(value);
@@ -410,7 +495,7 @@ export const useGameStore = create<GameState>()(
             const next = { latestAnnouncement: msg } as Partial<GameDataState>;
             setTimeout(() => {
               try {
-                set(() => ({ latestAnnouncement: null } as Partial<GameDataState>));
+                set(() => ({ latestAnnouncement: null }) as Partial<GameDataState>);
               } catch {
                 // ignore
               }
@@ -459,14 +544,12 @@ export const useGameStore = create<GameState>()(
           })),
 
         // Rapier control APIs
-        setUseRapierPhysics: (enabled: boolean) =>
-          set(() => ({ useRapierPhysics: enabled })),
+        setUseRapierPhysics: (enabled: boolean) => set(() => ({ useRapierPhysics: enabled })),
 
         setRapierActive: (active: boolean) =>
           set(() => ({ rapierActive: active, rapierInitError: active ? null : undefined })),
 
-        setRapierInitError: (msg: string | null) =>
-          set(() => ({ rapierInitError: msg })),
+        setRapierInitError: (msg: string | null) => set(() => ({ rapierInitError: msg })),
 
         // Apply compact rapier hit events (e.g. {brickId, damage}) and update combo state
         applyHits: (hits: Array<{ brickId: string; damage: number }>) => {
@@ -481,7 +564,11 @@ export const useGameStore = create<GameState>()(
             const state = get();
             const newComboCount = state.comboCount + 1;
             const newComboMultiplier = Math.min(1 + newComboCount * 0.05, 3);
-            set({ comboCount: newComboCount, comboMultiplier: newComboMultiplier, lastHitTime: Date.now() });
+            set({
+              comboCount: newComboCount,
+              comboMultiplier: newComboMultiplier,
+              lastHitTime: Date.now(),
+            });
           }
         },
       };
@@ -521,7 +608,9 @@ export const useGameStore = create<GameState>()(
 
             if (offlineEarnings > 0) {
               state.score += offlineEarnings;
-              console.log(`[Offline Progress] Earned ${offlineEarnings} score over ${secondsOffline.toFixed(0)}s`);
+              console.log(
+                `[Offline Progress] Earned ${offlineEarnings} score over ${secondsOffline.toFixed(0)}s`
+              );
             }
           }
 

@@ -18,8 +18,8 @@
 
 ## Runtime persistence
 
-- Uses Zustand `persist` middleware to save meta-only progression under localStorage key `idle-bricks3d:game:v1`.  
-- Hydration uses `onRehydrateStorage` to guard and reconstruct runtime entities (bricks and balls).  
+- Uses Zustand `persist` middleware to save meta-only progression under localStorage key `idle-bricks3d:game:v1`.
+- Hydration uses `onRehydrateStorage` to guard and reconstruct runtime entities (bricks and balls).
 
 ## Constraints and deps
 

@@ -21,7 +21,9 @@ export function UI() {
   const latestAchievement = ACHIEVEMENTS.find((item) => item.id === latestAchievementId);
   const latestAnnouncement = useGameStore((state) => state.latestAnnouncement);
   const compactHudEnabled = useGameStore((state) => state.settings.compactHudEnabled);
-  const liveMessage = latestAnnouncement || (latestAchievement ? `Achievement unlocked: ${latestAchievement.label}` : '');
+  const liveMessage =
+    latestAnnouncement ||
+    (latestAchievement ? `Achievement unlocked: ${latestAchievement.label}` : '');
 
   return (
     <div className="ui-container">

@@ -30,17 +30,18 @@ describe('Mobile Drawer — E2E', () => {
     const drawer = screen.getByTestId('mobile-upgrades-drawer');
     const header = screen.getByTestId('mobile-upgrades-drawer-header');
 
-    drawer.getBoundingClientRect = () => ({
-      width: 320,
-      height: 420,
-      top: 0,
-      left: 0,
-      bottom: 420,
-      right: 320,
-      x: 0,
-      y: 0,
-      toJSON: () => {},
-    } as DOMRect);
+    drawer.getBoundingClientRect = () =>
+      ({
+        width: 320,
+        height: 420,
+        top: 0,
+        left: 0,
+        bottom: 420,
+        right: 320,
+        x: 0,
+        y: 0,
+        toJSON: () => {},
+      }) as DOMRect;
 
     fireEvent.pointerDown(header, { pointerId: 1, clientY: 10, isPrimary: true });
     fireEvent.pointerMove(document, { pointerId: 1, clientY: 200 });
