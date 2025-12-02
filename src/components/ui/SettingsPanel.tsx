@@ -1,3 +1,4 @@
+import React from 'react';
 import { useGameStore } from '../../store/gameStore';
 import type { GameSettings } from '../../store/types';
 import './UI.css';
@@ -67,7 +68,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                 </div>
                 <div className="settings-grid">
                     {(() => {
-                        const settingsRecord = settings as Record<string, unknown>;
+                        const settingsRecord = settings as unknown as Record<string, unknown>;
                         return (Object.keys(settings) as Array<keyof GameSettings>)
                             .filter((k) => typeof settingsRecord[k] === 'boolean')
                             .map((key) => (

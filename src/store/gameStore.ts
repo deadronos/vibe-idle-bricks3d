@@ -57,8 +57,9 @@ const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState =
   const smallScreen = isBrowser ? window.innerWidth <= 768 : false;
   const lowPowerDevice = Boolean((deviceMemory && deviceMemory <= 2) || (hardwareConcurrency && hardwareConcurrency <= 2) || prefersReducedMotion || smallScreen);
 
-  const defaultGraphicsQuality: 'auto' | 'low' | 'medium' | 'high' = 'auto';
-  const computeDefaults = (quality: typeof defaultGraphicsQuality) => {
+  type GraphicsQuality = 'auto' | 'low' | 'medium' | 'high';
+  const defaultGraphicsQuality: GraphicsQuality = 'auto';
+  const computeDefaults = (quality: GraphicsQuality) => {
     if (quality === 'low') return { enableBloom: false, enableShadows: false, enableParticles: false, enableFullRigidPhysics: false } as GameSettings;
     if (quality === 'medium') return { enableBloom: true, enableShadows: true, enableParticles: false, enableFullRigidPhysics: true } as GameSettings;
     if (quality === 'high') return { enableBloom: true, enableShadows: true, enableParticles: true, enableFullRigidPhysics: true } as GameSettings;

@@ -6,6 +6,8 @@ import './UI.css';
 export function MobileUpgrades() {
   const [open, setOpen] = React.useState(false);
   const [showPrestige, setShowPrestige] = React.useState(false);
+  const [translateY, setTranslateY] = React.useState(0);
+  const [isDragging, setIsDragging] = React.useState(false);
   const score = useGameStore((s) => s.score);
   const ballCount = useGameStore((s) => s.ballCount);
   const vibeCrystals = useGameStore((s) => s.vibeCrystals);
@@ -19,6 +21,63 @@ export function MobileUpgrades() {
   const damageCost = getBallDamageCost();
   const speedCost = getBallSpeedCost();
   const ballCost = getBallCountCost();
+  const drawerRef = React.useRef<HTMLDivElement | null>(null);
+  const headerRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Attach drag handler hook
+  useDrawerDrag({ open, setOpen, drawerRef, headerRef, translateY, setTranslateY, setIsDragging });
+
+  // Keep CSS variable in sync with state for transitions & snaps
+  React.useEffect(() => {
+    const drawer = drawerRef.current;
+    if (!drawer) return;
+    try {
+      drawer.style.setProperty('--mobile-upgrades-translate', `${translateY}px`);
+    } catch {
+      // ignore in test env
+    }
+  }, [translateY]);
+
+  // Close via Escape key for accessibility
+  React.useEffect(() => {
+    if (!open) return;
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', onEsc);
+    return () => document.removeEventListener('keydown', onEsc);
+  }, [open]);
+
+  // Focus trapping for drawer while open
+  React.useEffect(() => {
+    if (!open) return;
+    const root = drawerRef.current;
+    if (!root) return;
+    const focusables = root.querySelectorAll<HTMLElement>('a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])');
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (first) first.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        if (focusables.length === 0) return;
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            (last as HTMLElement)?.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            (first as HTMLElement)?.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [open]);
 
   return (
     <>
@@ -57,9 +116,42 @@ export function MobileUpgrades() {
       </div>
 
       {open && (
-        <div className="mobile-upgrades-drawer-overlay" role="dialog" aria-modal="true" aria-label="Upgrades drawer" onClick={() => setOpen(false)}>
-          <div className="mobile-upgrades-drawer" role="region" aria-labelledby="mobile-upgrades-heading" onClick={(e) => e.stopPropagation()}>
-            <div className="mobile-upgrades-header">
+        <div
+          className="mobile-upgrades-drawer-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Upgrades drawer"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className={`mobile-upgrades-drawer ${isDragging ? 'dragging' : ''}`}
+            role="region"
+            aria-labelledby="mobile-upgrades-heading"
+            onClick={(e) => e.stopPropagation()}
+            ref={drawerRef}
+            data-testid="mobile-upgrades-drawer"
+            // CSS variable is updated by useDrawerDrag to avoid inline styles
+            data-translate-y={translateY}
+          >
+            <div
+              className="mobile-upgrades-header"
+              ref={headerRef}
+              data-testid="mobile-upgrades-drawer-header"
+            >
+              <div
+                className="mobile-upgrades-handle"
+                role="button"
+                tabIndex={0}
+                aria-label="Drag to close upgrades drawer"
+                data-testid="mobile-upgrades-handle"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                    setOpen(false);
+                    e.preventDefault();
+                  }
+                }}
+                onClick={() => setOpen(false)}
+              />
               <h3 id="mobile-upgrades-heading">Upgrades</h3>
               <button className="close-button" onClick={() => setOpen(false)} aria-label="Close upgrades">✕</button>
             </div>
@@ -101,4 +193,83 @@ export function MobileUpgrades() {
       )}
     </>
   );
+}
+
+// Implement pointer drag behavior via a lightweight hook on mount
+// to avoid re-creating handlers when not open.
+function useDrawerDrag({ open, setOpen, drawerRef, headerRef, translateY, setTranslateY, setIsDragging }: {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  drawerRef: React.RefObject<HTMLDivElement | null>;
+  headerRef: React.RefObject<HTMLDivElement | null>;
+  translateY: number;
+  setTranslateY: (n: number) => void;
+  setIsDragging: (b: boolean) => void;
+}) {
+  const startYRef = React.useRef<number | null>(null);
+  const lastPointerId = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const header = headerRef.current;
+    const drawer = drawerRef.current;
+    if (!header || !drawer) return;
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (!e.isPrimary) return;
+      startYRef.current = e.clientY;
+      lastPointerId.current = e.pointerId;
+      setIsDragging(true);
+      // Prevent default to avoid page scroll on touch devices when dragging
+      (e.target as Element).setPointerCapture?.(e.pointerId);
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (startYRef.current === null) return;
+      // Only handle primary pointer
+      if (e.pointerId !== lastPointerId.current) return;
+      const delta = Math.max(0, e.clientY - (startYRef.current ?? 0));
+      const height = Math.max(0, drawer.getBoundingClientRect().height || 0);
+      const capped = Math.min(delta, height);
+      setTranslateY(capped);
+      try {
+        drawer.style.setProperty('--mobile-upgrades-translate', `${capped}px`);
+      } catch {
+        // ignore if style property can't be set in this environment
+      }
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      if (startYRef.current === null) return;
+      // Only handle primary pointer
+      if (e.pointerId !== lastPointerId.current) return;
+      // Calculate threshold — 33% of drawer height
+      const height = Math.max(0, drawer.getBoundingClientRect().height || 0);
+      const threshold = height * 0.33;
+      const finalTranslate = translateY;
+      if (finalTranslate > threshold) {
+        setOpen(false);
+      } else {
+        setTranslateY(0);
+      }
+      setIsDragging(false);
+      startYRef.current = null;
+      lastPointerId.current = null;
+      try {
+        (e.target as Element).releasePointerCapture?.(e.pointerId);
+      } catch {
+        // ignore
+      }
+    };
+
+    header.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+
+    return () => {
+      header.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+    };
+  }, [open, headerRef, drawerRef, setOpen, setTranslateY, setIsDragging, translateY]);
 }

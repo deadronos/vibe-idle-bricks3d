@@ -195,5 +195,12 @@ Small steps with minimal risk: implement in 3-5 incremental PRs.
 4. Add focus trap library and write integration tests for modals.
 5. Add e2e tests for different viewports.
 
+## Implementation Notes (update)
+
+- Added `MobileUpgrades` bottom-sheet drawer with pointer-based drag-to-close behavior, a visible handle, and CSS variable-driven transform to avoid inline styles.
+- Added keyboard activation (Enter/Space) and Escape key support to close the drawer for accessibility.
+- Added E2E-style tests and unit tests: `src/test/mobileUpgrades.drag.test.tsx`, `tests/e2e/mobile-drawer.spec.tsx`.
+- Added CSS rules to `UI.css` to support safe-area insets, touch targets, and motion-reduced transitions.
+
 -- End Design
 

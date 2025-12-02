@@ -143,12 +143,29 @@
   border-top-right-radius: 12px;
   padding: 16px;
   box-shadow: 0 -4px 10px rgba(0,0,0,0.5);
+  /* controlled via CSS variable to avoid inline styles */
+  transform: translateY(var(--mobile-upgrades-translate, 0px));
+  transition: transform 180ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.mobile-upgrades-drawer.dragging {
+  transition: none;
 }
 
 .mobile-upgrades-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  touch-action: none; /* Avoid interfering with pointer capture on mobile */
+}
+
+.mobile-upgrades-handle {
+  width: 40px;
+  height: 6px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.12);
+  margin-right: 8px;
+  margin-left: 8px;
 }
 
 .mobile-upgrades-content {
