@@ -1,3 +1,4 @@
+import React from 'react';
 import { useGameStore } from '../../store/gameStore';
 import './PrestigeModal.css';
 
@@ -19,6 +20,7 @@ export function PrestigeModal({ onClose }: PrestigeModalProps) {
     const futureMultiplier = 1 + (vibeCrystals + reward) * 0.1;
     const futureBonus = Math.round((futureMultiplier - 1) * 100);
 
+    const modalRef = React.useRef<HTMLDivElement | null>(null);
     const handlePrestige = () => {
         if (canPrestige) {
             performPrestige();
@@ -26,9 +28,41 @@ export function PrestigeModal({ onClose }: PrestigeModalProps) {
         }
     };
 
+    React.useEffect(() => {
+        const root = modalRef.current;
+        if (!root) return;
+        const prevActive = document.activeElement as HTMLElement | null;
+        const focusables = root.querySelectorAll<HTMLElement>('a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])');
+        if (focusables && focusables.length > 0) focusables[0].focus();
+
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+            if (e.key !== 'Tab') return;
+            if (!focusables || focusables.length === 0) return;
+            if (e.shiftKey) {
+                if (document.activeElement === focusables[0]) {
+                    e.preventDefault();
+                    focusables[focusables.length - 1].focus();
+                }
+            } else {
+                if (document.activeElement === focusables[focusables.length - 1]) {
+                    e.preventDefault();
+                    focusables[0].focus();
+                }
+            }
+        };
+        document.addEventListener('keydown', onKeyDown);
+        return () => {
+            document.removeEventListener('keydown', onKeyDown);
+            if (prevActive) prevActive.focus();
+        };
+    }, [onClose]);
+
     return (
             <div className="modal-overlay" onClick={onClose}>
-                <div className="modal-content prestige-modal" role="dialog" aria-modal="true" aria-labelledby="prestige-heading" onClick={(e) => e.stopPropagation()}>
+                <div ref={modalRef} className="modal-content prestige-modal" role="dialog" aria-modal="true" aria-labelledby="prestige-heading" onClick={(e) => e.stopPropagation()}>
                 <button className="modal-close" onClick={onClose} aria-label="Close">
                     ×
                 </button>

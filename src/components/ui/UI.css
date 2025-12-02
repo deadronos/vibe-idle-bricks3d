@@ -95,6 +95,72 @@
   min-width: 200px;
 }
 
+/* Mobile quick upgrades row and drawer */
+.quick-upgrades-row {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  z-index: 120;
+  pointer-events: auto;
+}
+
+.quick-upgrade {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hide quick upgrades on desktop */
+.quick-upgrades-row {
+  display: none;
+}
+
+.mobile-upgrades-drawer-overlay {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 1500;
+}
+
+.mobile-upgrades-drawer {
+  width: 100%;
+  max-width: 720px;
+  background: rgba(16,20,30,0.95);
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 -4px 10px rgba(0,0,0,0.5);
+}
+
+.mobile-upgrades-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mobile-upgrades-content {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.spacer {
+  height: 12px;
+}
+
 .upgrade-button {
   width: 100%;
   padding: 12px;
@@ -311,6 +377,10 @@
     font-size: 28px;
   }
 
+  .quick-upgrades-row {
+    display: flex;
+  }
+
   .upgrades-panel {
     position: absolute;
     right: 20px;
@@ -320,6 +390,7 @@
     transform: none;
     max-height: 50vh;
     overflow-y: auto;
+    display: none;
   }
 
   .achievements-panel {
@@ -448,4 +519,13 @@ button:focus,
   height: 18px;
   cursor: pointer;
   accent-color: #4a90e2;
+}
+
+.settings-grid select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.06);
 }

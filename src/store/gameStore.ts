@@ -48,6 +48,27 @@ const updateBallSpeeds = (balls: Ball[], ballSpeed: number): Ball[] =>
  */
 const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState => {
   const storageExists = hasExistingStorage();
+  // Device heuristics - only when in browser context
+  const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+  const nav = isBrowser ? (navigator as Navigator & { deviceMemory?: number }) : undefined;
+  const deviceMemory = isBrowser ? nav?.deviceMemory ?? undefined : undefined;
+  const hardwareConcurrency = isBrowser ? navigator.hardwareConcurrency ?? undefined : undefined;
+  const prefersReducedMotion = isBrowser ? !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) : false;
+  const smallScreen = isBrowser ? window.innerWidth <= 768 : false;
+  const lowPowerDevice = Boolean((deviceMemory && deviceMemory <= 2) || (hardwareConcurrency && hardwareConcurrency <= 2) || prefersReducedMotion || smallScreen);
+
+  const defaultGraphicsQuality: 'auto' | 'low' | 'medium' | 'high' = 'auto';
+  const computeDefaults = (quality: typeof defaultGraphicsQuality) => {
+    if (quality === 'low') return { enableBloom: false, enableShadows: false, enableParticles: false, enableFullRigidPhysics: false } as GameSettings;
+    if (quality === 'medium') return { enableBloom: true, enableShadows: true, enableParticles: false, enableFullRigidPhysics: true } as GameSettings;
+    if (quality === 'high') return { enableBloom: true, enableShadows: true, enableParticles: true, enableFullRigidPhysics: true } as GameSettings;
+    // 'auto'
+    return lowPowerDevice
+      ? { enableBloom: false, enableShadows: false, enableParticles: false, enableFullRigidPhysics: false } as GameSettings
+      : { enableBloom: true, enableShadows: true, enableParticles: true, enableFullRigidPhysics: true } as GameSettings;
+  };
+
+  const defaultSettings = computeDefaults(defaultGraphicsQuality);
 
   return {
     score: 0,
@@ -56,12 +77,12 @@ const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState =
     maxWaveReached: DEFAULT_WAVE,
     unlockedAchievements: [],
     settings: {
-      enableBloom: true,
-      enableShadows: true,
+      ...defaultSettings,
       enableSound: true,
-      enableParticles: true,
-      // Enable full rigid-body physics (Rapier) by default.
-      enableFullRigidPhysics: true,
+      // Enable full rigid-body physics (Rapier) by default (mirrors enableFullRigidPhysics value).
+      enableFullRigidPhysics: defaultSettings.enableFullRigidPhysics,
+      graphicsQuality: defaultGraphicsQuality,
+      compactHudEnabled: smallScreen,
     },
     // Prestige system
     vibeCrystals: 0,
@@ -86,6 +107,7 @@ const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState =
     useRapierPhysics: true,
     rapierActive: false,
     rapierInitError: null as string | null,
+    latestAnnouncement: null,
   };
 };
 
@@ -348,6 +370,53 @@ export const useGameStore = create<GameState>()(
             };
           }),
 
+        setGraphicsQuality: (value: 'auto' | 'low' | 'medium' | 'high') =>
+          set((state) => {
+            // compute flags for quality
+            const compute = (quality: 'auto' | 'low' | 'medium' | 'high') => {
+              if (quality === 'low') return { enableBloom: false, enableShadows: false, enableParticles: false, enableFullRigidPhysics: false } as GameSettings;
+              if (quality === 'medium') return { enableBloom: true, enableShadows: true, enableParticles: false, enableFullRigidPhysics: true } as GameSettings;
+              if (quality === 'high') return { enableBloom: true, enableShadows: true, enableParticles: true, enableFullRigidPhysics: true } as GameSettings;
+              // auto: keep existing heuristics - use small screen and device heuristics to fallback
+              const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+              const nav = isBrowser ? (navigator as Navigator & { deviceMemory?: number }) : undefined;
+              const deviceMemory = isBrowser ? nav?.deviceMemory ?? undefined : undefined;
+              const hardwareConcurrency = isBrowser ? navigator.hardwareConcurrency ?? undefined : undefined;
+              const prefersReducedMotion = isBrowser ? !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) : false;
+              const smallScreen = isBrowser ? window.innerWidth <= 768 : false;
+              const lowPower = Boolean((deviceMemory && deviceMemory <= 2) || (hardwareConcurrency && hardwareConcurrency <= 2) || prefersReducedMotion || smallScreen);
+              return lowPower
+                ? { enableBloom: false, enableShadows: false, enableParticles: false, enableFullRigidPhysics: false } as GameSettings
+                : { enableBloom: true, enableShadows: true, enableParticles: true, enableFullRigidPhysics: true } as GameSettings;
+            };
+
+            const nextSettingsPartial = compute(value);
+            const nextSettings: GameSettings = {
+              ...state.settings,
+              ...nextSettingsPartial,
+              graphicsQuality: value,
+            };
+
+            return {
+              settings: nextSettings,
+              useRapierPhysics: !!nextSettings.enableFullRigidPhysics,
+            };
+          }),
+
+        announce: (msg: string) =>
+          set(() => {
+            // Set ephemeral announcement and clear after 4s
+            const next = { latestAnnouncement: msg } as Partial<GameDataState>;
+            setTimeout(() => {
+              try {
+                set(() => ({ latestAnnouncement: null } as Partial<GameDataState>));
+              } catch {
+                // ignore
+              }
+            }, 4000);
+            return next as GameDataState;
+          }),
+
         // Prestige system
         getPrestigeReward: () => {
           const { maxWaveReached } = get();
@@ -376,6 +445,7 @@ export const useGameStore = create<GameState>()(
               // Explicitly create fresh ball and bricks for active prestige
               balls: [createInitialBall(DEFAULT_BALL_SPEED, DEFAULT_BALL_DAMAGE)],
               bricks: createInitialBricks(DEFAULT_WAVE),
+              latestAnnouncement: `Prestiged: +${reward} Vibe Crystal${reward !== 1 ? 's' : ''} (+${Math.round((prestigeMultiplier - 1) * 100)}% score)`,
             };
           }),
 
