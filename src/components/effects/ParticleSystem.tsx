@@ -3,10 +3,15 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { effectBus, type EffectEvent } from '../../systems/EffectEventBus';
 
-const MAX_PARTICLES = 1000;
+// default count if not provided via props
+const DEFAULT_MAX_PARTICLES = 1000;
 const PARTICLE_LIFE = 1.0; // seconds
 
-export function ParticleSystem() {
+export type ParticleSystemProps = {
+  maxParticles?: number;
+};
+
+export function ParticleSystem({ maxParticles = DEFAULT_MAX_PARTICLES }: ParticleSystemProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
@@ -24,7 +29,8 @@ export function ParticleSystem() {
 
   // Initialize pool
   useEffect(() => {
-    particles.current = Array.from({ length: MAX_PARTICLES }, () => ({
+    const count = Math.max(0, Math.floor(maxParticles));
+    particles.current = Array.from({ length: count }, () => ({
       position: new THREE.Vector3(),
       velocity: new THREE.Vector3(),
       color: new THREE.Color(),
@@ -32,7 +38,7 @@ export function ParticleSystem() {
       scale: 1,
       active: false,
     }));
-  }, []);
+  }, [maxParticles]);
 
   useEffect(() => {
     const handleEffect = (event: EffectEvent) => {
@@ -100,8 +106,14 @@ export function ParticleSystem() {
     if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
   });
 
+  const instancedArgs: [THREE.BufferGeometry | undefined, THREE.Material | undefined, number] = [
+    undefined,
+    undefined,
+    Math.max(0, Math.floor(maxParticles)),
+  ];
+
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, MAX_PARTICLES]}>
+    <instancedMesh ref={meshRef} args={instancedArgs}>
       <boxGeometry args={[1, 1, 1]} />
       <meshStandardMaterial vertexColors toneMapped={false} emissiveIntensity={2} />
     </instancedMesh>
