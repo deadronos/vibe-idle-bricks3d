@@ -96,7 +96,9 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
   const ballBodies = new Map<string, RapierBody | undefined>();
   const brickBodies = new Map<string, { body: RapierBody | undefined; size: { x: number; y: number; z: number } }>();
   // Map of runtime handles (body or collider handles) -> game entity info { type, id }
-  const handleToEntity = new Map<any, { type: 'ball' | 'brick'; id: string }>();
+  const handleToEntity = new Map<unknown, { type: 'ball' | 'brick'; id: string }>();
+
+  const maybeHandle = (obj: unknown) => (obj && typeof obj === 'object' ? (obj as { handle?: unknown }).handle ?? obj : obj);
 
   function addBall(b: Ball) {
     if (ballBodies.has(b.id)) {
@@ -143,9 +145,9 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
 
     // Attempt to capture runtime handles for mapping contact events back to game ids
     try {
-      const bodyKey = (body as any)?.handle ?? body;
+      const bodyKey = maybeHandle(body);
       if (typeof bodyKey !== 'undefined' && bodyKey !== null) handleToEntity.set(bodyKey, { type: 'ball', id: b.id });
-      const collKey = (createdCollider as any)?.handle ?? createdCollider;
+      const collKey = maybeHandle(createdCollider);
       if (typeof collKey !== 'undefined' && collKey !== null) handleToEntity.set(collKey, { type: 'ball', id: b.id });
     } catch {
       /* ignore */
@@ -222,9 +224,9 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
 
     // Capture runtime handles for mapping
     try {
-      const bodyKey = (body as any)?.handle ?? body;
+      const bodyKey = maybeHandle(body);
       if (typeof bodyKey !== 'undefined' && bodyKey !== null) handleToEntity.set(bodyKey, { type: 'brick', id: brick.id });
-      const collKey = (createdCollider as any)?.handle ?? createdCollider;
+      const collKey = maybeHandle(createdCollider);
       if (typeof collKey !== 'undefined' && collKey !== null) handleToEntity.set(collKey, { type: 'brick', id: brick.id });
     } catch {
       /* ignore */
@@ -320,24 +322,30 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
   function drainContactEvents() {
     // Try to extract runtime-provided contact events (several rapier builds expose different APIs).
     try {
-      const runtimeAny = runtime as any;
+      const runtimeAny = runtime as unknown as Record<string, unknown>;
 
-      const tryCollect = (candidate: any): any[] | null => {
+      const tryCollect = (candidate: unknown): unknown[] | null => {
         if (!candidate) return null;
         try {
           if (typeof candidate === 'function') {
-            const res = candidate();
+            const fn = candidate as (...args: unknown[]) => unknown;
+            const res = fn();
             if (res == null) return null;
-            if (Array.isArray(res)) return res;
-            // If res is iterable
-            if (typeof res[Symbol.iterator] === 'function') return Array.from(res as Iterable<any>);
+            if (Array.isArray(res)) return res as unknown[];
+            if (res && typeof res === 'object' && typeof (res as Record<PropertyKey, unknown>)[Symbol.iterator] === 'function') return Array.from(res as Iterable<unknown>);
+            const resObj = res as Record<string, unknown>;
+            if (typeof resObj.drain === 'function') return (resObj.drain as (...args: unknown[]) => unknown)() as unknown[];
+            if (typeof resObj.drainEvents === 'function') return (resObj.drainEvents as (...args: unknown[]) => unknown)() as unknown[];
+            if (typeof resObj.getEvents === 'function') return (resObj.getEvents as (...args: unknown[]) => unknown)() as unknown[];
+            if (typeof resObj.getContactEvents === 'function') return (resObj.getContactEvents as (...args: unknown[]) => unknown)() as unknown[];
             return [res];
           }
-          if (Array.isArray(candidate)) return candidate;
-          if (typeof candidate.drain === 'function') return candidate.drain();
-          if (typeof candidate.drainEvents === 'function') return candidate.drainEvents();
-          if (typeof candidate.getEvents === 'function') return candidate.getEvents();
-          if (typeof candidate.getContactEvents === 'function') return candidate.getContactEvents();
+          if (Array.isArray(candidate)) return candidate as unknown[];
+          const candObj = candidate as Record<string, unknown>;
+          if (typeof candObj.drain === 'function') return (candObj.drain as (...args: unknown[]) => unknown)() as unknown[];
+          if (typeof candObj.drainEvents === 'function') return (candObj.drainEvents as (...args: unknown[]) => unknown)() as unknown[];
+          if (typeof candObj.getEvents === 'function') return (candObj.getEvents as (...args: unknown[]) => unknown)() as unknown[];
+          if (typeof candObj.getContactEvents === 'function') return (candObj.getContactEvents as (...args: unknown[]) => unknown)() as unknown[];
           return null;
         } catch {
           return null;
@@ -362,27 +370,34 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
           const out: ContactEvent[] = [];
           for (const ev of evs) {
             try {
+              const evObj = ev as Record<string, unknown>;
               // Heuristic: find handles on the event object
               const possibleHandleKeys = ['collider1', 'collider2', 'colliderA', 'colliderB', 'body1', 'body2', 'bodyA', 'bodyB', 'rigidBody1', 'rigidBody2', 'a', 'b', 'object1', 'object2', 'handle1', 'handle2'];
-              let h1: any = undefined;
-              let h2: any = undefined;
+              let h1: unknown = undefined;
+              let h2: unknown = undefined;
               for (let i = 0; i < possibleHandleKeys.length; i += 2) {
                 const k1 = possibleHandleKeys[i];
                 const k2 = possibleHandleKeys[i + 1];
-                if (ev[k1] !== undefined && ev[k2] !== undefined) {
-                  h1 = ev[k1];
-                  h2 = ev[k2];
+                if (evObj[k1] !== undefined && evObj[k2] !== undefined) {
+                  h1 = evObj[k1];
+                  h2 = evObj[k2];
                   break;
                 }
               }
 
               // Fallback: look for numeric pair in array-like event
               if (h1 === undefined && Array.isArray(ev) && ev.length >= 2) {
-                h1 = ev[0];
-                h2 = ev[1];
+                h1 = (ev as unknown[])[0];
+                h2 = (ev as unknown[])[1];
               }
 
-              const unpack = (x: any) => (x && (x.handle !== undefined ? x.handle : x));
+              const unpack = (x: unknown) => {
+                if (x && typeof x === 'object') {
+                  const xo = x as Record<string, unknown>;
+                  return xo.handle !== undefined ? xo.handle : x;
+                }
+                return x;
+              };
               const key1 = unpack(h1);
               const key2 = unpack(h2);
 
@@ -404,20 +419,25 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
                 continue;
               }
 
-              const extractVec = (obj: any, keys: string[]) => {
+              const extractVec = (obj: unknown, keys: string[]): Vec3 | undefined => {
                 for (const k of keys) {
-                  const v = obj?.[k];
+                  if (!obj || typeof obj !== 'object') continue;
+                  const v = (obj as Record<string, unknown>)[k];
                   if (v === undefined) continue;
                   if (Array.isArray(v)) return [v[0] ?? 0, v[1] ?? 0, v[2] ?? 0] as Vec3;
-                  if (typeof v === 'object' && v !== null && ('x' in v || 'y' in v || 'z' in v)) return [v.x ?? 0, v.y ?? 0, v.z ?? 0] as Vec3;
+                  if (typeof v === 'object' && v !== null && ('x' in v || 'y' in v || 'z' in v)) {
+                    const vo = v as Record<string, unknown>;
+                    return [Number(vo.x ?? 0), Number(vo.y ?? 0), Number(vo.z ?? 0)];
+                  }
                 }
                 return undefined;
               };
 
-              const point = extractVec(ev, ['point', 'contactPoint', 'worldPoint', 'p', 'pt', 'position']) ?? [0, 0, 0];
-              const normal = extractVec(ev, ['normal', 'contactNormal', 'n']) ?? undefined;
-              const relVel = extractVec(ev, ['relativeVelocity', 'relative_vel', 'vel', 'relativeVelocityWorld']) ?? undefined;
-              const impulse = (ev && (ev.impulse ?? ev.totalImpulse ?? ev.impulseMagnitude ?? ev.normalImpulse)) ?? undefined;
+              const point = extractVec(evObj, ['point', 'contactPoint', 'worldPoint', 'p', 'pt', 'position']) ?? [0, 0, 0];
+              const normal = extractVec(evObj, ['normal', 'contactNormal', 'n']) ?? undefined;
+              const relVel = extractVec(evObj, ['relativeVelocity', 'relative_vel', 'vel', 'relativeVelocityWorld']) ?? undefined;
+              const rawImpulse = (evObj && (evObj['impulse'] ?? evObj['totalImpulse'] ?? evObj['impulseMagnitude'] ?? evObj['normalImpulse'])) ?? undefined;
+              const impulse = typeof rawImpulse === 'number' ? rawImpulse : (rawImpulse == null ? undefined : Number(rawImpulse as unknown));
 
               out.push({ ballId, brickId, point, normal: normal ?? [0, 0, 1], impulse, relativeVelocity: relVel });
             } catch {
@@ -512,7 +532,13 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
       const impObj = { x: impulse[0], y: impulse[1], z: impulse[2] };
 
       // Try common Rapier runtime method shapes
-      const anyB: any = b as any;
+      const anyB = b as unknown as {
+        applyImpulse?: (a: unknown, b?: unknown) => unknown;
+        applyImpulseAtPoint?: (a: unknown, b?: unknown, c?: unknown) => unknown;
+        linvel?: () => unknown;
+        setLinvel?: (x: number, y: number, z: number) => unknown;
+      };
+
       if (typeof anyB.applyImpulse === 'function') {
         try {
           anyB.applyImpulse(impObj, true);
@@ -542,10 +568,10 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
       }
 
       // Fallback: nudge linear velocity
-      const vRaw = typeof anyB.linvel === 'function' ? anyB.linvel() : anyB.linvel;
-      let vx = Array.isArray(vRaw) ? vRaw[0] ?? 0 : vRaw?.x ?? 0;
-      let vy = Array.isArray(vRaw) ? vRaw[1] ?? 0 : vRaw?.y ?? 0;
-      let vz = Array.isArray(vRaw) ? vRaw[2] ?? 0 : vRaw?.z ?? 0;
+      const vRaw = typeof anyB.linvel === 'function' ? anyB.linvel() : (anyB as { linvel?: unknown }).linvel;
+      let vx = Array.isArray(vRaw) ? (vRaw as number[])[0] ?? 0 : Number(((vRaw as Record<string, unknown>)['x']) ?? 0);
+      let vy = Array.isArray(vRaw) ? (vRaw as number[])[1] ?? 0 : Number(((vRaw as Record<string, unknown>)['y']) ?? 0);
+      let vz = Array.isArray(vRaw) ? (vRaw as number[])[2] ?? 0 : Number(((vRaw as Record<string, unknown>)['z']) ?? 0);
 
       // Heuristic scale so impulses remain reasonable
       const scale = 0.5;
@@ -572,7 +598,11 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
     const b = ballBodies.get(id);
     if (!b) return false;
     try {
-      const anyB: any = b as any;
+      const anyB = b as unknown as {
+        applyTorque?: (a: unknown, b?: unknown) => unknown;
+        setAngvel?: (x: number, y: number, z: number) => unknown;
+        angvel?: () => unknown;
+      };
 
       if (typeof anyB.applyTorque === 'function') {
         try {
@@ -598,10 +628,10 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
       }
 
       // Fallback: attempt to nudge angular velocity if accessor exists
-      const avRaw = typeof anyB.angvel === 'function' ? anyB.angvel() : anyB.angvel;
-      let avx = Array.isArray(avRaw) ? avRaw[0] ?? 0 : avRaw?.x ?? 0;
-      let avy = Array.isArray(avRaw) ? avRaw[1] ?? 0 : avRaw?.y ?? 0;
-      let avz = Array.isArray(avRaw) ? avRaw[2] ?? 0 : avRaw?.z ?? 0;
+      const avRaw = typeof anyB.angvel === 'function' ? anyB.angvel() : (anyB as { angvel?: unknown }).angvel;
+      let avx = Array.isArray(avRaw) ? (avRaw as number[])[0] ?? 0 : Number(((avRaw as Record<string, unknown>)['x']) ?? 0);
+      let avy = Array.isArray(avRaw) ? (avRaw as number[])[1] ?? 0 : Number(((avRaw as Record<string, unknown>)['y']) ?? 0);
+      let avz = Array.isArray(avRaw) ? (avRaw as number[])[2] ?? 0 : Number(((avRaw as Record<string, unknown>)['z']) ?? 0);
 
       const scale = 0.5;
       avx += torque[0] * scale;
@@ -623,5 +653,5 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
     return false;
   }
 
-  return { addBall, removeBall, addBrick, removeBrick, step, drainContactEvents, getBallStates, destroy };
+  return { addBall, removeBall, addBrick, removeBrick, step, drainContactEvents, getBallStates, applyImpulseToBall, applyTorqueToBall, destroy };
 }

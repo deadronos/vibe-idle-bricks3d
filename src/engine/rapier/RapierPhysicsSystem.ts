@@ -151,9 +151,11 @@ export const RapierPhysicsSystem = {
 
   applyImpulse(ballId: string, impulse: [number, number, number], point?: [number, number, number]) {
     const w = _getWorld();
-    if (!w || typeof (w as any).applyImpulseToBall !== 'function') return false;
+    if (!w) return false;
+    const fn = (w as RapierWorld).applyImpulseToBall;
+    if (typeof fn !== 'function') return false;
     try {
-      return (w as any).applyImpulseToBall(ballId, impulse, point);
+      return fn.call(w, ballId, impulse, point);
     } catch {
       return false;
     }
@@ -161,9 +163,11 @@ export const RapierPhysicsSystem = {
 
   applyTorque(ballId: string, torque: [number, number, number]) {
     const w = _getWorld();
-    if (!w || typeof (w as any).applyTorqueToBall !== 'function') return false;
+    if (!w) return false;
+    const fn = (w as RapierWorld).applyTorqueToBall;
+    if (typeof fn !== 'function') return false;
     try {
-      return (w as any).applyTorqueToBall(ballId, torque);
+      return fn.call(w, ballId, torque);
     } catch {
       return false;
     }

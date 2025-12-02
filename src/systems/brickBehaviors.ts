@@ -69,7 +69,7 @@ export function handleContact(info: ContactInfo, opts: { applyDamage?: boolean }
 
 // Default no-op behavior registration for 'normal' bricks (kept lightweight)
 registerBehavior('normal', {
-  onHit: (_brickId, _info) => {
+  onHit: () => {
     // intentionally empty: store damage is applied by FrameManager via applyHits
   },
 });

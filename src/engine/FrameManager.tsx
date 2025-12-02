@@ -4,7 +4,7 @@ import type { Ball } from '../store/types';
 import { useGameStore, ARENA_SIZE } from '../store/gameStore';
 import { stepBallFrame } from './collision';
 import { RapierPhysicsSystem } from './rapier/RapierPhysicsSystem';
-import type { RapierWorld, BallState } from './rapier/rapierWorld';
+import type { RapierWorld, BallState, ContactEvent } from './rapier/rapierWorld';
 import { handleContact } from '../systems/brickBehaviors';
 
 export function FrameManager() {
@@ -158,19 +158,19 @@ export function FrameManager() {
           // Notify behaviors (do NOT re-apply damage here to avoid duplication)
           for (const e of events) {
             const by = balls.find((x) => x.id === e.ballId);
-            const point = (e as any).point ?? (by ? by.position : [0, 0, 0]);
-            const relVel = (e as any).relativeVelocity ?? (by ? by.velocity : [0, 0, 0]);
-            const normal = (e as any).normal ?? (() => {
+            const point = e.point ?? (by ? by.position : [0, 0, 0]);
+            const relVel = e.relativeVelocity ?? (by ? by.velocity : [0, 0, 0]);
+            const normal = e.normal ?? (() => {
               const rv = relVel;
               const speed = Math.sqrt(rv[0] * rv[0] + rv[1] * rv[1] + rv[2] * rv[2]);
               return speed > 1e-6 ? [rv[0] / speed, rv[1] / speed, rv[2] / speed] : [0, 0, 1];
             })();
-            const impulse = (e as any).impulse ?? (by ? by.damage : 1);
+            const impulse = e.impulse ?? (by ? by.damage : 1);
 
             // Apply physical impulse/torque to the ball if the runtime supports it.
             try {
               // Prefer applying an impulse at contact point (world space) so Rapier generates torque naturally
-              const impVec: [number, number, number] = [ (normal as number[])[0] * (impulse as number), (normal as number[])[1] * (impulse as number), (normal as number[])[2] * (impulse as number) ];
+              const impVec: [number, number, number] = [ normal[0] * (impulse as number), normal[1] * (impulse as number), normal[2] * (impulse as number) ];
               RapierPhysicsSystem.applyImpulse(e.ballId, impVec as [number, number, number], point as [number, number, number]);
             } catch {
               /* ignore failures */
@@ -206,7 +206,7 @@ export function FrameManager() {
     }
 
     const hits: { brickId: string; damage: number }[] = [];
-    const contactInfos: any[] = [];
+    const contactInfos: ContactEvent[] = [];
     const nextBalls = balls.map((ball) => {
       const { nextPosition, nextVelocity, hitBrickId } = stepBallFrame(
         ball,
@@ -220,8 +220,8 @@ export function FrameManager() {
         // Build a best-effort contactInfo for non-rapier path
         const relVel = ball.velocity;
         const speed = Math.sqrt(relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]);
-        const normal = speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
-        contactInfos.push({ ballId: ball.id, brickId: hitBrickId, point: nextPosition, normal, relativeVelocity: relVel, impulse: ball.damage });
+        const normal: [number, number, number] = speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
+        contactInfos.push({ ballId: ball.id, brickId: hitBrickId, point: [nextPosition[0], nextPosition[1], nextPosition[2]] as [number, number, number], normal, relativeVelocity: relVel, impulse: ball.damage });
       }
 
       return {
