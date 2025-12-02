@@ -2,11 +2,12 @@
 
 ## PENDING
 
-none
+- [DESIGN006] Responsive & Accessible UI - Drafted: mobile-friendly, a11y, device defaults
 
 ## IN PROGRESS
 
 - [DESIGN002] Performance & UX - Drafted: FrameManager, InstancedMesh, Accessibility
+- [DESIGN006] Responsive & Accessible UI - Drafted: mobile-friendly, a11y, device defaults
 
 ## COMPLETED
 
