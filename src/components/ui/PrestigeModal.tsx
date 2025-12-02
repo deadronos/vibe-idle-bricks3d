@@ -27,13 +27,13 @@ export function PrestigeModal({ onClose }: PrestigeModalProps) {
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content prestige-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-overlay" onClick={onClose}>
+                <div className="modal-content prestige-modal" role="dialog" aria-modal="true" aria-labelledby="prestige-heading" onClick={(e) => e.stopPropagation()}>
                 <button className="modal-close" onClick={onClose} aria-label="Close">
                     ×
                 </button>
 
-                <h2>🌟 Prestige System</h2>
+                <h2 id="prestige-heading">🌟 Prestige System</h2>
 
                 <div className="prestige-stats">
                     <div className="prestige-stat">

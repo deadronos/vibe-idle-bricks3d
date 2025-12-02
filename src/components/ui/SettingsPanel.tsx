@@ -16,9 +16,9 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
 
     return (
         <div className="settings-modal-overlay" onClick={onClose}>
-            <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-heading" onClick={(e) => e.stopPropagation()}>
                 <div className="settings-header">
-                    <h2>Settings</h2>
+                    <h2 id="settings-heading">Settings</h2>
                     <button className="close-button" onClick={onClose}>✕</button>
                 </div>
                 <div className="settings-grid">

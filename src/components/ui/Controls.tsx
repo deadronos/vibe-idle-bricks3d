@@ -7,7 +7,12 @@ export function Controls() {
   return (
     <>
       <div className="panel controls-panel">
-        <button className={`control-button ${isPaused ? 'paused' : ''}`} onClick={togglePause}>
+        <button
+          className={`control-button ${isPaused ? 'paused' : ''}`}
+          onClick={togglePause}
+          aria-pressed={isPaused ? 'true' : 'false'}
+          aria-label={isPaused ? 'Resume game' : 'Pause game'}
+        >
           {isPaused ? '▶️ Resume' : '⏸️ Pause'}
         </button>
       </div>

@@ -5,7 +5,8 @@
   right: 0;
   bottom: 0;
   pointer-events: none;
-  padding: 20px;
+  /* support safe area insets for modern phones */
+  padding: calc(20px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -27,12 +28,17 @@
 
 .panel {
   background: rgba(0, 0, 0, 0.7);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(74, 144, 226, 0.3);
   border-radius: 12px;
   padding: 16px;
   pointer-events: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  /* Prevent panels from overflowing the viewport on small devices */
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .panel h2 {
@@ -99,6 +105,12 @@
   color: #fff;
   cursor: pointer;
   transition: all 0.2s ease;
+  /* Mobile touch target size */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
 }
 
 .upgrade-button:hover:not(:disabled) {
@@ -151,6 +163,16 @@
   font-size: 16px;
   font-weight: bold;
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+/* Make interactive elements touch-friendly */
+.gear-icon,
+.upgrade-button,
+.prestige-trigger,
+.control-button,
+.modal-close {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .prestige-trigger.available {
@@ -214,6 +236,7 @@
   font-size: 16px;
   cursor: pointer;
   transition: all 0.2s ease;
+  touch-action: manipulation;
 }
 
 .control-button:hover {
@@ -231,6 +254,7 @@
   bottom: 20px;
   right: 20px;
   max-width: 280px;
+  overflow-y: auto;
 }
 
 .achievements-list {
@@ -290,9 +314,12 @@
   .upgrades-panel {
     position: absolute;
     right: 20px;
+    left: 20px;
     top: auto;
     bottom: 80px;
     transform: none;
+    max-height: 50vh;
+    overflow-y: auto;
   }
 
   .achievements-panel {
@@ -300,10 +327,30 @@
     right: 20px;
     bottom: 20px;
     left: 20px;
+    max-height: 40vh;
+    overflow-y: auto;
   }
 
   .instructions {
     display: none;
+  }
+}
+
+/* Accessibility: visible focus for keyboard users */
+button:focus,
+.panel:focus {
+  outline: 2px solid rgba(74, 144, 226, 0.75);
+  outline-offset: 2px;
+}
+
+/* Reduce non-essential motion when the user prefers it */
+@media (prefers-reduced-motion: reduce) {
+  .combo-count,
+  .combo-bonus,
+  .prestige-trigger.active,
+  .gear-icon {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
@@ -315,6 +362,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.8);
+  -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px);
   display: flex;
   justify-content: center;

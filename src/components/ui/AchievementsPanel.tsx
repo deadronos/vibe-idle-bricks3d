@@ -7,8 +7,8 @@ export function AchievementsPanel() {
   );
 
   return (
-    <div className="panel achievements-panel">
-      <h2>Achievements</h2>
+    <div className="panel achievements-panel" role="region" aria-labelledby="achievements-heading">
+      <h2 id="achievements-heading">Achievements</h2>
       <div className="stat">
         <span>Unlocked:</span>
         <span>

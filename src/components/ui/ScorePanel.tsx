@@ -7,15 +7,17 @@ export function ScorePanel({ onOpenSettings }: { onOpenSettings: () => void }) {
   const maxWaveReached = useGameStore((state) => state.maxWaveReached);
 
   return (
-    <div className="panel score-panel">
+    <div className="panel score-panel" role="region" aria-labelledby="score-heading">
       <button
         className="gear-icon"
         onClick={onOpenSettings}
         aria-label="Settings"
+        aria-controls="settings-heading"
+        aria-haspopup="dialog"
       >
         ⚙️
       </button>
-      <h2>Score</h2>
+      <h2 id="score-heading">Score</h2>
       <div className="score-value">{score.toLocaleString()}</div>
       <div className="stat">
         <span>Bricks Destroyed:</span>
