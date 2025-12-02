@@ -38,6 +38,7 @@ export interface GameSettings {
   enableShadows: boolean;
   enableSound: boolean;
   enableParticles: boolean;
+  enableFullRigidPhysics?: boolean;
 }
 
 export type AchievementType = 'score' | 'bricks' | 'wave' | 'upgrade';
