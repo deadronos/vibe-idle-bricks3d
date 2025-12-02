@@ -9,7 +9,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  /* make sure it's above other UI drawers */
+  z-index: 3000;
+  /* overlay must receive pointer events so clicks go to the modal */
+  pointer-events: auto;
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -17,12 +20,19 @@
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   border: 2px solid rgba(255, 215, 0, 0.3);
   border-radius: 16px;
-  padding: 2rem;
+  /* ensure padding/border are included in width calculation so the modal never overflows its container */
+  box-sizing: border-box;
+  padding: 1.5rem;
   max-width: 500px;
-  width: 90%;
+  /* prefer viewport-relative width so the modal fits if the overlay is constrained */
+  width: min(90vw, 500px);
+  /* allow automatic scaling via --modal-scale for tight containers */
+  transform: scale(var(--modal-scale, 1));
+  transform-origin: center;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
   position: relative;
   animation: slideUp 0.3s ease-out;
+  transition: transform 160ms ease-out;
 }
 
 .modal-close {
@@ -102,6 +112,12 @@
 .prestige-reward {
   text-align: center;
   margin-bottom: 1rem;
+}
+
+/* keep the modal from overflowing vertically and allow internal scrolling */
+.modal-content {
+  max-height: 90vh;
+  overflow: auto;
 }
 
 .reward-text {

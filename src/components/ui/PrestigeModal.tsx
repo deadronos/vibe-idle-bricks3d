@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useGameStore } from '../../store/gameStore';
 import './PrestigeModal.css';
 
@@ -62,7 +63,70 @@ export function PrestigeModal({ onClose }: PrestigeModalProps) {
     };
   }, [onClose]);
 
-  return (
+  // dynamically scale the modal to ensure it fits tight containers (e.g. inside an upgrade panel)
+  React.useEffect(() => {
+    const el = modalRef.current;
+    if (!el || typeof window === 'undefined') return;
+
+    const overlay = el.parentElement as HTMLElement | null;
+    if (!overlay) return;
+
+    let mounted = true;
+
+    const updateScale = () => {
+      if (!mounted) return;
+
+      // Temporarily clear transform to measure natural size
+      const prevTransform = el.style.transform;
+      el.style.transform = 'none';
+
+      // measure on next frame to ensure layout is complete
+      window.requestAnimationFrame(() => {
+        const modalRect = el.getBoundingClientRect();
+        const overlayRect = overlay.getBoundingClientRect();
+
+        // put a small margin so the modal doesn't touch container edges
+        const margin = Math.min(48, overlayRect.width * 0.06);
+        const maxW = Math.max(0, overlayRect.width - margin * 2);
+        const maxH = Math.max(0, overlayRect.height - margin * 2);
+
+        let scale = 1;
+        if (modalRect.width > 0 && modalRect.height > 0) {
+          const scaleX = Math.min(1, maxW / modalRect.width);
+          const scaleY = Math.min(1, maxH / modalRect.height);
+          scale = Math.min(scaleX, scaleY);
+        }
+
+        // prefer readable minimum scale
+        scale = Math.max(0.6, Math.min(1, scale));
+
+        el.style.setProperty('--modal-scale', String(scale));
+
+        // restore previous transform if any
+        el.style.transform = prevTransform;
+      });
+    };
+
+    updateScale();
+    window.addEventListener('resize', updateScale);
+
+    let ro: ResizeObserver | null = null;
+    if (typeof (window as any).ResizeObserver === 'function') {
+      const _ro = new (window as any).ResizeObserver(updateScale);
+      _ro.observe(overlay);
+      _ro.observe(el);
+      ro = _ro;
+    }
+
+    return () => {
+      mounted = false;
+      window.removeEventListener('resize', updateScale);
+      if (ro) ro.disconnect();
+      if (el) el.style.removeProperty('--modal-scale');
+    };
+  }, []);
+
+  const content = (
     <div className="modal-overlay" onClick={onClose}>
       <div
         ref={modalRef}
@@ -137,4 +201,10 @@ export function PrestigeModal({ onClose }: PrestigeModalProps) {
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(content, document.body);
+  }
+
+  return content; // fallback for SSR / tests without DOM
 }
