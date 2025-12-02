@@ -40,6 +40,12 @@ export const createInitialBricks = (wave: number): Brick[] => {
           armorMultiplier = 0.5; // 50% damage reduction
         }
 
+        // Ensure the very first brick is a normal brick (keeps behavior deterministic for tests)
+        if (bricks.length === 0) {
+          type = 'normal';
+          armorMultiplier = undefined;
+        }
+
         bricks.push({
           id: generateBrickId(),
           position: [

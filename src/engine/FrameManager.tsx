@@ -3,10 +3,9 @@ import { useFrame } from '@react-three/fiber';
 import type { Ball } from '../store/types';
 import { useGameStore, ARENA_SIZE } from '../store/gameStore';
 import { stepBallFrame } from './collision';
-import { initRapier, resetRapier } from './rapier/rapierInit';
-import { createWorld } from './rapier/rapierWorld';
-import type { RapierWorld, BallState } from './rapier/rapierWorld';
-import { setWorld, resetAll, setModule } from './rapier/rapierRuntime';
+import { RapierPhysicsSystem } from './rapier/RapierPhysicsSystem';
+import type { RapierWorld, BallState, ContactEvent } from './rapier/rapierWorld';
+import { handleContact } from '../systems/brickBehaviors';
 
 export function FrameManager() {
   const isPaused = useGameStore((state) => state.isPaused);
@@ -22,16 +21,12 @@ export function FrameManager() {
   useEffect(() => {
     // Clean up rapier resources on unmount
     return () => {
-      if (rapierWorldRef.current) {
-        try {
-          rapierWorldRef.current.destroy();
-        } catch (e) {
-          void e;
-        }
-        rapierWorldRef.current = null;
+      try {
+        RapierPhysicsSystem.destroy();
+      } catch (e) {
+        void e;
       }
-      resetAll();
-      resetRapier();
+      rapierWorldRef.current = null;
     };
   }, []);
 
@@ -54,22 +49,19 @@ export function FrameManager() {
     if (useRapierPhysics) {
       // Initialize Rapier lazily if toggle was enabled but not initialized yet
       if (!rapierWorldRef.current && state.useRapierPhysics) {
-        initRapier()
-          .then((R) => {
+        RapierPhysicsSystem.init()
+          .then((w) => {
             try {
-              const w = createWorld(R, { x: 0, y: 0, z: 0 });
               rapierWorldRef.current = w;
-              setModule(R);
-              setWorld(w);
 
               // Register existing bricks and balls
-                      for (const b of bricks) {
-                        try {
-                          w.addBrick(b);
-                          regBrickIds.current.add(b.id);
-                        } catch (e) {
-                          void e;
-                        }
+              for (const b of bricks) {
+                try {
+                  w.addBrick(b);
+                  regBrickIds.current.add(b.id);
+                } catch (e) {
+                  void e;
+                }
               }
 
               for (const b of balls) {
@@ -80,19 +72,20 @@ export function FrameManager() {
                   void e;
                 }
               }
-
-              // Mark rapier active
-              useGameStore.setState({ rapierActive: true, rapierInitError: null });
             } catch (err) {
-              useGameStore.setState({ useRapierPhysics: false, rapierActive: false, rapierInitError: (err as Error).message });
+              try {
+                useGameStore.setState({ useRapierPhysics: false, rapierActive: false, rapierInitError: (err as Error).message });
+              } catch {
+                /* ignore */
+              }
             }
           })
-          .catch((err) => {
-            useGameStore.setState({ useRapierPhysics: false, rapierActive: false, rapierInitError: (err as Error).message });
+          .catch(() => {
+            // RapierPhysicsSystem.init handles store state on error
           });
       }
 
-      const w = rapierWorldRef.current;
+      const w = RapierPhysicsSystem.getWorld();
       if (w) {
         // Sync newly-added balls
         const ballIds = new Set(balls.map((b) => b.id));
@@ -146,9 +139,10 @@ export function FrameManager() {
         // Step the world
         w.step(delta);
 
-        // Drain events and forward to the store
+        // Drain events and forward to the store; also notify behavior hooks.
         const events = w.drainContactEvents();
         if (events.length > 0) {
+          // Aggregate for damage/combo then call behavior hooks for visuals/impulses.
           const hitsForStore: { brickId: string; damage: number }[] = [];
           for (const e of events) {
             const by = balls.find((x) => x.id === e.ballId);
@@ -159,6 +153,30 @@ export function FrameManager() {
           if (hitsForStore.length > 0) {
             const apply = useGameStore.getState().applyHits;
             if (apply) apply(hitsForStore);
+          }
+
+          // Notify behaviors (do NOT re-apply damage here to avoid duplication)
+          for (const e of events) {
+            const by = balls.find((x) => x.id === e.ballId);
+            const point = e.point ?? (by ? by.position : [0, 0, 0]);
+            const relVel = e.relativeVelocity ?? (by ? by.velocity : [0, 0, 0]);
+            const normal = e.normal ?? (() => {
+              const rv = relVel;
+              const speed = Math.sqrt(rv[0] * rv[0] + rv[1] * rv[1] + rv[2] * rv[2]);
+              return speed > 1e-6 ? [rv[0] / speed, rv[1] / speed, rv[2] / speed] : [0, 0, 1];
+            })();
+            const impulse = e.impulse ?? (by ? by.damage : 1);
+
+            // Apply physical impulse/torque to the ball if the runtime supports it.
+            try {
+              // Prefer applying an impulse at contact point (world space) so Rapier generates torque naturally
+              const impVec: [number, number, number] = [ normal[0] * (impulse as number), normal[1] * (impulse as number), normal[2] * (impulse as number) ];
+              RapierPhysicsSystem.applyImpulse(e.ballId, impVec as [number, number, number], point as [number, number, number]);
+            } catch {
+              /* ignore failures */
+            }
+
+            handleContact({ ballId: e.ballId, brickId: e.brickId, point, normal, relativeVelocity: relVel, impulse }, { applyDamage: false });
           }
         }
 
@@ -188,6 +206,7 @@ export function FrameManager() {
     }
 
     const hits: { brickId: string; damage: number }[] = [];
+    const contactInfos: ContactEvent[] = [];
     const nextBalls = balls.map((ball) => {
       const { nextPosition, nextVelocity, hitBrickId } = stepBallFrame(
         ball,
@@ -198,6 +217,11 @@ export function FrameManager() {
 
       if (hitBrickId) {
         hits.push({ brickId: hitBrickId, damage: ball.damage });
+        // Build a best-effort contactInfo for non-rapier path
+        const relVel = ball.velocity;
+        const speed = Math.sqrt(relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]);
+        const normal: [number, number, number] = speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
+        contactInfos.push({ ballId: ball.id, brickId: hitBrickId, point: [nextPosition[0], nextPosition[1], nextPosition[2]] as [number, number, number], normal, relativeVelocity: relVel, impulse: ball.damage });
       }
 
       return {
@@ -222,6 +246,11 @@ export function FrameManager() {
           const newComboMultiplier = Math.min(1 + newComboCount * 0.05, 3);
           useGameStore.setState({ comboCount: newComboCount, comboMultiplier: newComboMultiplier, lastHitTime: Date.now() });
         }
+      }
+
+      // Notify behaviors (do not re-apply damage here)
+      for (const info of contactInfos) {
+        handleContact(info, { applyDamage: false });
       }
     }
 

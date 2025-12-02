@@ -60,6 +60,8 @@ const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState =
       enableShadows: true,
       enableSound: true,
       enableParticles: true,
+      // Enable full rigid-body physics (Rapier) by default.
+      enableFullRigidPhysics: true,
     },
     // Prestige system
     vibeCrystals: 0,
@@ -325,12 +327,26 @@ export const useGameStore = create<GameState>()(
           }),
 
         toggleSetting: (key: keyof GameSettings) =>
-          set((state) => ({
-            settings: {
+          set((state) => {
+            const current = state.settings[key as keyof GameSettings] as unknown as boolean;
+            const nextSettings = {
               ...state.settings,
-              [key]: !state.settings[key as keyof GameSettings],
-            },
-          })),
+              [key]: !current,
+            } as GameSettings;
+
+            // If the user toggles the full rigid physics setting, mirror it to the runtime flag
+            // that controls whether Rapier-based rigid bodies should be used.
+            if (key === 'enableFullRigidPhysics') {
+              return {
+                settings: nextSettings,
+                useRapierPhysics: !!nextSettings.enableFullRigidPhysics,
+              };
+            }
+
+            return {
+              settings: nextSettings,
+            };
+          }),
 
         // Prestige system
         getPrestigeReward: () => {
