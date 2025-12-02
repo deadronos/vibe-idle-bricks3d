@@ -60,8 +60,8 @@ const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState =
       enableShadows: true,
       enableSound: true,
       enableParticles: true,
-      // Opt-in: enable full rigid-body physics (Rapier). Disabled by default for lower-end devices.
-      enableFullRigidPhysics: false,
+      // Enable full rigid-body physics (Rapier) by default.
+      enableFullRigidPhysics: true,
     },
     // Prestige system
     vibeCrystals: 0,
@@ -83,7 +83,7 @@ const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState =
     lastBallSpawnTime: 0,
     lastSaveTime: Date.now(),
     // Rapier integration runtime flags
-    useRapierPhysics: false,
+    useRapierPhysics: true,
     rapierActive: false,
     rapierInitError: null as string | null,
   };
