@@ -111,8 +111,9 @@ export function PrestigeModal({ onClose }: PrestigeModalProps) {
     window.addEventListener('resize', updateScale);
 
     let ro: ResizeObserver | null = null;
-    if (typeof (window as any).ResizeObserver === 'function') {
-      const _ro = new (window as any).ResizeObserver(updateScale);
+    const globalObj = window as Window & { ResizeObserver?: typeof ResizeObserver };
+    if (typeof globalObj.ResizeObserver === 'function') {
+      const _ro = new globalObj.ResizeObserver(updateScale);
       _ro.observe(overlay);
       _ro.observe(el);
       ro = _ro;
