@@ -46,9 +46,12 @@ export const createInitialBricks = (wave: number): Brick[] => {
         }
 
         // Ensure the very first brick is a normal brick (keeps behavior deterministic for tests)
+        // If randomness produced a special brick (golden/armor) for the first slot,
+        // explicitly reset it back to a normal brick including its value.
         if (bricks.length === 0) {
           type = 'normal';
           armorMultiplier = undefined;
+          value = baseValue;
         }
 
         bricks.push({

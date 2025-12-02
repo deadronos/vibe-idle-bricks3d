@@ -18,6 +18,13 @@ describe('Ball Spawn Queue - Timing', () => {
   beforeEach(() => {
     resetToKnownState();
     vi.clearAllMocks();
+    // Use deterministic time in these timing tests so Date.now comparisons are stable
+    vi.useFakeTimers();
+    // initialize the fake clock to the current real time for realistic timestamps
+    vi.setSystemTime(Date.now());
+  });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('should spawn exactly one ball at 500ms intervals', () => {
