@@ -3,17 +3,23 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { RapierWorld, BallState } from '../engine/rapier/rapierWorld';
 import { getWorld as getRapierWorld } from '../engine/rapier/rapierRuntime';
+import { useGameStore } from '../store/gameStore';
+import { getRenderingOptions } from './GameScene.utils';
 
 interface BallsInstancedProps {
   world?: RapierWorld | null;
   maxInstances?: number;
   radius?: number;
+  geometrySegments?: number;
 }
 
-export function BallsInstanced({ world, maxInstances = 128, radius = 0.25 }: BallsInstancedProps) {
+export function BallsInstanced({ world, maxInstances = 128, radius = 0.25, geometrySegments }: BallsInstancedProps) {
   const meshRef = useRef<THREE.InstancedMesh | null>(null);
   const idToIndex = useRef<Map<string, number>>(new Map());
   const tmpMat = useMemo(() => new THREE.Matrix4(), []);
+  const settings = useGameStore((state) => state.settings);
+  const { computedQuality } = getRenderingOptions(settings);
+  const segments = geometrySegments ?? (computedQuality === 'high' ? 16 : computedQuality === 'medium' ? 8 : 6);
 
   useFrame(() => {
     // If caller didn't pass a world instance, try the shared runtime registry
@@ -57,11 +63,19 @@ export function BallsInstanced({ world, maxInstances = 128, radius = 0.25 }: Bal
   });
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined as unknown as THREE.BufferGeometry, undefined as unknown as THREE.Material, maxInstances]}>
-      <sphereGeometry args={[radius, 8, 8]} />
+    <instancedMesh
+      ref={meshRef}
+      args={[
+        undefined as unknown as THREE.BufferGeometry,
+        undefined as unknown as THREE.Material,
+        maxInstances,
+      ]}
+        castShadow={computedQuality !== 'low'}
+        >
+      <sphereGeometry args={[radius, segments, segments]} />
       <meshStandardMaterial color="white" />
     </instancedMesh>
   );
-};
+}
 
 export default BallsInstanced;

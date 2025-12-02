@@ -16,7 +16,15 @@ describe('Rapier integration helpers (store)', () => {
   });
 
   it('applyHits reduces brick health and does not increment combo for single hit', () => {
-    const brick: Brick = { id: 'b1', position: [0, 0, 0], health: 3, maxHealth: 3, color: '#fff', value: 5, type: 'normal' };
+    const brick: Brick = {
+      id: 'b1',
+      position: [0, 0, 0],
+      health: 3,
+      maxHealth: 3,
+      color: '#fff',
+      value: 5,
+      type: 'normal',
+    };
 
     useGameStore.setState({ bricks: [brick], comboCount: 0, comboMultiplier: 1 });
 
@@ -31,8 +39,24 @@ describe('Rapier integration helpers (store)', () => {
 
   it('applyHits increments combo when multiple bricks are hit in same frame', () => {
     const bricks: Brick[] = [
-      { id: 'b1', position: [0, 0, 0], health: 3, maxHealth: 3, color: '#fff', value: 5, type: 'normal' },
-      { id: 'b2', position: [1, 0, 0], health: 3, maxHealth: 3, color: '#fff', value: 5, type: 'normal' },
+      {
+        id: 'b1',
+        position: [0, 0, 0],
+        health: 3,
+        maxHealth: 3,
+        color: '#fff',
+        value: 5,
+        type: 'normal',
+      },
+      {
+        id: 'b2',
+        position: [1, 0, 0],
+        health: 3,
+        maxHealth: 3,
+        color: '#fff',
+        value: 5,
+        type: 'normal',
+      },
     ];
 
     useGameStore.setState({ bricks, comboCount: 0, comboMultiplier: 1 });

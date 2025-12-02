@@ -74,7 +74,11 @@ export function FrameManager() {
               }
             } catch (err) {
               try {
-                useGameStore.setState({ useRapierPhysics: false, rapierActive: false, rapierInitError: (err as Error).message });
+                useGameStore.setState({
+                  useRapierPhysics: false,
+                  rapierActive: false,
+                  rapierInitError: (err as Error).message,
+                });
               } catch {
                 /* ignore */
               }
@@ -160,23 +164,43 @@ export function FrameManager() {
             const by = balls.find((x) => x.id === e.ballId);
             const point = e.point ?? (by ? by.position : [0, 0, 0]);
             const relVel = e.relativeVelocity ?? (by ? by.velocity : [0, 0, 0]);
-            const normal = e.normal ?? (() => {
-              const rv = relVel;
-              const speed = Math.sqrt(rv[0] * rv[0] + rv[1] * rv[1] + rv[2] * rv[2]);
-              return speed > 1e-6 ? [rv[0] / speed, rv[1] / speed, rv[2] / speed] : [0, 0, 1];
-            })();
+            const normal =
+              e.normal ??
+              (() => {
+                const rv = relVel;
+                const speed = Math.sqrt(rv[0] * rv[0] + rv[1] * rv[1] + rv[2] * rv[2]);
+                return speed > 1e-6 ? [rv[0] / speed, rv[1] / speed, rv[2] / speed] : [0, 0, 1];
+              })();
             const impulse = e.impulse ?? (by ? by.damage : 1);
 
             // Apply physical impulse/torque to the ball if the runtime supports it.
             try {
               // Prefer applying an impulse at contact point (world space) so Rapier generates torque naturally
-              const impVec: [number, number, number] = [ normal[0] * (impulse as number), normal[1] * (impulse as number), normal[2] * (impulse as number) ];
-              RapierPhysicsSystem.applyImpulse(e.ballId, impVec as [number, number, number], point as [number, number, number]);
+              const impVec: [number, number, number] = [
+                normal[0] * (impulse as number),
+                normal[1] * (impulse as number),
+                normal[2] * (impulse as number),
+              ];
+              RapierPhysicsSystem.applyImpulse(
+                e.ballId,
+                impVec as [number, number, number],
+                point as [number, number, number]
+              );
             } catch {
               /* ignore failures */
             }
 
-            handleContact({ ballId: e.ballId, brickId: e.brickId, point, normal, relativeVelocity: relVel, impulse }, { applyDamage: false });
+            handleContact(
+              {
+                ballId: e.ballId,
+                brickId: e.brickId,
+                point,
+                normal,
+                relativeVelocity: relVel,
+                impulse,
+              },
+              { applyDamage: false }
+            );
           }
         }
 
@@ -219,9 +243,19 @@ export function FrameManager() {
         hits.push({ brickId: hitBrickId, damage: ball.damage });
         // Build a best-effort contactInfo for non-rapier path
         const relVel = ball.velocity;
-        const speed = Math.sqrt(relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]);
-        const normal: [number, number, number] = speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
-        contactInfos.push({ ballId: ball.id, brickId: hitBrickId, point: [nextPosition[0], nextPosition[1], nextPosition[2]] as [number, number, number], normal, relativeVelocity: relVel, impulse: ball.damage });
+        const speed = Math.sqrt(
+          relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]
+        );
+        const normal: [number, number, number] =
+          speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
+        contactInfos.push({
+          ballId: ball.id,
+          brickId: hitBrickId,
+          point: [nextPosition[0], nextPosition[1], nextPosition[2]] as [number, number, number],
+          normal,
+          relativeVelocity: relVel,
+          impulse: ball.damage,
+        });
       }
 
       return {
@@ -244,7 +278,11 @@ export function FrameManager() {
           const s = useGameStore.getState();
           const newComboCount = s.comboCount + 1;
           const newComboMultiplier = Math.min(1 + newComboCount * 0.05, 3);
-          useGameStore.setState({ comboCount: newComboCount, comboMultiplier: newComboMultiplier, lastHitTime: Date.now() });
+          useGameStore.setState({
+            comboCount: newComboCount,
+            comboMultiplier: newComboMultiplier,
+            lastHitTime: Date.now(),
+          });
         }
       }
 

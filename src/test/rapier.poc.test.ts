@@ -51,7 +51,9 @@ describe('Rapier PoC — init and single-ball vs single-brick parity', () => {
 
     for (let i = 0; i < 120; i++) {
       // step counter (not used) intentionally omitted
-      const r = stepBallFrame(baselineBall, delta, { width: 100, height: 100, depth: 100 }, [brick]);
+      const r = stepBallFrame(baselineBall, delta, { width: 100, height: 100, depth: 100 }, [
+        brick,
+      ]);
       baselineBall.position = r.nextPosition as [number, number, number];
       baselineBall.velocity = r.nextVelocity as [number, number, number];
       if (r.hitBrickId) {

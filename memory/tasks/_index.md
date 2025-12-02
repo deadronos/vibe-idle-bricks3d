@@ -6,7 +6,6 @@
 
 - [TASK002] Performance Profiling & UX Polish - Profile rendering and optimize GameScene/Ball updates; polish UI
 
-
 ## COMPLETED
 
 - [TASK001] Wave & Meta Progression Implementation - Implemented waves, achievements, partial persistence (meta-only), and UI updates (see tests and store updates)

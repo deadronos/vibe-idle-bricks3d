@@ -38,7 +38,17 @@ describe('BrickBehaviors', () => {
       ],
     });
 
-    handleContact({ ballId: 'ball-test-1', brickId: 'brick-test-1', point: [0, 0, 0], normal: [0, 0, 1], impulse: 2, relativeVelocity: [0, 0, 1] }, { applyDamage: false });
+    handleContact(
+      {
+        ballId: 'ball-test-1',
+        brickId: 'brick-test-1',
+        point: [0, 0, 0],
+        normal: [0, 0, 1],
+        impulse: 2,
+        relativeVelocity: [0, 0, 1],
+      },
+      { applyDamage: false }
+    );
 
     const state = useGameStore.getState();
     const b = state.bricks.find((x) => x.id === 'brick-test-1');
@@ -71,7 +81,17 @@ describe('BrickBehaviors', () => {
       ],
     });
 
-    handleContact({ ballId: 'ball-test-2', brickId: 'brick-test-2', point: [0, 0, 0], normal: [0, 0, 1], impulse: 3, relativeVelocity: [0, 0, 1] }, { applyDamage: true });
+    handleContact(
+      {
+        ballId: 'ball-test-2',
+        brickId: 'brick-test-2',
+        point: [0, 0, 0],
+        normal: [0, 0, 1],
+        impulse: 3,
+        relativeVelocity: [0, 0, 1],
+      },
+      { applyDamage: true }
+    );
 
     const state = useGameStore.getState();
     const b = state.bricks.find((x) => x.id === 'brick-test-2');

@@ -67,7 +67,8 @@ export const checkAndUnlockAchievements = (
 ) => {
   const view = getAchievementView(state, overrides);
   const newlyUnlocked = ACHIEVEMENTS.filter(
-    (achievement) => !view.unlockedAchievements.includes(achievement.id) && meetsAchievement(achievement, view)
+    (achievement) =>
+      !view.unlockedAchievements.includes(achievement.id) && meetsAchievement(achievement, view)
   ).map((achievement) => achievement.id);
 
   return mergeUnlocks(view.unlockedAchievements, newlyUnlocked);

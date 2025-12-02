@@ -105,4 +105,4 @@ npm run test:run
 
 ---
 
-This design is intentionally incremental: start with low-risk extracts (`types`, `constants`, `createInitials`) and add tests before touching persistence or UI. If you want, I can open a branch and implement Step 1 (`types` + `constants`), run tests, and open a PR. 
+This design is intentionally incremental: start with low-risk extracts (`types`, `constants`, `createInitials`) and add tests before touching persistence or UI. If you want, I can open a branch and implement Step 1 (`types` + `constants`), run tests, and open a PR.

@@ -445,15 +445,17 @@ describe('Rehydration - Concurrent Operations', () => {
       ballCount: 4,
       ballSpawnQueue: 3,
       wave: 1,
-      bricks: Array(5).fill(null).map((_, i) => ({
-        id: `brick-${i}`,
-        type: 'normal',
-        position: [0, 0, 0] as const,
-        health: 1,
-        maxHealth: 1,
-        color: '#fff',
-        value: 10,
-      })),
+      bricks: Array(5)
+        .fill(null)
+        .map((_, i) => ({
+          id: `brick-${i}`,
+          type: 'normal',
+          position: [0, 0, 0] as const,
+          health: 1,
+          maxHealth: 1,
+          color: '#fff',
+          value: 10,
+        })),
     });
 
     // Destroy all bricks and regenerate
@@ -689,9 +691,30 @@ describe('Stat Propagation', () => {
       ballDamage: 1,
       score: 10000,
       balls: [
-        { id: 'ball-1', position: [0, 0, 0], velocity: [0.1, 0.1, 0.1], radius: 0.3, damage: 1, color: '#fff' },
-        { id: 'ball-2', position: [1, 0, 0], velocity: [0.1, 0.1, 0.1], radius: 0.3, damage: 1, color: '#fff' },
-        { id: 'ball-3', position: [2, 0, 0], velocity: [0.1, 0.1, 0.1], radius: 0.3, damage: 1, color: '#fff' },
+        {
+          id: 'ball-1',
+          position: [0, 0, 0],
+          velocity: [0.1, 0.1, 0.1],
+          radius: 0.3,
+          damage: 1,
+          color: '#fff',
+        },
+        {
+          id: 'ball-2',
+          position: [1, 0, 0],
+          velocity: [0.1, 0.1, 0.1],
+          radius: 0.3,
+          damage: 1,
+          color: '#fff',
+        },
+        {
+          id: 'ball-3',
+          position: [2, 0, 0],
+          velocity: [0.1, 0.1, 0.1],
+          radius: 0.3,
+          damage: 1,
+          color: '#fff',
+        },
       ],
     });
 
@@ -713,8 +736,22 @@ describe('Stat Propagation', () => {
       ballSpeed: initialSpeed,
       score: 10000,
       balls: [
-        { id: 'ball-1', position: [0, 0, 0], velocity: [0.05, 0.05, 0.05], radius: 0.3, damage: 1, color: '#fff' },
-        { id: 'ball-2', position: [1, 0, 0], velocity: [0.1, 0, 0], radius: 0.3, damage: 1, color: '#fff' },
+        {
+          id: 'ball-1',
+          position: [0, 0, 0],
+          velocity: [0.05, 0.05, 0.05],
+          radius: 0.3,
+          damage: 1,
+          color: '#fff',
+        },
+        {
+          id: 'ball-2',
+          position: [1, 0, 0],
+          velocity: [0.1, 0, 0],
+          radius: 0.3,
+          damage: 1,
+          color: '#fff',
+        },
       ],
     });
 
@@ -739,7 +776,14 @@ describe('Stat Propagation', () => {
       ballSpeed: 0.1,
       score: 10000,
       balls: [
-        { id: 'ball-1', position: [0, 0, 0], velocity: [0.1, 0, 0], radius: 0.3, damage: 1, color: '#fff' },
+        {
+          id: 'ball-1',
+          position: [0, 0, 0],
+          velocity: [0.1, 0, 0],
+          radius: 0.3,
+          damage: 1,
+          color: '#fff',
+        },
       ],
     });
 
@@ -773,7 +817,14 @@ describe('Stat Propagation', () => {
       ballSpeed: 0.1,
       score: 10000,
       balls: [
-        { id: 'ball-1', position: [0, 0, 0], velocity: [0, 0, 0], radius: 0.3, damage: 1, color: '#fff' },
+        {
+          id: 'ball-1',
+          position: [0, 0, 0],
+          velocity: [0, 0, 0],
+          radius: 0.3,
+          damage: 1,
+          color: '#fff',
+        },
       ],
     });
 

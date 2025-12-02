@@ -25,11 +25,11 @@ The `FrameManager` is the authoritative per-frame orchestrator. To make Rapier d
 
 ### Subtasks
 
-| ID  | Description                                            | Status        | Updated    | Notes |
-| --- | ------------------------------------------------------ | ------------- | ---------- | ----- |
-| 2.1 | Update `FrameManager` to init Rapier and step world     | Completed     | 2025-12-01 | init on toggle + per-frame step |
-| 2.2 | Add event translation and forward API in `gameStore`    | Completed     | 2025-12-01 | applyHits + control flags added |
-| 2.3 | Add env override `RAPIER=false`                         | Completed     | 2025-12-01 | runtime toggle + safe fallback |
+| ID  | Description                                          | Status    | Updated    | Notes                           |
+| --- | ---------------------------------------------------- | --------- | ---------- | ------------------------------- |
+| 2.1 | Update `FrameManager` to init Rapier and step world  | Completed | 2025-12-01 | init on toggle + per-frame step |
+| 2.2 | Add event translation and forward API in `gameStore` | Completed | 2025-12-01 | applyHits + control flags added |
+| 2.3 | Add env override `RAPIER=false`                      | Completed | 2025-12-01 | runtime toggle + safe fallback  |
 
 ## Progress Log
 
