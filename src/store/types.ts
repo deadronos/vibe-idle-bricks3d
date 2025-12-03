@@ -39,6 +39,8 @@ export interface GameSettings {
   enableSound: boolean;
   enableParticles: boolean;
   enableFullRigidPhysics?: boolean;
+  graphicsQuality?: 'auto' | 'low' | 'medium' | 'high';
+  compactHudEnabled?: boolean;
 }
 
 export type AchievementType = 'score' | 'bricks' | 'wave' | 'upgrade';
@@ -67,6 +69,8 @@ export interface GameDataState {
   comboCount: number;
   comboMultiplier: number;
   lastHitTime: number;
+  // Ephemeral ARIA announcements (not persisted)
+  latestAnnouncement?: string | null;
 }
 
 export interface GameEntitiesState {
@@ -109,6 +113,8 @@ export interface GameActions {
   tryProcessBallSpawnQueue: () => void;
   forceProcessAllQueuedBalls: () => void;
   toggleSetting: (key: keyof GameSettings) => void;
+  setGraphicsQuality?: (value: 'auto' | 'low' | 'medium' | 'high') => void;
+  announce?: (msg: string) => void;
   // Prestige actions
   performPrestige: () => void;
   getPrestigeReward: () => number;

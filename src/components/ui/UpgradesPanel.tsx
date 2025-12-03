@@ -18,17 +18,27 @@ export function UpgradesPanel() {
   const canPrestige = maxWaveReached >= 5;
 
   return (
-    <div className="panel upgrades-panel">
-      <h2>Upgrades</h2>
+    <div className="panel upgrades-panel" role="region" aria-labelledby="upgrades-heading">
+      <h2 id="upgrades-heading">Upgrades</h2>
 
-      <button className="upgrade-button" onClick={upgradeBallDamage} disabled={score < damageCost}>
+      <button
+        className="upgrade-button"
+        onClick={upgradeBallDamage}
+        disabled={score < damageCost}
+        aria-label={`Upgrade Ball Damage — costs ${damageCost.toLocaleString()} points`}
+      >
         <div className="upgrade-info">
           <span className="upgrade-name">⚔️ Ball Damage +1</span>
           <span className="upgrade-cost">{damageCost.toLocaleString()} pts</span>
         </div>
       </button>
 
-      <button className="upgrade-button" onClick={upgradeBallSpeed} disabled={score < speedCost}>
+      <button
+        className="upgrade-button"
+        onClick={upgradeBallSpeed}
+        disabled={score < speedCost}
+        aria-label={`Upgrade Ball Speed — costs ${speedCost.toLocaleString()} points`}
+      >
         <div className="upgrade-info">
           <span className="upgrade-name">💨 Ball Speed +2%</span>
           <span className="upgrade-cost">{speedCost.toLocaleString()} pts</span>
@@ -39,6 +49,7 @@ export function UpgradesPanel() {
         className="upgrade-button"
         onClick={upgradeBallCount}
         disabled={score < ballCost || ballCount >= 20}
+        aria-label={`Add Ball — costs ${ballCost.toLocaleString()} points`}
       >
         <div className="upgrade-info">
           <span className="upgrade-name">🔮 New Ball</span>

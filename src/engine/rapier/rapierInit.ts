@@ -17,12 +17,18 @@ export async function initRapier(): Promise<RapierModule> {
 
     // The compat entry sometimes exports an initializer function
     const initializer: unknown =
-      typeof mod === 'function' ? mod : (mod as { default?: unknown; init?: unknown }).default ?? (mod as { default?: unknown; init?: unknown }).init;
+      typeof mod === 'function'
+        ? mod
+        : ((mod as { default?: unknown; init?: unknown }).default ??
+          (mod as { default?: unknown; init?: unknown }).init);
 
     // Log which shape was imported so consumers can observe WASM vs fallback behavior
     try {
       if (typeof console !== 'undefined' && typeof console.info === 'function') {
-        console.info('[rapier] @dimforge/rapier3d-compat imported', { modType: typeof mod, hasInitializer: typeof initializer === 'function' });
+        console.info('[rapier] @dimforge/rapier3d-compat imported', {
+          modType: typeof mod,
+          hasInitializer: typeof initializer === 'function',
+        });
       }
     } catch {
       /* ignore logging failures */
@@ -46,13 +52,19 @@ export async function initRapier(): Promise<RapierModule> {
       let maybe: unknown;
       try {
         const globalProc = globalThis as unknown as { process?: { versions?: { node?: unknown } } };
-        if (typeof globalProc.process !== 'undefined' && globalProc.process.versions && globalProc.process.versions.node) {
+        if (
+          typeof globalProc.process !== 'undefined' &&
+          globalProc.process.versions &&
+          globalProc.process.versions.node
+        ) {
           // node environment — use createRequire to resolve the package-relative wasm path
           // Import dynamically so bundlers don't try to polyfill it.
-          
+
           const { createRequire } = await import('module');
           const req = createRequire(import.meta.url);
-          maybe = await initFn({ locateFile: (f: string) => req.resolve(`@dimforge/rapier3d-compat/${f}`) });
+          maybe = await initFn({
+            locateFile: (f: string) => req.resolve(`@dimforge/rapier3d-compat/${f}`),
+          });
         } else {
           maybe = await initializer();
         }

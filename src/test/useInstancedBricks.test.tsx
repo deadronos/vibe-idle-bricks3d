@@ -22,8 +22,24 @@ describe('useInstancedBricks registration to rapier world', () => {
     setWorld(fakeWorld);
 
     const bricks: Brick[] = [
-      { id: 'b1', position: [0, 0, 0] as [number, number, number], health: 1, maxHealth: 1, color: '#fff', value: 1, type: 'normal' },
-      { id: 'b2', position: [1, 0, 0] as [number, number, number], health: 1, maxHealth: 1, color: '#fff', value: 1, type: 'normal' },
+      {
+        id: 'b1',
+        position: [0, 0, 0] as [number, number, number],
+        health: 1,
+        maxHealth: 1,
+        color: '#fff',
+        value: 1,
+        type: 'normal',
+      },
+      {
+        id: 'b2',
+        position: [1, 0, 0] as [number, number, number],
+        health: 1,
+        maxHealth: 1,
+        color: '#fff',
+        value: 1,
+        type: 'normal',
+      },
     ];
 
     const r = render(<HookTest bricks={bricks} />);

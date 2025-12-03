@@ -14,8 +14,8 @@ The test expects rehydrate to restore a previously saved state after resetting t
 
 ## Implementation Plan
 
-1. Reproduce the failing test in isolation and determine the exact sequence of localStorage writes.  
-2. Consider adding a `skipPersist` flag to `setState` calls used during testing to avoid writing default state to storage, or use a `rehydrate` helper that reads from a snapshot of localStorage before any default write occurs.  
+1. Reproduce the failing test in isolation and determine the exact sequence of localStorage writes.
+2. Consider adding a `skipPersist` flag to `setState` calls used during testing to avoid writing default state to storage, or use a `rehydrate` helper that reads from a snapshot of localStorage before any default write occurs.
 3. Add a test for explicit rehydrate behavior and/or handle `rehydrate()` gracefully.
 4. Validate the fix by running the tests and ensuring no regressions.
 
@@ -25,11 +25,11 @@ The test expects rehydrate to restore a previously saved state after resetting t
 
 ### Subtasks
 
-| ID  | Description                                              | Status      | Updated    | Notes |
-| --- | -------------------------------------------------------- | ----------- | ---------- | ----- |
-| 1.1 | Reproduce failing test in isolation                      | Completed   | 2025-11-29 | Reproduced locally and logged write order |
-| 2.1 | Evaluate fix options (skip writes in test; rehydrate helper) | Completed   | 2025-11-29 | Implemented companion metadata approach |
-| 3.1 | Implement minimal fix with tests                         | Completed   | 2025-11-29 | Tests updated and passing for the failing case |
+| ID  | Description                                                  | Status    | Updated    | Notes                                          |
+| --- | ------------------------------------------------------------ | --------- | ---------- | ---------------------------------------------- |
+| 1.1 | Reproduce failing test in isolation                          | Completed | 2025-11-29 | Reproduced locally and logged write order      |
+| 2.1 | Evaluate fix options (skip writes in test; rehydrate helper) | Completed | 2025-11-29 | Implemented companion metadata approach        |
+| 3.1 | Implement minimal fix with tests                             | Completed | 2025-11-29 | Tests updated and passing for the failing case |
 
 ## Progress Log
 

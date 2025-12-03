@@ -1080,11 +1080,10 @@ describe('Game Store - Integration Tests', () => {
     const hydrated = useGameStore.getState();
     expect(hydrated.ballCount).toBe(8);
     expect(hydrated.balls.length).toBe(8); // THE KEY TEST: balls array should have 8 items, not 1
-    
+
     // Verify each ball has correct damage and speed
     hydrated.balls.forEach((ball) => {
       expect(ball.damage).toBe(2);
     });
   });
 });
-

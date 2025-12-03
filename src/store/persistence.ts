@@ -113,9 +113,10 @@ export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDep
   const unlockedAchievements = Array.isArray(state.unlockedAchievements)
     ? state.unlockedAchievements.filter((id): id is string => typeof id === 'string')
     : [];
-  const settings = state.settings && typeof state.settings === 'object'
-    ? (state.settings as GameState['settings'])
-    : { enableBloom: true, enableShadows: true, enableSound: true, enableParticles: true };
+  const settings =
+    state.settings && typeof state.settings === 'object'
+      ? (state.settings as GameState['settings'])
+      : { enableBloom: true, enableShadows: true, enableSound: true, enableParticles: true };
 
   // We'll attempt to apply rehydration synchronously when possible to avoid
   // extra frame delay. However, in some initialization orders the store
@@ -185,7 +186,10 @@ export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDep
     applyRehydrate();
   } catch (err) {
     // If sync fails due to init order, defer to next tick and don't swallow errors
-    const errMsg = err && typeof err === 'object' && 'message' in err ? String((err as { message?: unknown }).message) : String(err);
+    const errMsg =
+      err && typeof err === 'object' && 'message' in err
+        ? String((err as { message?: unknown }).message)
+        : String(err);
     console.warn('[GameStore] Deferring rehydrate to next tick due to init order:', errMsg);
     setTimeout(() => {
       try {
@@ -204,21 +208,33 @@ export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDep
   // Skip this behavior in test environment to keep tests deterministic.
   try {
     const globalProc = globalThis as unknown as { process?: { env?: Record<string, string> } };
-    const isTestEnv = typeof globalProc.process !== 'undefined' && !!globalProc.process?.env && globalProc.process?.env.NODE_ENV === 'test';
+    const isTestEnv =
+      typeof globalProc.process !== 'undefined' &&
+      !!globalProc.process?.env &&
+      globalProc.process?.env.NODE_ENV === 'test';
     const shouldForceSpawn = typeof window !== 'undefined' && !isTestEnv;
     if (shouldForceSpawn) {
       setTimeout(() => {
         try {
           const current = useGameStore.getState();
-          if (current.ballCount > 0 && (!Array.isArray(current.balls) || current.balls.length === 0)) {
-            console.warn('[GameStore] No balls present after rehydrate — forcing spawn of all balls via setState.');
+          if (
+            current.ballCount > 0 &&
+            (!Array.isArray(current.balls) || current.balls.length === 0)
+          ) {
+            console.warn(
+              '[GameStore] No balls present after rehydrate — forcing spawn of all balls via setState.'
+            );
             try {
               // Create all balls immediately to ensure runtime shows them.
               const allBalls = Array.from({ length: current.ballCount }, () =>
                 createInitialBall(current.ballSpeed, current.ballDamage)
               );
               // Overwrite balls and clear queue so rendering shows entities immediately
-              useGameStore.setState({ balls: allBalls, ballSpawnQueue: 0, lastBallSpawnTime: Date.now() });
+              useGameStore.setState({
+                balls: allBalls,
+                ballSpawnQueue: 0,
+                lastBallSpawnTime: Date.now(),
+              });
             } catch (spawnErr) {
               console.error('[GameStore] Error forcing spawn via setState:', spawnErr);
             }
@@ -241,9 +257,8 @@ export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDep
       (ball) =>
         ball.damage !== currentState.ballDamage ||
         Math.abs(
-          Math.sqrt(
-            ball.velocity[0] ** 2 + ball.velocity[1] ** 2 + ball.velocity[2] ** 2
-          ) - currentState.ballSpeed
+          Math.sqrt(ball.velocity[0] ** 2 + ball.velocity[1] ** 2 + ball.velocity[2] ** 2) -
+            currentState.ballSpeed
         ) > 0.01
     );
 
@@ -254,17 +269,14 @@ export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDep
       const rebuiltBalls = currentState.balls.map((ball) => ({
         ...ball,
         damage: currentState.ballDamage,
-        velocity: Array.from(
-          { length: 3 },
-          (_, i) => {
-            const currentVelMagnitude = Math.sqrt(
-              ball.velocity[0] ** 2 + ball.velocity[1] ** 2 + ball.velocity[2] ** 2
-            );
-            return currentVelMagnitude > 0
-              ? (ball.velocity[i] / currentVelMagnitude) * currentState.ballSpeed
-              : ball.velocity[i];
-          }
-        ) as Ball['velocity'],
+        velocity: Array.from({ length: 3 }, (_, i) => {
+          const currentVelMagnitude = Math.sqrt(
+            ball.velocity[0] ** 2 + ball.velocity[1] ** 2 + ball.velocity[2] ** 2
+          );
+          return currentVelMagnitude > 0
+            ? (ball.velocity[i] / currentVelMagnitude) * currentState.ballSpeed
+            : ball.velocity[i];
+        }) as Ball['velocity'],
       }));
       useGameStore.setState({ balls: rebuiltBalls });
     }

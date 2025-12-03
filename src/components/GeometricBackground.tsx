@@ -40,10 +40,7 @@ interface BuildingBlock {
 }
 
 // Generate dense building-like structures on the sides
-function generateBuildingWall(
-  side: 'left' | 'right',
-  seed: number
-): BuildingBlock[] {
+function generateBuildingWall(side: 'left' | 'right', seed: number): BuildingBlock[] {
   const random = seededRandom(seed);
   const blocks: BuildingBlock[] = [];
   const { width, depth } = ARENA_SIZE;
@@ -108,11 +105,7 @@ function generateFloatingBoxes(count: number, seed: number): BuildingBlock[] {
 
     blocks.push({
       position: [x, y, z],
-      scale: [
-        1 + random() * 5,
-        1 + random() * 8,
-        1 + random() * 4,
-      ],
+      scale: [1 + random() * 5, 1 + random() * 8, 1 + random() * 4],
       color: DARK_COLORS[Math.floor(random() * DARK_COLORS.length)],
       hasNeonEdge,
       neonColor: neonColors[Math.floor(random() * neonColors.length)],
@@ -131,11 +124,7 @@ function BuildingBlockMesh({ block }: { block: BuildingBlock }) {
     <group position={block.position} scale={block.scale}>
       {/* Solid dark box */}
       <mesh geometry={geometry}>
-        <meshStandardMaterial
-          color={block.color}
-          metalness={0.8}
-          roughness={0.3}
-        />
+        <meshStandardMaterial color={block.color} metalness={0.8} roughness={0.3} />
       </mesh>
       {/* Neon edge highlight */}
       {block.hasNeonEdge && (
@@ -227,10 +216,7 @@ function ReflectiveFloor() {
       </mesh>
 
       {/* Grid lines on top of reflection */}
-      <gridHelper
-        args={[floorSize, 100, '#333333', '#111111']}
-        position={[0, 0.1, 0]}
-      />
+      <gridHelper args={[floorSize, 100, '#333333', '#111111']} position={[0, 0.1, 0]} />
     </group>
   );
 }
@@ -320,21 +306,9 @@ function FloatingNeonBoxes() {
 
     for (let i = 0; i < 40; i++) {
       items.push({
-        position: [
-          (random() - 0.5) * 80,
-          (random() - 0.5) * 40,
-          -depth - random() * 60,
-        ],
-        scale: [
-          2 + random() * 4,
-          2 + random() * 5,
-          2 + random() * 3,
-        ],
-        rotation: [
-          random() * Math.PI,
-          random() * Math.PI,
-          random() * Math.PI * 0.3,
-        ],
+        position: [(random() - 0.5) * 80, (random() - 0.5) * 40, -depth - random() * 60],
+        scale: [2 + random() * 4, 2 + random() * 5, 2 + random() * 3],
+        rotation: [random() * Math.PI, random() * Math.PI, random() * Math.PI * 0.3],
         color: colors[Math.floor(random() * colors.length)],
       });
     }
@@ -348,7 +322,12 @@ function FloatingNeonBoxes() {
   return (
     <group>
       {boxes.map((box, i) => (
-        <group key={`neon-box-${i}`} position={box.position} rotation={box.rotation} scale={box.scale}>
+        <group
+          key={`neon-box-${i}`}
+          position={box.position}
+          rotation={box.rotation}
+          scale={box.scale}
+        >
           <lineSegments geometry={edgesGeometry}>
             <lineBasicMaterial color={box.color} toneMapped={false} />
           </lineSegments>

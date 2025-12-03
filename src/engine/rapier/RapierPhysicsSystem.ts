@@ -25,7 +25,11 @@ export const RapierPhysicsSystem = {
       } catch (err) {
         const msg = (err as Error)?.message ?? String(err);
         try {
-          useGameStore.setState({ useRapierPhysics: false, rapierActive: false, rapierInitError: msg });
+          useGameStore.setState({
+            useRapierPhysics: false,
+            rapierActive: false,
+            rapierInitError: msg,
+          });
         } catch {
           /* ignore */
         }
@@ -34,7 +38,11 @@ export const RapierPhysicsSystem = {
     } catch (err) {
       const msg = (err as Error)?.message ?? String(err);
       try {
-        useGameStore.setState({ useRapierPhysics: false, rapierActive: false, rapierInitError: msg });
+        useGameStore.setState({
+          useRapierPhysics: false,
+          rapierActive: false,
+          rapierInitError: msg,
+        });
       } catch {
         /* ignore */
       }
@@ -149,7 +157,11 @@ export const RapierPhysicsSystem = {
     }
   },
 
-  applyImpulse(ballId: string, impulse: [number, number, number], point?: [number, number, number]) {
+  applyImpulse(
+    ballId: string,
+    impulse: [number, number, number],
+    point?: [number, number, number]
+  ) {
     const w = _getWorld();
     if (!w) return false;
     const fn = (w as RapierWorld).applyImpulseToBall;

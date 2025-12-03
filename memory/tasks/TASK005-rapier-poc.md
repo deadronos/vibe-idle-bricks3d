@@ -27,21 +27,21 @@ We need a small, tightly-scoped PoC to validate three things: 1) Rapier can be i
 
 ### Subtasks
 
-| ID  | Description                                            | Status        | Updated    | Notes |
-| --- | ------------------------------------------------------ | ------------- | ---------- | ----- |
-| 1.1 | Create `rapierInit.ts`                                  | Completed     | 2025-12-01 | added dynamic loader + caching |
-| 1.2 | Create `rapierWorld.ts`                                 | Completed     | 2025-12-01 | minimal wrapper + fallback detection |
-| 1.3 | Create `BallsInstanced.tsx`                             | Completed     | 2025-12-01 | instanced mesh + imperative updates |
-| 1.4 | Add `rapier.poc.test.ts`                                | Completed     | 2025-12-01 | smoke + parity (tolerant) |
-| 1.5 | Add `.wasm` assetsInclude to `vite.config.ts`           | Completed     | 2025-12-01 | Vite will include wasm assets in builds/tests |
+| ID  | Description                                   | Status    | Updated    | Notes                                         |
+| --- | --------------------------------------------- | --------- | ---------- | --------------------------------------------- |
+| 1.1 | Create `rapierInit.ts`                        | Completed | 2025-12-01 | added dynamic loader + caching                |
+| 1.2 | Create `rapierWorld.ts`                       | Completed | 2025-12-01 | minimal wrapper + fallback detection          |
+| 1.3 | Create `BallsInstanced.tsx`                   | Completed | 2025-12-01 | instanced mesh + imperative updates           |
+| 1.4 | Add `rapier.poc.test.ts`                      | Completed | 2025-12-01 | smoke + parity (tolerant)                     |
+| 1.5 | Add `.wasm` assetsInclude to `vite.config.ts` | Completed | 2025-12-01 | Vite will include wasm assets in builds/tests |
 
 ## Progress Log
 
 ### 2025-12-01
 
-- Scaffolding created: `rapierInit.ts`, `rapierWorld.ts`, `BallsInstanced.tsx` and tests.  
-- Added `assetsInclude: ['**/*.wasm']` to `vite.config.ts` so WASM assets resolve under Vite/Vitest.  
-- Added PoC tests: `initRapier()` smoke test, and a tolerant single-ball vs single-brick parity test that will gracefully accept environments where the WASM World cannot be constructed (CI fallback).  
+- Scaffolding created: `rapierInit.ts`, `rapierWorld.ts`, `BallsInstanced.tsx` and tests.
+- Added `assetsInclude: ['**/*.wasm']` to `vite.config.ts` so WASM assets resolve under Vite/Vitest.
+- Added PoC tests: `initRapier()` smoke test, and a tolerant single-ball vs single-brick parity test that will gracefully accept environments where the WASM World cannot be constructed (CI fallback).
 
 Notes: the parity test is intentionally tolerant — it verifies both successful rapier world creation plus parity behaviour where possible, and gracefully asserts a safe failure path (clear error message) when WASM isn't loadable in the environment.
 

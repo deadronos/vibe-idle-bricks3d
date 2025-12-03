@@ -68,7 +68,11 @@ describe('Rapier impulse -> angular response', () => {
 
         const normal = ev!.normal ?? [0, 0, 1];
         const impMag = ev!.impulse ?? 3;
-        const imp: [number, number, number] = [normal[0] * impMag * 2, normal[1] * impMag * 2, normal[2] * impMag * 2];
+        const imp: [number, number, number] = [
+          normal[0] * impMag * 2,
+          normal[1] * impMag * 2,
+          normal[2] * impMag * 2,
+        ];
         const point = ev!.point ?? ball.position;
 
         const applied = RapierPhysicsSystem.applyImpulse(ball.id, imp, point);

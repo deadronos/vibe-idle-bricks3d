@@ -34,13 +34,16 @@ export function getBehaviorForBrick(brick: Brick | undefined): BrickBehavior | u
  * should aggregate hits and apply damage via the store if they want combo logic.
  * Pass { applyDamage: true } to also apply damage using the store's `applyHits`.
  */
-export function handleContact(info: ContactInfo, opts: { applyDamage?: boolean } = { applyDamage: false }) {
+export function handleContact(
+  info: ContactInfo,
+  opts: { applyDamage?: boolean } = { applyDamage: false }
+) {
   const state = useGameStore.getState();
 
   // Optionally apply damage through the centralized applyHits so combo logic is preserved
   if (opts.applyDamage) {
     const ball = state.balls.find((b: Ball) => b.id === info.ballId);
-    const damage = ball ? ball.damage : info.impulse ?? 1;
+    const damage = ball ? ball.damage : (info.impulse ?? 1);
     const apply = state.applyHits;
     if (apply) {
       try {

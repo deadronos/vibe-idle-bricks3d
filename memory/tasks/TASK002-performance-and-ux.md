@@ -44,12 +44,12 @@ Key changes:
 
 ## Error Handling Matrix
 
-| Scenario | Detection | Response |
-| --- | --- | --- |
-| Pointer events report `instanceId` as `null`/`undefined` | `ThreeEvent.instanceId` guard fires | Call `clearHoveredInstance()` so no stale highlight remains |
-| Hovered brick is destroyed while highlighted | Hover id not found inside bricks array during layout effect | Drop refs + skip recoloring so removed meshes do not throw |
-| Picking helper receives out-of-range index | `getBrickFromInstance` bounds checks | Return `null`; tests/e2e verify behavior |
-| Perf harness detects physics drift | Harness expect failures | Inspect `stepBallFrame` for regression before shipping |
+| Scenario                                                 | Detection                                                   | Response                                                    |
+| -------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
+| Pointer events report `instanceId` as `null`/`undefined` | `ThreeEvent.instanceId` guard fires                         | Call `clearHoveredInstance()` so no stale highlight remains |
+| Hovered brick is destroyed while highlighted             | Hover id not found inside bricks array during layout effect | Drop refs + skip recoloring so removed meshes do not throw  |
+| Picking helper receives out-of-range index               | `getBrickFromInstance` bounds checks                        | Return `null`; tests/e2e verify behavior                    |
+| Perf harness detects physics drift                       | Harness expect failures                                     | Inspect `stepBallFrame` for regression before shipping      |
 
 ## Progress Tracking
 
@@ -57,15 +57,15 @@ Key changes:
 
 ### Subtasks
 
-| ID  | Description                                      | Status       | Updated    | Notes |
-| --- | ------------------------------------------------ | ------------ | ---------- | ----- |
-| 1.1 | Setup profiling harness & PerfOverlay            | Complete     | 2025-11-29 | PerfOverlay gated by ?perf=1; perf harness test added |
-| 2.1 | Create FrameManager & collision engine           | Complete     | 2025-11-29 | Centralized physics loop + helpers |
-| 2.2 | Refactor Ball to render-only component           | Complete     | 2025-11-29 | Driven by FrameManager |
-| 3.1 | Create BricksInstanced component                 | Complete     | 2025-11-29 | InstancedMesh renderer |
-| 3.2 | Implement batch updates & picking                | Complete     | 2025-11-30 | Hover state now imperatively updates single instances |
-| 4.1 | Add UI a11y (aria-live, keyboard shortcuts)      | Complete     | 2025-11-29 | Space, U keys + live region |
-| 5.1 | Validation tests (picking & perf)                | Complete     | 2025-11-30 | Added tests/e2e/picking.spec.ts (plus perf harness) |
+| ID  | Description                                 | Status   | Updated    | Notes                                                 |
+| --- | ------------------------------------------- | -------- | ---------- | ----------------------------------------------------- |
+| 1.1 | Setup profiling harness & PerfOverlay       | Complete | 2025-11-29 | PerfOverlay gated by ?perf=1; perf harness test added |
+| 2.1 | Create FrameManager & collision engine      | Complete | 2025-11-29 | Centralized physics loop + helpers                    |
+| 2.2 | Refactor Ball to render-only component      | Complete | 2025-11-29 | Driven by FrameManager                                |
+| 3.1 | Create BricksInstanced component            | Complete | 2025-11-29 | InstancedMesh renderer                                |
+| 3.2 | Implement batch updates & picking           | Complete | 2025-11-30 | Hover state now imperatively updates single instances |
+| 4.1 | Add UI a11y (aria-live, keyboard shortcuts) | Complete | 2025-11-29 | Space, U keys + live region                           |
+| 5.1 | Validation tests (picking & perf)           | Complete | 2025-11-30 | Added tests/e2e/picking.spec.ts (plus perf harness)   |
 
 ## Progress Log
 

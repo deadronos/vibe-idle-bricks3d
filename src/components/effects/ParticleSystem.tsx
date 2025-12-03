@@ -3,107 +3,119 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { effectBus, type EffectEvent } from '../../systems/EffectEventBus';
 
-const MAX_PARTICLES = 1000;
+// default count if not provided via props
+const DEFAULT_MAX_PARTICLES = 1000;
 const PARTICLE_LIFE = 1.0; // seconds
 
-export function ParticleSystem() {
-    const meshRef = useRef<THREE.InstancedMesh>(null);
-    const dummy = useMemo(() => new THREE.Object3D(), []);
+export type ParticleSystemProps = {
+  maxParticles?: number;
+};
 
-    // Particle state
-    const particles = useRef<{
-        position: THREE.Vector3;
-        velocity: THREE.Vector3;
-        color: THREE.Color;
-        life: number;
-        scale: number;
-        active: boolean;
-    }[]>([]);
+export function ParticleSystem({ maxParticles = DEFAULT_MAX_PARTICLES }: ParticleSystemProps) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
 
-    // Initialize pool
-    useEffect(() => {
-        particles.current = Array.from({ length: MAX_PARTICLES }, () => ({
-            position: new THREE.Vector3(),
-            velocity: new THREE.Vector3(),
-            color: new THREE.Color(),
-            life: 0,
-            scale: 1,
-            active: false,
-        }));
-    }, []);
+  // Particle state
+  const particles = useRef<
+    {
+      position: THREE.Vector3;
+      velocity: THREE.Vector3;
+      color: THREE.Color;
+      life: number;
+      scale: number;
+      active: boolean;
+    }[]
+  >([]);
 
-    useEffect(() => {
-        const handleEffect = (event: EffectEvent) => {
-            if (event.type === 'brick_destroy' || event.type === 'brick_hit') {
-                const count = event.type === 'brick_destroy' ? 15 : 3;
-                const speed = event.type === 'brick_destroy' ? 5 : 2;
+  // Initialize pool
+  useEffect(() => {
+    const count = Math.max(0, Math.floor(maxParticles));
+    particles.current = Array.from({ length: count }, () => ({
+      position: new THREE.Vector3(),
+      velocity: new THREE.Vector3(),
+      color: new THREE.Color(),
+      life: 0,
+      scale: 1,
+      active: false,
+    }));
+  }, [maxParticles]);
 
-                for (let i = 0; i < count; i++) {
-                    // Find inactive particle
-                    const particle = particles.current.find(p => !p.active);
-                    if (!particle) break;
+  useEffect(() => {
+    const handleEffect = (event: EffectEvent) => {
+      if (event.type === 'brick_destroy' || event.type === 'brick_hit') {
+        const count = event.type === 'brick_destroy' ? 15 : 3;
+        const speed = event.type === 'brick_destroy' ? 5 : 2;
 
-                    particle.active = true;
-                    particle.life = PARTICLE_LIFE;
-                    particle.position.set(...event.position);
-                    particle.color.set(event.color);
+        for (let i = 0; i < count; i++) {
+          // Find inactive particle
+          const particle = particles.current.find((p) => !p.active);
+          if (!particle) break;
 
-                    // Random velocity
-                    const theta = Math.random() * Math.PI * 2;
-                    const phi = Math.random() * Math.PI;
-                    particle.velocity.set(
-                        Math.sin(phi) * Math.cos(theta),
-                        Math.cos(phi),
-                        Math.sin(phi) * Math.sin(theta)
-                    ).multiplyScalar(Math.random() * speed);
+          particle.active = true;
+          particle.life = PARTICLE_LIFE;
+          particle.position.set(...event.position);
+          particle.color.set(event.color);
 
-                    particle.scale = Math.random() * 0.3 + 0.1;
-                }
-            }
-        };
+          // Random velocity
+          const theta = Math.random() * Math.PI * 2;
+          const phi = Math.random() * Math.PI;
+          particle.velocity
+            .set(Math.sin(phi) * Math.cos(theta), Math.cos(phi), Math.sin(phi) * Math.sin(theta))
+            .multiplyScalar(Math.random() * speed);
 
-        return effectBus.subscribe(handleEffect);
-    }, []);
+          particle.scale = Math.random() * 0.3 + 0.1;
+        }
+      }
+    };
 
-    useFrame((_state, delta) => {
-        if (!meshRef.current) return;
+    return effectBus.subscribe(handleEffect);
+  }, []);
 
-        // track active particles if needed (not currently used)
-        particles.current.forEach((particle, i) => {
-            if (!particle.active) {
-                // Hide inactive particles
-                dummy.position.set(0, -1000, 0);
-                dummy.updateMatrix();
-                meshRef.current!.setMatrixAt(i, dummy.matrix);
-                return;
-            }
+  useFrame((_state, delta) => {
+    if (!meshRef.current) return;
 
-            // Update physics
-            particle.life -= delta;
-            particle.velocity.y -= 9.8 * delta; // Gravity
-            particle.position.addScaledVector(particle.velocity, delta);
+    // track active particles if needed (not currently used)
+    particles.current.forEach((particle, i) => {
+      if (!particle.active) {
+        // Hide inactive particles
+        dummy.position.set(0, -1000, 0);
+        dummy.updateMatrix();
+        meshRef.current!.setMatrixAt(i, dummy.matrix);
+        return;
+      }
 
-            if (particle.life <= 0) {
-                particle.active = false;
-            } else {
-                // (count intentionally not tracked)
-                dummy.position.copy(particle.position);
-                const scale = particle.scale * (particle.life / PARTICLE_LIFE);
-                dummy.scale.setScalar(scale);
-                dummy.updateMatrix();
-                meshRef.current!.setMatrixAt(i, dummy.matrix);
-                meshRef.current!.setColorAt(i, particle.color);
-            }
-        });
+      // Update physics
+      particle.life -= delta;
+      particle.velocity.y -= 9.8 * delta; // Gravity
+      particle.position.addScaledVector(particle.velocity, delta);
 
-        meshRef.current.instanceMatrix.needsUpdate = true;
-        if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
+      if (particle.life <= 0) {
+        particle.active = false;
+      } else {
+        // (count intentionally not tracked)
+        dummy.position.copy(particle.position);
+        const scale = particle.scale * (particle.life / PARTICLE_LIFE);
+        dummy.scale.setScalar(scale);
+        dummy.updateMatrix();
+        meshRef.current!.setMatrixAt(i, dummy.matrix);
+        meshRef.current!.setColorAt(i, particle.color);
+      }
     });
 
-    return (
-        <instancedMesh ref={meshRef} args={[undefined, undefined, MAX_PARTICLES]}>
-            <boxGeometry args={[1, 1, 1]} />
-            <meshStandardMaterial vertexColors toneMapped={false} emissiveIntensity={2} />
-        </instancedMesh>
-    );
+    meshRef.current.instanceMatrix.needsUpdate = true;
+    if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
+  });
+
+  const instancedArgs: [THREE.BufferGeometry | undefined, THREE.Material | undefined, number] = [
+    undefined,
+    undefined,
+    Math.max(0, Math.floor(maxParticles)),
+  ];
+
+  return (
+    <instancedMesh ref={meshRef} args={instancedArgs}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial vertexColors toneMapped={false} emissiveIntensity={2} />
+    </instancedMesh>
+  );
 }

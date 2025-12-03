@@ -6,6 +6,7 @@ import { Controls } from './Controls';
 import { ScorePanel } from './ScorePanel';
 import { StatsPanel } from './StatsPanel';
 import { UpgradesPanel } from './UpgradesPanel';
+import { MobileUpgrades } from './MobileUpgrades';
 import { SettingsPanel } from './SettingsPanel';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 import './UI.css';
@@ -18,7 +19,11 @@ export function UI() {
 
   const latestAchievementId = unlockedAchievements[unlockedAchievements.length - 1];
   const latestAchievement = ACHIEVEMENTS.find((item) => item.id === latestAchievementId);
-  const liveMessage = latestAchievement ? `Achievement unlocked: ${latestAchievement.label}` : '';
+  const latestAnnouncement = useGameStore((state) => state.latestAnnouncement);
+  const compactHudEnabled = useGameStore((state) => state.settings.compactHudEnabled);
+  const liveMessage =
+    latestAnnouncement ||
+    (latestAchievement ? `Achievement unlocked: ${latestAchievement.label}` : '');
 
   return (
     <div className="ui-container">
@@ -28,9 +33,10 @@ export function UI() {
 
       <ComboDisplay />
       <ScorePanel onOpenSettings={() => setShowSettings(true)} />
-      <StatsPanel />
+      {!compactHudEnabled && <StatsPanel />}
       <UpgradesPanel />
-      <AchievementsPanel />
+      <MobileUpgrades />
+      {!compactHudEnabled && <AchievementsPanel />}
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
       <Controls />
     </div>

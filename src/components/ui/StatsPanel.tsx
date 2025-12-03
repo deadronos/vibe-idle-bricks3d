@@ -6,8 +6,8 @@ export function StatsPanel() {
   const ballSpeed = useGameStore((state) => state.ballSpeed);
 
   return (
-    <div className="panel stats-panel">
-      <h2>Stats</h2>
+    <div className="panel stats-panel" role="region" aria-labelledby="stats-heading">
+      <h2 id="stats-heading">Stats</h2>
       <div className="stat">
         <span>Balls:</span>
         <span>{ballCount}</span>
