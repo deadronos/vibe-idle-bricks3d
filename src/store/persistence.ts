@@ -34,8 +34,8 @@ export const hasExistingStorage = (storage: Pick<Storage, 'getItem'> = localStor
   }
 };
 
-export const createMetaStorage = () =>
-  createJSONStorage(() => ({
+export const createMetaStorage = <T>() =>
+  createJSONStorage<T>(() => ({
     getItem: (name) => {
       const raw = localStorage.getItem(name);
       const meta = localStorage.getItem(name + ':meta');
@@ -95,7 +95,21 @@ type RehydrateDeps = {
   ) => GameState['unlockedAchievements'];
 };
 
-export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDeps) => {
+/** State shape provided during rehydration (subset of GameState) */
+type RehydrateState = Pick<
+  GameState,
+  | 'score'
+  | 'bricksDestroyed'
+  | 'wave'
+  | 'maxWaveReached'
+  | 'ballDamage'
+  | 'ballSpeed'
+  | 'ballCount'
+  | 'unlockedAchievements'
+  | 'settings'
+>;
+
+export const handleRehydrate = (state: RehydrateState | undefined, deps: RehydrateDeps) => {
   if (!state) {
     return;
   }

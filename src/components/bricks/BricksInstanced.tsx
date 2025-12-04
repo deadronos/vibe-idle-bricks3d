@@ -2,7 +2,7 @@ import type { Brick } from '../../store/types';
 import { BRICK_SIZE } from '../../engine/collision';
 import { useInstancedBricks } from './useInstancedBricks';
 import { useGameStore } from '../../store/gameStore';
-import { getRenderingOptions } from '../GameScene.utils';
+import { getRenderingOptions } from '../GameScene/utils';
 
 interface BricksInstancedProps {
   bricks: Brick[];

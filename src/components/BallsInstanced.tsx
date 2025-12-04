@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import type { RapierWorld, BallState } from '../engine/rapier/rapierWorld';
 import { getWorld as getRapierWorld } from '../engine/rapier/rapierRuntime';
 import { useGameStore } from '../store/gameStore';
-import { getRenderingOptions } from './GameScene.utils';
+import { getRenderingOptions } from './GameScene/utils';
 
 interface BallsInstancedProps {
   world?: RapierWorld | null;
