@@ -5,6 +5,7 @@
 ## IN PROGRESS
 
 - [TASK002] Performance Profiling & UX Polish - Profile rendering and optimize GameScene/Ball updates; polish UI
+- [TASK010] Refactor GameScene (DESIGN008) - Track refactor of `GameScene` into layered components per DESIGN008
 
 ## COMPLETED
 
