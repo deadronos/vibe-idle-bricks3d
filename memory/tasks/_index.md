@@ -16,6 +16,8 @@
 - [TASK007] BallsInstanced & Rendering Swap - Implement instanced ball renderer and update `GameScene`/bricks lifecycle for Rapier-driven visuals
 - [TASK008] Rapier CI Smoke & Default Flip - Add Rapier init smoke job, gate default flip, and document rollback procedure
 
+- [TASK009] Retrospective: Refactor gameStore (DESIGN007) - Completed retrospective summarizing DESIGN007 implementation
+
 ## ABANDONED
 
 none
