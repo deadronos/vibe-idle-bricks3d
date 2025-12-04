@@ -3,6 +3,14 @@ import type { GameStoreSlice } from './types';
 
 export type GraphicsQuality = 'auto' | 'low' | 'medium' | 'high';
 
+/** Keys of GameSettings that represent toggleable boolean settings */
+type BooleanSettingKeys =
+  | 'enableBloom'
+  | 'enableShadows'
+  | 'enableSound'
+  | 'enableParticles'
+  | 'enableFullRigidPhysics';
+
 type UiActions = Pick<
   GameActions,
   | 'togglePause'
@@ -112,13 +120,14 @@ export const createUiSlice: GameStoreSlice<UiActions & UiState> = (set) => ({
 
   toggleSetting: (key) =>
     set((state) => {
-      const current = state.settings[key as keyof GameSettings] as unknown as boolean;
-      const nextSettings = {
+      const settingKey = key as BooleanSettingKeys;
+      const current = state.settings[settingKey] ?? false;
+      const nextSettings: GameSettings = {
         ...state.settings,
-        [key]: !current,
-      } as GameSettings;
+        [settingKey]: !current,
+      };
 
-      if (key === 'enableFullRigidPhysics') {
+      if (settingKey === 'enableFullRigidPhysics') {
         return {
           settings: nextSettings,
           useRapierPhysics: !!nextSettings.enableFullRigidPhysics,
@@ -148,15 +157,15 @@ export const createUiSlice: GameStoreSlice<UiActions & UiState> = (set) => ({
 
   announce: (msg: string) =>
     set(() => {
-      const next = { latestAnnouncement: msg } as Partial<GameDataState>;
+      const next = { latestAnnouncement: msg };
       setTimeout(() => {
         try {
-          set(() => ({ latestAnnouncement: null }) as Partial<GameDataState>);
+          set(() => ({ latestAnnouncement: null }));
         } catch {
           // ignore
         }
       }, 4000);
-      return next as GameDataState;
+      return next;
     }),
 
   setUseRapierPhysics: (enabled) => set(() => ({ useRapierPhysics: enabled })),

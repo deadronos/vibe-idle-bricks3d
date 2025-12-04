@@ -7,7 +7,7 @@ import {
   MAX_BALL_COUNT,
 } from '../constants';
 import { createInitialBall, createInitialBricks } from '../createInitials';
-import type { GameActions, GameState } from '../types';
+import type { GameActions } from '../types';
 import { buildInitialState } from './persistence';
 import type { GameStoreSlice } from './types';
 import { updateBallDamages, updateBallSpeeds } from './balls';
@@ -205,7 +205,7 @@ export const createProgressionSlice: GameStoreSlice<ProgressionActions> = (set, 
         balls: [createInitialBall(DEFAULT_BALL_SPEED, DEFAULT_BALL_DAMAGE)],
         bricks: createInitialBricks(DEFAULT_WAVE),
         latestAnnouncement: `Prestiged: +${reward} Vibe Crystal${reward !== 1 ? 's' : ''} (+${Math.round((prestigeMultiplier - 1) * 100)}% score)`,
-      } as GameState;
+      };
     }),
 
   resetCombo: () =>

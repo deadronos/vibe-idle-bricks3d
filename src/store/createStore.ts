@@ -21,10 +21,8 @@ const createGameState: GameStateCreator = (set, get, store) => ({
   ...createPersistenceSlice(set, get, store),
 });
 
-let storeRef!: UseBoundStore<StoreApi<GameState>>;
-
-export const useGameStore = create<GameState>()(
-  persist(createGameState, createPersistOptions(() => storeRef))
+// Forward reference to break circular dependency - the getter is only called
+// during rehydration after the store is fully initialized
+export const useGameStore: UseBoundStore<StoreApi<GameState>> = create<GameState>()(
+  persist(createGameState, createPersistOptions(() => useGameStore))
 );
-
-storeRef = useGameStore;
