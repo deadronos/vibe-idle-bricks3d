@@ -11,6 +11,14 @@ type BooleanSettingKeys =
   | 'enableParticles'
   | 'enableFullRigidPhysics';
 
+const BOOLEAN_SETTING_KEYS: Set<string> = new Set([
+  'enableBloom',
+  'enableShadows',
+  'enableSound',
+  'enableParticles',
+  'enableFullRigidPhysics',
+]);
+
 type UiActions = Pick<
   GameActions,
   | 'togglePause'
@@ -120,6 +128,12 @@ export const createUiSlice: GameStoreSlice<UiActions & UiState> = (set) => ({
 
   toggleSetting: (key) =>
     set((state) => {
+      // Runtime guard: only toggle boolean settings
+      if (!BOOLEAN_SETTING_KEYS.has(key)) {
+        console.warn(`toggleSetting: "${key}" is not a toggleable boolean setting`);
+        return {};
+      }
+
       const settingKey = key as BooleanSettingKeys;
       const current = state.settings[settingKey] ?? false;
       const nextSettings: GameSettings = {
