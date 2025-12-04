@@ -1,3 +1,4 @@
+import type { StoreApi, UseBoundStore } from 'zustand';
 import type { PersistOptions } from 'zustand/middleware';
 import {
   DEFAULT_BALL_COUNT,
@@ -45,6 +46,20 @@ const detectCompactHud = () => {
   return window.innerWidth <= 768;
 };
 
+/**
+ * Builds the initial game state with default values.
+ *
+ * When storage exists from a previous session, `balls` and `bricks` arrays are
+ * initialized as empty placeholders. The `onRehydrateStorage` callback will
+ * populate these arrays during the rehydration process by calling `handleRehydrate`,
+ * which creates entities based on the persisted `ballCount`, `ballDamage`, `ballSpeed`,
+ * and `wave` values.
+ *
+ * When no storage exists (fresh start), the function creates initial balls and bricks
+ * directly to avoid a flash of empty state.
+ *
+ * @returns Initial game state with data, entities, and upgrade values
+ */
 export const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState => {
   const storageExists = hasExistingStorage();
   const defaultSettingsFlags = computeGraphicsSettings(defaultGraphicsQuality);
@@ -98,7 +113,7 @@ export const createPersistenceSlice: GameStoreSlice<Pick<GameActions, 'resetGame
 });
 
 export const createPersistOptions = (
-  getStore: () => { getState: () => GameState; setState: (next: Partial<GameState>) => void }
+  getStore: () => UseBoundStore<StoreApi<GameState>>
 ): PersistOptions<GameState, PersistedState> => ({
   name: STORAGE_KEY,
   version: 1,
@@ -140,11 +155,10 @@ export const createPersistOptions = (
 
       state.lastSaveTime = now;
 
-      const capturedState = state as unknown as GameState;
       setTimeout(() => {
         try {
           const store = getStore();
-          handleRehydrate(capturedState, {
+          handleRehydrate(state, {
             checkAndUnlockAchievements,
             createInitialBall,
             createInitialBricks,

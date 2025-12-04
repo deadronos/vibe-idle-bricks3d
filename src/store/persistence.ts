@@ -95,7 +95,21 @@ type RehydrateDeps = {
   ) => GameState['unlockedAchievements'];
 };
 
-export const handleRehydrate = (state: GameState | undefined, deps: RehydrateDeps) => {
+/** State shape provided during rehydration (subset of GameState) */
+type RehydrateState = Pick<
+  GameState,
+  | 'score'
+  | 'bricksDestroyed'
+  | 'wave'
+  | 'maxWaveReached'
+  | 'ballDamage'
+  | 'ballSpeed'
+  | 'ballCount'
+  | 'unlockedAchievements'
+  | 'settings'
+>;
+
+export const handleRehydrate = (state: RehydrateState | undefined, deps: RehydrateDeps) => {
   if (!state) {
     return;
   }
