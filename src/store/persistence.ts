@@ -34,8 +34,8 @@ export const hasExistingStorage = (storage: Pick<Storage, 'getItem'> = localStor
   }
 };
 
-export const createMetaStorage = () =>
-  createJSONStorage(() => ({
+export const createMetaStorage = <T>() =>
+  createJSONStorage<T>(() => ({
     getItem: (name) => {
       const raw = localStorage.getItem(name);
       const meta = localStorage.getItem(name + ':meta');
