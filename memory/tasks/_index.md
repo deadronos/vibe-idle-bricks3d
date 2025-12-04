@@ -6,6 +6,7 @@
 
 - [TASK002] Performance Profiling & UX Polish - Profile rendering and optimize GameScene/Ball updates; polish UI
 - [TASK010] Refactor GameScene (DESIGN008) - Track refactor of `GameScene` into layered components per DESIGN008
+- [TASK011] Refactor brick behaviors (DESIGN009) - Split `brickBehaviors.ts` into modular behavior registry and behavior modules
 
 ## COMPLETED
 
