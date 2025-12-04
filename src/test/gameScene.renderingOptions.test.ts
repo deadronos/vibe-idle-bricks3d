@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getRenderingOptions } from '../components/GameScene.utils';
+import { getRenderingOptions } from '../components/GameScene/utils';
 import type { GameSettings } from '../store/types';
 
 describe('getRenderingOptions', () => {

@@ -5,6 +5,7 @@
 ## IN PROGRESS
 
 - [TASK002] Performance Profiling & UX Polish - Profile rendering and optimize GameScene/Ball updates; polish UI
+- [TASK010] Refactor GameScene (DESIGN008) - Track refactor of `GameScene` into layered components per DESIGN008
 
 ## COMPLETED
 
@@ -15,6 +16,8 @@
 - [TASK006] Rapier Integration — FrameManager & Store - Wire `rapierWorld.step(dt)` into the frame loop; add event forwarding and fallback controls
 - [TASK007] BallsInstanced & Rendering Swap - Implement instanced ball renderer and update `GameScene`/bricks lifecycle for Rapier-driven visuals
 - [TASK008] Rapier CI Smoke & Default Flip - Add Rapier init smoke job, gate default flip, and document rollback procedure
+
+- [TASK009] Retrospective: Refactor gameStore (DESIGN007) - Completed retrospective summarizing DESIGN007 implementation
 
 ## ABANDONED
 

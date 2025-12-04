@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { getRenderingOptions } from './GameScene.utils';
+import { getRenderingOptions } from './GameScene/utils';
 import type { Mesh } from 'three';
 import type { Ball as BallType } from '../store/types';
 
