@@ -1,6 +1,6 @@
 # TASK012 - Rapier World Refactor (DESIGN010)
 
- **Status:** Pending
+ **Status:** Completed
 **Added:** 2025-12-05
 **Updated:** 2025-12-05
 
@@ -28,30 +28,34 @@ Create a task for DESIGN010 — Refactor `src/engine/rapier/rapierWorld.ts` into
 
 ## Progress Tracking
 
-**Overall Status:** Not Started — 0%
+**Overall Status:** Completed — 100%
 
 ### Subtasks
 
 | ID  | Description                                                      | Status     | Updated    | Notes |
 | --- | ---------------------------------------------------------------- | ---------- | ---------- | ----- |
-| 1.1 | Create `runtime-probes.ts` with probe helpers                     | Not Started | 2025-12-05 |       |
-| 2.1 | Implement `createBodyManager()` and boundary-safe accessors       | Not Started | 2025-12-05 |       |
-| 3.1 | Implement `contact-parsing.ts` and parsing heuristics             | Not Started | 2025-12-05 |       |
-| 4.1 | Implement `overlap-detector.ts` geometric fallback                | Not Started | 2025-12-05 |       |
-| 5.1 | Replace `rapierWorld.ts` with an adapter that composes modules    | Not Started | 2025-12-05 |       |
-| 6.1 | Add unit tests for each module                                    | Not Started | 2025-12-05 |       |
-| 7.1 | Add integration tests for parity of `drainContactEvents()`        | Not Started | 2025-12-05 |       |
-| 8.1 | Run validation suite and CI updates                               | Not Started | 2025-12-05 |       |
+| 1.1 | Create `runtime-probes.ts` with probe helpers                     | Completed  | 2025-12-05 |       |
+| 2.1 | Implement `createBodyManager()` and boundary-safe accessors       | Completed  | 2025-12-05 |       |
+| 3.1 | Implement `contact-parsing.ts` and parsing heuristics             | Completed  | 2025-12-05 |       |
+| 4.1 | Implement `overlap-detector.ts` geometric fallback                | Completed  | 2025-12-05 |       |
+| 5.1 | Replace `rapierWorld.ts` with an adapter that composes modules    | Completed  | 2025-12-05 |       |
+| 6.1 | Add unit tests for each module                                    | Completed  | 2025-12-05 |       |
+| 7.1 | Add integration tests for parity of `drainContactEvents()`        | Completed  | 2025-12-05 |       |
+| 8.1 | Run validation suite and CI updates                               | Completed  | 2025-12-05 |       |
 
 ## Progress Log
 
 ### 2025-12-05
 
 - Task created to track DESIGN010: Rapier World Refactor. Pending shift from monolithic `rapierWorld.ts` to a small set of focused modules plus a thin adapter to preserve API and runtime parity.
+- Implemented modular refactor: `runtime-probes.ts`, `body-management.ts`, `contact-parsing.ts`, `overlap-detector.ts`, and adapter `rapierWorld.ts`.
+- Added shared `types.ts`.
+- Added unit tests in `src/test/rapier/`.
+- Verified parity with existing tests.
+- CI checks (typecheck, lint, build) passed.
 
 ---
 
 **References:**
 
 - Design doc: [DESIGN010 — Rapier World Refactor](../designs/DESIGN010-rapier-world-refactor.md)
-
