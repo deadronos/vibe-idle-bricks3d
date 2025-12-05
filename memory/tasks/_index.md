@@ -2,6 +2,8 @@
 
 ## PENDING
 
+- [TASK012] Rapier World Refactor (DESIGN010) - Split `rapierWorld.ts` into focused modules (runtime-probes, body-management, contact-parsing, overlap-detector), add unit/integration tests, and preserve API parity
+
 ## IN PROGRESS
 
 - [TASK002] Performance Profiling & UX Polish - Profile rendering and optimize GameScene/Ball updates; polish UI
