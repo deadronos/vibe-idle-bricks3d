@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { handleRehydrate, RehydrateDeps } from '../../store/persistence/rehydrate';
+import { handleRehydrate } from '../../store/persistence/rehydrate';
+import type { RehydrateDeps } from '../../store/persistence/rehydrate';
 import type { GameState } from '../../store/types';
+import type { RehydrateState } from '../../store/persistence/rehydrate';
 
 describe('handleRehydrate', () => {
   const mockSetState = vi.fn();
@@ -51,7 +53,7 @@ describe('handleRehydrate', () => {
       wave: 2,
       ballCount: 3,
       // ... other required fields will be clamped/defaulted if missing
-    } as any;
+    } as RehydrateState;
 
     handleRehydrate(state, mockDeps);
 
@@ -69,7 +71,7 @@ describe('handleRehydrate', () => {
       throw new Error('Not ready');
     });
 
-    const state = { score: 100 } as any;
+    const state = { score: 100 } as RehydrateState;
 
     // Mock console.warn/error to keep test output clean
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -98,7 +100,7 @@ describe('handleRehydrate', () => {
       ballDamage: 0, // Should become 1
       ballSpeed: 0, // Should become 0.1 (DEFAULT_BALL_SPEED)
       ballCount: 0, // Should become 1
-    } as any;
+    } as RehydrateState;
 
     handleRehydrate(state, mockDeps);
 
@@ -112,7 +114,7 @@ describe('handleRehydrate', () => {
 
   it('should trigger safety net if balls are missing after rehydration (non-test env)', () => {
     // This tests that it DOES NOT run in test env
-    handleRehydrate({ ballCount: 5 } as any, mockDeps);
+    handleRehydrate({ ballCount: 5 } as RehydrateState, mockDeps);
 
     mockSetState.mockClear(); // clear the initial rehydrate call
 
@@ -129,9 +131,9 @@ describe('handleRehydrate', () => {
       balls: [badBall],
       ballDamage: 10,
       ballSpeed: 1,
-    } as any);
+    } as unknown as GameState);
 
-    handleRehydrate({ ballDamage: 10, ballSpeed: 1 } as any, mockDeps);
+    handleRehydrate({ ballDamage: 10, ballSpeed: 1 } as RehydrateState, mockDeps);
 
     mockSetState.mockClear(); // Clear initial rehydrate
 
