@@ -1,9 +1,15 @@
 import type { BrickBehavior } from './types';
 
+/**
+ * Function signature for emitting a powerup.
+ */
 export type PowerupEmitter = (brickId: string) => void;
 
 /**
- * Placeholder behavior for powerup drops. Attach a custom emitter when registering.
+ * Creates a behavior that drops a powerup when the brick is destroyed.
+ *
+ * @param {PowerupEmitter} [emitPowerup] - The callback to trigger the powerup drop.
+ * @returns {BrickBehavior} The powerup drop behavior.
  */
 export function createPowerupDropBehavior(emitPowerup?: PowerupEmitter): BrickBehavior {
   return {

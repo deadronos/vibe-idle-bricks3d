@@ -7,6 +7,13 @@ type BricksLayerProps = {
   onRegenerate: () => void;
 };
 
+/**
+ * Manages the rendering and regeneration of bricks in the scene.
+ * Uses instanced rendering for performance.
+ *
+ * @param {BricksLayerProps} props - Component props.
+ * @returns {JSX.Element} The bricks layer.
+ */
 export function BricksLayer({ bricks, onRegenerate }: BricksLayerProps) {
   useEffect(() => {
     if (bricks.length === 0) {

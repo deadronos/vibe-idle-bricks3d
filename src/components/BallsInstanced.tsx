@@ -6,13 +6,27 @@ import { getWorld as getRapierWorld } from '../engine/rapier/rapierRuntime';
 import { useGameStore } from '../store/gameStore';
 import { getRenderingOptions } from './GameScene/utils';
 
+/**
+ * Props for the BallsInstanced component.
+ */
 interface BallsInstancedProps {
+  /** Optional physics world instance. Defaults to global runtime. */
   world?: RapierWorld | null;
+  /** Maximum number of balls to support. Defaults to 128. */
   maxInstances?: number;
+  /** Radius of the balls. Defaults to 0.25. */
   radius?: number;
+  /** Number of segments for the sphere geometry. Defaults based on quality settings. */
   geometrySegments?: number;
 }
 
+/**
+ * Renders multiple balls using instanced rendering.
+ * Efficiently updates positions based on physics state.
+ *
+ * @param {BallsInstancedProps} props - Component props.
+ * @returns {JSX.Element} The instanced mesh.
+ */
 export function BallsInstanced({ world, maxInstances = 128, radius = 0.25, geometrySegments }: BallsInstancedProps) {
   const meshRef = useRef<THREE.InstancedMesh | null>(null);
   const idToIndex = useRef<Map<string, number>>(new Map());

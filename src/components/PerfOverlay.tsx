@@ -14,6 +14,13 @@ const overlayStyle: CSSProperties = {
   boxShadow: '0 6px 16px rgba(0, 0, 0, 0.35)',
 };
 
+/**
+ * Performance metrics overlay.
+ * Enabled via query parameter `?perf=1` or `?perf=true`.
+ * Displays FPS and frame time.
+ *
+ * @returns {JSX.Element | null} The overlay component.
+ */
 export function PerfOverlay() {
   const enabled = useMemo(() => {
     if (typeof window === 'undefined') return false;

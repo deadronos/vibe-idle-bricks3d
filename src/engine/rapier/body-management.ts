@@ -3,6 +3,14 @@ import type { Ball, Brick } from '../../store/types';
 import type { RapierModule, RapierWorldRuntime, RapierBody, BallState, Vec3 } from './types';
 import { maybeHandle, readTranslation, readLinvel, readRotation, readAngvel, safeApplyImpulse, safeApplyTorque } from './runtime-probes';
 
+/**
+ * Creates a body manager to handle Rapier bodies for balls and bricks.
+ * Manages creation, removal, and state synchronization of physics bodies.
+ *
+ * @param {RapierModule} rapier - The Rapier module.
+ * @param {RapierWorldRuntime} runtime - The Rapier world runtime.
+ * @returns {Object} The body manager instance.
+ */
 export function createBodyManager(rapier: RapierModule, runtime: RapierWorldRuntime) {
   const ballBodies = new Map<string, RapierBody | undefined>();
   const brickBodies = new Map<
@@ -12,6 +20,11 @@ export function createBodyManager(rapier: RapierModule, runtime: RapierWorldRunt
   // Map of runtime handles (body or collider handles) -> game entity info { type, id }
   const handleToEntity = new Map<unknown, { type: 'ball' | 'brick'; id: string }>();
 
+  /**
+   * Adds or updates a ball in the physics world.
+   *
+   * @param {Ball} b - The ball to add.
+   */
   function addBall(b: Ball) {
     if (ballBodies.has(b.id)) {
       // Update existing body's transform and velocity if possible
@@ -73,6 +86,11 @@ export function createBodyManager(rapier: RapierModule, runtime: RapierWorldRunt
     ballBodies.set(b.id, body);
   }
 
+  /**
+   * Removes a ball from the physics world.
+   *
+   * @param {string} id - The ID of the ball to remove.
+   */
   function removeBall(id: string) {
     const b = ballBodies.get(id);
     if (!b) return;
@@ -97,6 +115,11 @@ export function createBodyManager(rapier: RapierModule, runtime: RapierWorldRunt
     ballBodies.delete(id);
   }
 
+  /**
+   * Adds or updates a brick in the physics world.
+   *
+   * @param {Brick} brick - The brick to add.
+   */
   function addBrick(brick: Brick) {
     if (brickBodies.has(brick.id)) {
       // Update transform if available
@@ -159,6 +182,11 @@ export function createBodyManager(rapier: RapierModule, runtime: RapierWorldRunt
     brickBodies.set(brick.id, { body, size: { x: halfX * 2, y: halfY * 2, z: halfZ * 2 } });
   }
 
+  /**
+   * Removes a brick from the physics world.
+   *
+   * @param {string} id - The ID of the brick to remove.
+   */
   function removeBrick(id: string) {
     const info = brickBodies.get(id);
     if (!info) return;
@@ -180,6 +208,11 @@ export function createBodyManager(rapier: RapierModule, runtime: RapierWorldRunt
     brickBodies.delete(id);
   }
 
+  /**
+   * Retrieves the current state of all balls in the simulation.
+   *
+   * @returns {BallState[]} List of ball states.
+   */
   function getBallStates(): BallState[] {
     const out: BallState[] = [];
     for (const [id, body] of ballBodies.entries()) {
@@ -221,18 +254,36 @@ export function createBodyManager(rapier: RapierModule, runtime: RapierWorldRunt
     return out;
   }
 
+  /**
+   * Applies an impulse to a ball.
+   *
+   * @param {string} id - The ID of the ball.
+   * @param {Vec3} impulse - The impulse vector.
+   * @param {Vec3} [point] - The point of application (optional).
+   * @returns {boolean} True if successful, false otherwise.
+   */
   function applyImpulseToBall(id: string, impulse: Vec3, point?: Vec3): boolean {
     const b = ballBodies.get(id);
     if (!b) return false;
     return safeApplyImpulse(b, impulse, point);
   }
 
+  /**
+   * Applies torque to a ball.
+   *
+   * @param {string} id - The ID of the ball.
+   * @param {Vec3} torque - The torque vector.
+   * @returns {boolean} True if successful, false otherwise.
+   */
   function applyTorqueToBall(id: string, torque: Vec3): boolean {
     const b = ballBodies.get(id);
     if (!b) return false;
     return safeApplyTorque(b, torque);
   }
 
+  /**
+   * Cleans up all managed bodies and mappings.
+   */
   function destroy() {
     ballBodies.clear();
     brickBodies.clear();

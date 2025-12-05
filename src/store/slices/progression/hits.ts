@@ -4,7 +4,18 @@ import { checkAndUnlockAchievements } from '../../achievements';
 import { createInitialBricks } from '../../createInitials';
 import type { GameState } from '../../types';
 
+/**
+ * Collection of side-effect functions for brick hits.
+ * Emits events to the effect bus for visual feedback.
+ */
 export const effects = {
+  /**
+   * Emits a brick hit event.
+   *
+   * @param {Vector3Tuple} position - The position of the hit.
+   * @param {string} color - The color of the brick.
+   * @param {number} amount - The damage amount.
+   */
   emitBrickHit: (position: Vector3Tuple, color: string, amount: number) => {
     effectBus.emit({
       type: 'brick_hit',
@@ -13,6 +24,12 @@ export const effects = {
       amount,
     });
   },
+  /**
+   * Emits a brick destroy event.
+   *
+   * @param {Vector3Tuple} position - The position of the destroyed brick.
+   * @param {string} color - The color of the brick.
+   */
   emitBrickDestroy: (position: Vector3Tuple, color: string) => {
     effectBus.emit({
       type: 'brick_destroy',
@@ -22,6 +39,14 @@ export const effects = {
   },
 };
 
+/**
+ * Creates the hits slice of the game store.
+ * Manages brick damage, removal, combo system, and wave regeneration.
+ *
+ * @param {Function} set - The Zustand set function.
+ * @param {Function} get - The Zustand get function.
+ * @returns {Object} The hits slice actions.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createHitsSlice = (set: any, get: any) => ({
   damageBrick: (id: string, damage: number) =>

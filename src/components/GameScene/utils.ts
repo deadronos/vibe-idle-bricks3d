@@ -1,5 +1,12 @@
 import type { GameSettings } from '../../store/types';
 
+/**
+ * Computes rendering parameters based on game settings and device capabilities.
+ * Determines shadow resolution, particle count, bloom intensity, and pixel ratio.
+ *
+ * @param {Partial<GameSettings> | undefined} settings - The current game settings.
+ * @returns {Object} Computed rendering options.
+ */
 export function getRenderingOptions(settings: Partial<GameSettings> | undefined) {
   const quality = settings?.graphicsQuality ?? 'auto';
   const dpr = typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1;

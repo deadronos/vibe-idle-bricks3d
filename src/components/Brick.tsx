@@ -3,10 +3,22 @@ import { useFrame } from '@react-three/fiber';
 import type { Mesh } from 'three';
 import type { Brick as BrickType } from '../store/types';
 
+/**
+ * Props for the Brick component.
+ */
 interface BrickProps {
+  /** The brick entity data. */
   brick: BrickType;
 }
 
+/**
+ * Renders a single brick in the scene.
+ * Used when instanced rendering is disabled or for specific single bricks.
+ * Features hover effects and damage visualization.
+ *
+ * @param {BrickProps} props - Component props.
+ * @returns {JSX.Element} The brick mesh.
+ */
 export function Brick({ brick }: BrickProps) {
   const meshRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);

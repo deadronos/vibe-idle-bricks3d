@@ -7,6 +7,10 @@ import {
 import type { Ball, Brick, GameState } from '../types';
 import { clampNumber } from './validators';
 
+/**
+ * Dependencies required for rehydration logic.
+ * Injected to make the function pure and testable.
+ */
 export type RehydrateDeps = {
   useGameStore: {
     getState: () => GameState;
@@ -34,6 +38,13 @@ export type RehydrateState = Pick<
   | 'settings'
 >;
 
+/**
+ * Handles the logic for restoring game state from persisted storage.
+ *
+ * @param {RehydrateState | undefined} state - The persisted state object.
+ * @param {RehydrateDeps} deps - The dependencies needed for rehydration.
+ * @throws {Error} If rehydration fails or dependencies are missing.
+ */
 export const handleRehydrate = (state: RehydrateState | undefined, deps: RehydrateDeps) => {
   if (!state) {
     return;

@@ -23,6 +23,9 @@ import type { GameStoreSlice } from './types';
 
 const defaultGraphicsQuality: GraphicsQuality = 'auto';
 
+/**
+ * State properties that are persisted to local storage.
+ */
 type PersistedState = Pick<
   GameState,
   | 'score'
@@ -40,6 +43,11 @@ type PersistedState = Pick<
   | 'lastSaveTime'
 >;
 
+/**
+ * Detects if the device screen is small (compact HUD).
+ *
+ * @returns {boolean} True if compact HUD should be enabled.
+ */
 const detectCompactHud = () => {
   const isBrowser = typeof window !== 'undefined';
   if (!isBrowser) return false;
@@ -58,7 +66,7 @@ const detectCompactHud = () => {
  * When no storage exists (fresh start), the function creates initial balls and bricks
  * directly to avoid a flash of empty state.
  *
- * @returns Initial game state with data, entities, and upgrade values
+ * @returns {GameDataState & GameEntitiesState & UpgradeState} Initial game state with data, entities, and upgrade values
  */
 export const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState => {
   const storageExists = hasExistingStorage();
@@ -101,6 +109,15 @@ export const buildInitialState = (): GameDataState & GameEntitiesState & Upgrade
   };
 };
 
+/**
+ * Creates the persistence slice of the game store.
+ * Manages game reset functionality.
+ *
+ * @param {Function} set - The Zustand set function.
+ * @param {Function} _get - The Zustand get function (unused).
+ * @param {Object} store - The Zustand store API.
+ * @returns {Object} The persistence slice actions.
+ */
 export const createPersistenceSlice: GameStoreSlice<Pick<GameActions, 'resetGame'>> = (
   set,
   _get,
@@ -112,6 +129,13 @@ export const createPersistenceSlice: GameStoreSlice<Pick<GameActions, 'resetGame
   },
 });
 
+/**
+ * Configures the persistence middleware options.
+ * Defines what state to save, the storage engine, and rehydration logic (offline progress).
+ *
+ * @param {Function} getStore - Function to retrieve the bound store instance.
+ * @returns {PersistOptions<GameState, PersistedState>} The persistence options.
+ */
 export const createPersistOptions = (
   getStore: () => UseBoundStore<StoreApi<GameState>>
 ): PersistOptions<GameState, PersistedState> => ({

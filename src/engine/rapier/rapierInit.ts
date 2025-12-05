@@ -4,10 +4,21 @@
  * or a namespace directly; handle both shapes and cache the result.
  */
 
+/**
+ * Type alias for the loaded Rapier module.
+ */
 export type RapierModule = unknown;
 
 let cached: RapierModule | null = null;
 
+/**
+ * Initializes the Rapier physics engine.
+ * Handles dynamic imports and WASM initialization.
+ * Supports both browser and Node.js environments.
+ *
+ * @returns {Promise<RapierModule>} A promise resolving to the initialized Rapier module.
+ * @throws {Error} If initialization fails.
+ */
 export async function initRapier(): Promise<RapierModule> {
   if (cached) return cached;
 
@@ -111,6 +122,10 @@ export async function initRapier(): Promise<RapierModule> {
   }
 }
 
+/**
+ * Resets the cached Rapier instance.
+ * Useful for testing or re-initialization.
+ */
 export function resetRapier() {
   cached = null;
 }

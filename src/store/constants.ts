@@ -1,5 +1,8 @@
 import type { AchievementDefinition } from './types';
 
+/**
+ * Palette of colors used for bricks.
+ */
 export const BRICK_COLORS = [
   '#FF6B6B',
   '#4ECDC4',
@@ -11,17 +14,32 @@ export const BRICK_COLORS = [
   '#F7DC6F',
 ];
 
+/**
+ * Dimensions of the gameplay arena.
+ */
 export const ARENA_SIZE = { width: 12, height: 10, depth: 8 };
 
+/** Default starting wave number. */
 export const DEFAULT_WAVE = 1;
+/** Default starting ball speed. */
 export const DEFAULT_BALL_SPEED = 0.1;
+/** Default starting ball damage. */
 export const DEFAULT_BALL_DAMAGE = 1;
+/** Default starting ball count. */
 export const DEFAULT_BALL_COUNT = 1;
+/** Scaling factor for wave difficulty. */
 export const WAVE_SCALE_FACTOR = 0.2;
+/** Maximum number of balls allowed. */
 export const MAX_BALL_COUNT = 20;
 
+/**
+ * Key used for local storage persistence.
+ */
 export const STORAGE_KEY = 'idle-bricks3d:game:v1';
 
+/**
+ * List of available achievements.
+ */
 export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     id: 'score-1k',
