@@ -34,7 +34,7 @@ describe('metaStorage', () => {
   });
 
   describe('createMetaStorage', () => {
-    const storage = createMetaStorage();
+    const storage = createMetaStorage()!;
 
     it('setItem should persist to localStorage and meta if non-default', () => {
       const name = 'test-storage';
