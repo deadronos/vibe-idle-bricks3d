@@ -4,6 +4,7 @@
 
 - [TASK012] Rapier World Refactor (DESIGN010) - Split `rapierWorld.ts` into focused modules (runtime-probes, body-management, contact-parsing, overlap-detector), add unit/integration tests, and preserve API parity
 - [TASK013] Store Persistence Refactor (DESIGN011) - Split `persistence.ts` into `metaStorage`, `validators`, `rehydrate`, and an adapter `persistence.ts`; add targeted unit tests and parity/integration tests
+- [TASK014] Progression Slice Refactor (DESIGN012) - Split `src/store/slices/progression.ts` into focused modules (`score`, `upgrades`, `prestige`, `hits`, `index`), add unit and integration tests, and preserve API parity
 
 ## IN PROGRESS
 
