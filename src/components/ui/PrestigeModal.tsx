@@ -3,10 +3,22 @@ import { createPortal } from 'react-dom';
 import { useGameStore } from '../../store/gameStore';
 import './PrestigeModal.css';
 
+/**
+ * Props for the PrestigeModal component.
+ */
 interface PrestigeModalProps {
+  /** Callback fired when the modal requests to be closed. */
   onClose: () => void;
 }
 
+/**
+ * Modal dialog for the prestige system.
+ * Shows current progress, potential rewards, and allows the user to reset progress for bonuses.
+ * Handles focus trapping for accessibility.
+ *
+ * @param {PrestigeModalProps} props - Component props.
+ * @returns {JSX.Element} The rendered modal.
+ */
 export function PrestigeModal({ onClose }: PrestigeModalProps) {
   const vibeCrystals = useGameStore((state) => state.vibeCrystals);
   const prestigeLevel = useGameStore((state) => state.prestigeLevel);

@@ -9,6 +9,14 @@ import { getWorld as getRapierWorld } from '../../engine/rapier/rapierRuntime';
 const tempObject = new Object3D();
 const tempColor = new Color();
 
+/**
+ * Custom hook for managing instanced brick meshes.
+ * Handles instanced positioning, color updates (damage/hover), and picking interactions.
+ * Also synchronizes bricks with the physics world (Rapier).
+ *
+ * @param {Brick[]} bricks - List of brick entities.
+ * @returns {Object} { meshRef, handlePointerMove, handlePointerOut }
+ */
 export const useInstancedBricks = (bricks: Brick[]) => {
   const meshRef = useRef<InstancedMesh>(null);
   const hoveredIndexRef = useRef<number | null>(null);

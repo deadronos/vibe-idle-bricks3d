@@ -6,12 +6,34 @@ import {
 } from './constants';
 import type { Ball, Brick, BrickType } from './types';
 
+/**
+ * Generates a unique ID for a brick.
+ * @returns {string} Unique brick ID.
+ */
 const generateBrickId = () => `brick-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+/**
+ * Generates a unique ID for a ball.
+ * @returns {string} Unique ball ID.
+ */
 const generateBallId = () => `ball-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
+/**
+ * Scales a value based on the current wave number.
+ *
+ * @param {number} base - The base value.
+ * @param {number} wave - The current wave number.
+ * @returns {number} The scaled value.
+ */
 export const scaleForWave = (base: number, wave: number) =>
   Math.max(1, Math.round(base * (1 + WAVE_SCALE_FACTOR * Math.max(0, wave - 1))));
 
+/**
+ * Creates the initial set of bricks for a given wave.
+ *
+ * @param {number} wave - The wave number to generate bricks for.
+ * @returns {Brick[]} An array of generated bricks.
+ */
 export const createInitialBricks = (wave: number): Brick[] => {
   const bricks: Brick[] = [];
   const rows = 4;
@@ -75,6 +97,13 @@ export const createInitialBricks = (wave: number): Brick[] => {
   return bricks;
 };
 
+/**
+ * Creates an initial ball with random direction.
+ *
+ * @param {number} [speed=DEFAULT_BALL_SPEED] - The ball's speed.
+ * @param {number} [damage=DEFAULT_BALL_DAMAGE] - The ball's damage.
+ * @returns {Ball} The generated ball.
+ */
 export const createInitialBall = (
   speed: number = DEFAULT_BALL_SPEED,
   damage: number = DEFAULT_BALL_DAMAGE

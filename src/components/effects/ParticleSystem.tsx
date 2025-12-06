@@ -7,10 +7,22 @@ import { effectBus, type EffectEvent } from '../../systems/EffectEventBus';
 const DEFAULT_MAX_PARTICLES = 1000;
 const PARTICLE_LIFE = 1.0; // seconds
 
+/**
+ * Props for the ParticleSystem component.
+ */
 export type ParticleSystemProps = {
+  /** Maximum number of simultaneous particles. */
   maxParticles?: number;
 };
 
+/**
+ * Instanced mesh particle system.
+ * Spawns particles on brick hits and destruction effects.
+ * Handles physics update (gravity/velocity) on each frame.
+ *
+ * @param {ParticleSystemProps} props - Component props.
+ * @returns {JSX.Element} The instanced mesh particle system.
+ */
 export function ParticleSystem({ maxParticles = DEFAULT_MAX_PARTICLES }: ParticleSystemProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);

@@ -1,8 +1,22 @@
 import type { Brick } from '../../store/types';
 import { BRICK_HALF_SIZE } from './constants';
 
+/**
+ * Clamps the time delta to a maximum value to prevent physics explosions.
+ *
+ * @param {number} delta - The time delta in seconds.
+ * @returns {number} The clamped delta.
+ */
 export const clampDelta = (delta: number) => Math.min(delta, 0.05);
 
+/**
+ * Checks if a position is out of bounds and returns collision info.
+ * This is a 1D check against a symmetric limit [-limit, limit].
+ *
+ * @param {number} position - The coordinate to check.
+ * @param {number} limit - The boundary limit.
+ * @returns {{ reflected: boolean; value: number }} Object indicating if reflected and the clamped position.
+ */
 export const reflectIfOutOfBounds = (position: number, limit: number) => {
   if (position < -limit || position > limit) {
     const clamped = Math.max(-limit, Math.min(limit, position));
@@ -11,6 +25,20 @@ export const reflectIfOutOfBounds = (position: number, limit: number) => {
   return { reflected: false, value: position };
 };
 
+/**
+ * Resolves collision between a sphere (ball) and a box (brick).
+ *
+ * @param {Object} target - The sphere object.
+ * @param {number} target.x - X coordinate.
+ * @param {number} target.y - Y coordinate.
+ * @param {number} target.z - Z coordinate.
+ * @param {number} target.radius - Radius of the sphere.
+ * @param {Brick} brick - The brick object.
+ * @returns {Object} Collision result.
+ *  - hit: boolean indicating if a collision occurred.
+ *  - axis: 'x' | 'y' | 'z' indicating the axis of collision (if hit).
+ *  - brickId: The ID of the brick (if hit).
+ */
 export const resolveBrickCollision = (
   target: { x: number; y: number; z: number; radius: number },
   brick: Brick

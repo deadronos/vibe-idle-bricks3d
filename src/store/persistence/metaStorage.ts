@@ -2,6 +2,12 @@ import { createJSONStorage } from 'zustand/middleware';
 import { STORAGE_KEY } from '../constants';
 import { isDefaultPersisted } from './validators';
 
+/**
+ * Checks if there is existing saved game data in local storage.
+ *
+ * @param {Pick<Storage, 'getItem'>} [storage=localStorage] - The storage provider to check.
+ * @returns {boolean} True if valid save data exists.
+ */
 export const hasExistingStorage = (storage: Pick<Storage, 'getItem'> = localStorage): boolean => {
   try {
     const stored = storage.getItem(STORAGE_KEY);
@@ -14,6 +20,13 @@ export const hasExistingStorage = (storage: Pick<Storage, 'getItem'> = localStor
   }
 };
 
+/**
+ * Creates a custom storage engine for Zustand persistence.
+ * Implements a "meta" storage mechanism to preserve progress through soft resets.
+ *
+ * @template T - The type of state being stored.
+ * @returns {StateStorage} The storage engine compatible with Zustand.
+ */
 export const createMetaStorage = <T>() =>
   createJSONStorage<T>(() => ({
     getItem: (name) => {

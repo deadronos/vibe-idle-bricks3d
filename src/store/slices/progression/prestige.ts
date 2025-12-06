@@ -3,10 +3,24 @@ import { createInitialBall, createInitialBricks } from '../../createInitials';
 import { buildInitialState } from '../persistence';
 import type { GameState } from '../../types';
 
+/**
+ * Calculates the prestige reward based on the maximum wave reached.
+ *
+ * @param {number} maxWaveReached - The highest wave number reached.
+ * @returns {number} The amount of vibe crystals to reward.
+ */
 export const calculatePrestigeReward = (maxWaveReached: number): number => {
   return Math.max(0, Math.floor(Math.sqrt(maxWaveReached - 1)));
 };
 
+/**
+ * Creates the prestige slice of the game store.
+ * Manages the prestige mechanic, resetting progress for rewards.
+ *
+ * @param {Function} set - The Zustand set function.
+ * @param {Function} get - The Zustand get function.
+ * @returns {Object} The prestige slice actions.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createPrestigeSlice = (set: any, get: any) => ({
   getPrestigeReward: () => {

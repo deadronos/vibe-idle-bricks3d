@@ -198,6 +198,17 @@ src/
 
 ```
 
+## Documentation
+
+Every source file in this repository is fully documented with JSDoc/TSDoc comments.
+These comments provide detailed information about the purpose, parameters, and return values of all public functions, components, and interfaces.
+
+Key areas to explore:
+- `src/store/`: Comprehensive state management documentation (Zustand slices).
+- `src/engine/`: Physics integration and simulation loop details.
+- `src/components/`: Component props and rendering behavior.
+- `src/systems/`: Event bus and game behavior systems.
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.

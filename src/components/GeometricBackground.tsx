@@ -23,6 +23,12 @@ const DARK_COLORS = [
 ];
 
 // Linear Congruential Generator (LCG) for consistent procedural generation
+/**
+ * Creates a seeded random number generator.
+ *
+ * @param {number} seed - The seed value.
+ * @returns {() => number} A function returning a random number between 0 and 1.
+ */
 function seededRandom(seed: number): () => number {
   let s = seed;
   return () => {
@@ -341,6 +347,12 @@ function FloatingNeonBoxes() {
   );
 }
 
+/**
+ * Procedurally generated geometric background with neon aesthetics.
+ * Includes reflective floor, building structures, and atmospheric lighting.
+ *
+ * @returns {JSX.Element} The background scene.
+ */
 export function GeometricBackground() {
   // Generate building walls on both sides
   const leftWall = useMemo(() => generateBuildingWall('left', 123), []);

@@ -4,6 +4,9 @@ import { Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { effectBus, type EffectEvent } from '../../systems/EffectEventBus';
 
+/**
+ * Represents a single floating text instance.
+ */
 interface FloatingTextItem {
   id: number;
   position: THREE.Vector3;
@@ -15,6 +18,12 @@ interface FloatingTextItem {
 
 const TEXT_LIFE = 0.8;
 
+/**
+ * System for displaying floating damage numbers.
+ * Subscribes to the effect bus to spawn numbers on damage events.
+ *
+ * @returns {JSX.Element} The floating text system.
+ */
 export function FloatingText() {
   const [items, setItems] = useState<FloatingTextItem[]>([]);
   const nextId = useRef(0);
@@ -64,6 +73,15 @@ export function FloatingText() {
   );
 }
 
+/**
+ * Individual floating text label component.
+ * Rotates to face the camera.
+ *
+ * @param {Object} props - Component props.
+ * @param {FloatingTextItem} props.item - The text item data.
+ * @param {THREE.Camera} props.camera - The active camera.
+ * @returns {JSX.Element} The text mesh.
+ */
 function FloatingLabel({ item, camera }: { item: FloatingTextItem; camera: THREE.Camera }) {
   const ref = useRef<THREE.Object3D | null>(null);
   const scratch = useRef({

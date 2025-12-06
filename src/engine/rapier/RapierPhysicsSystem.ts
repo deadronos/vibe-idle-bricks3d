@@ -5,7 +5,21 @@ import { setModule, setWorld, getWorld as _getWorld, resetAll } from './rapierRu
 import { useGameStore } from '../../store/gameStore';
 import type { Ball, Brick } from '../../store/types';
 
+/**
+ * Singleton managing the lifecycle and interaction with the Rapier physics engine.
+ * Provides a unified interface for initializing, updating, and querying the physics simulation.
+ */
 export const RapierPhysicsSystem = {
+  /**
+   * Initializes the physics system.
+   * Loads the WASM module and creates the physics world.
+   * Updates the game store with initialization status.
+   *
+   * @param {Object} [opts] - Configuration options.
+   * @param {Object} [opts.gravity] - Gravity vector to use.
+   * @returns {Promise<RapierWorld>} The initialized physics world.
+   * @throws {Error} If initialization fails.
+   */
   async init(opts?: { gravity?: { x: number; y: number; z: number } }): Promise<RapierWorld> {
     const existing = _getWorld();
     if (existing) return existing;
@@ -50,10 +64,19 @@ export const RapierPhysicsSystem = {
     }
   },
 
+  /**
+   * Retrieves the current physics world instance.
+   *
+   * @returns {RapierWorld | null} The physics world or null if not initialized.
+   */
   getWorld(): RapierWorld | null {
     return _getWorld();
   },
 
+  /**
+   * Destroys the physics system and releases resources.
+   * Updates the game store status.
+   */
   destroy(): void {
     try {
       const w = _getWorld();
@@ -83,10 +106,20 @@ export const RapierPhysicsSystem = {
     }
   },
 
+  /**
+   * Checks if the physics system is initialized.
+   *
+   * @returns {boolean} True if initialized.
+   */
   isInitialized(): boolean {
     return _getWorld() != null;
   },
 
+  /**
+   * Adds a ball to the physics simulation.
+   *
+   * @param {Ball} b - The ball to add.
+   */
   addBall(b: Ball) {
     const w = _getWorld();
     if (!w) return;
@@ -97,6 +130,11 @@ export const RapierPhysicsSystem = {
     }
   },
 
+  /**
+   * Removes a ball from the physics simulation.
+   *
+   * @param {string} id - The ID of the ball to remove.
+   */
   removeBall(id: string) {
     const w = _getWorld();
     if (!w) return;
@@ -107,6 +145,11 @@ export const RapierPhysicsSystem = {
     }
   },
 
+  /**
+   * Adds a brick to the physics simulation.
+   *
+   * @param {Brick} brick - The brick to add.
+   */
   addBrick(brick: Brick) {
     const w = _getWorld();
     if (!w) return;
@@ -117,6 +160,11 @@ export const RapierPhysicsSystem = {
     }
   },
 
+  /**
+   * Removes a brick from the physics simulation.
+   *
+   * @param {string} id - The ID of the brick to remove.
+   */
   removeBrick(id: string) {
     const w = _getWorld();
     if (!w) return;
@@ -127,6 +175,11 @@ export const RapierPhysicsSystem = {
     }
   },
 
+  /**
+   * Advances the physics simulation by one step.
+   *
+   * @param {number} [dt] - The time step delta (optional).
+   */
   step(dt?: number) {
     const w = _getWorld();
     if (!w) return;
@@ -137,6 +190,11 @@ export const RapierPhysicsSystem = {
     }
   },
 
+  /**
+   * Retrieves and clears accumulated contact events.
+   *
+   * @returns {ContactEvent[]} List of contact events.
+   */
   drainContactEvents(): ContactEvent[] {
     const w = _getWorld();
     if (!w || typeof w.drainContactEvents !== 'function') return [];
@@ -147,6 +205,11 @@ export const RapierPhysicsSystem = {
     }
   },
 
+  /**
+   * Retrieves the current state of all balls.
+   *
+   * @returns {Object[]} List of ball states.
+   */
   getBallStates() {
     const w = _getWorld();
     if (!w || typeof w.getBallStates !== 'function') return [];
@@ -157,6 +220,14 @@ export const RapierPhysicsSystem = {
     }
   },
 
+  /**
+   * Applies an impulse to a ball.
+   *
+   * @param {string} ballId - The ID of the ball.
+   * @param {Array<number>} impulse - The impulse vector [x, y, z].
+   * @param {Array<number>} [point] - The application point (optional).
+   * @returns {boolean} True if successful.
+   */
   applyImpulse(
     ballId: string,
     impulse: [number, number, number],
@@ -173,6 +244,13 @@ export const RapierPhysicsSystem = {
     }
   },
 
+  /**
+   * Applies torque to a ball.
+   *
+   * @param {string} ballId - The ID of the ball.
+   * @param {Array<number>} torque - The torque vector [x, y, z].
+   * @returns {boolean} True if successful.
+   */
   applyTorque(ballId: string, torque: [number, number, number]) {
     const w = _getWorld();
     if (!w) return false;
@@ -186,4 +264,7 @@ export const RapierPhysicsSystem = {
   },
 };
 
+/**
+ * Type of the RapierPhysicsSystem object.
+ */
 export type RapierPhysicsSystemType = typeof RapierPhysicsSystem;

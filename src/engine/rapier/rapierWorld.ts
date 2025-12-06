@@ -12,9 +12,17 @@ import type {
 
 export type { RapierModule, RapierWorld, ContactEvent, BallState, Vec3 };
 
-// Minimal wrapper around the rapier runtime. The implementation deliberately
-// keeps types loose and falls back to a simple overlap detector if the
-// runtime doesn't expose contact event APIs in an environment-dependent way.
+/**
+ * Creates a new Rapier physics world.
+ *
+ * @param {unknown} rapierParam - The loaded Rapier module.
+ * @param {Object} [gravity] - The gravity vector.
+ * @param {number} [gravity.x=0] - X component.
+ * @param {number} [gravity.y=0] - Y component.
+ * @param {number} [gravity.z=0] - Z component.
+ * @returns {RapierWorld} A wrapper around the physics world.
+ * @throws {Error} If world initialization fails.
+ */
 export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }): RapierWorld {
   const rapier = rapierParam as RapierModule;
   let world: RapierWorldRuntime | undefined;

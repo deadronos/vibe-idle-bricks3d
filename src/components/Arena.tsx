@@ -1,6 +1,12 @@
 import { ARENA_SIZE } from '../store/gameStore';
 import * as THREE from 'three';
 
+/**
+ * Renders the game arena boundaries, floor, and glowing edges.
+ * Visual representation only; collision logic is handled by the physics engine.
+ *
+ * @returns {JSX.Element} The arena group.
+ */
 export function Arena() {
   const { width, height, depth } = ARENA_SIZE;
 

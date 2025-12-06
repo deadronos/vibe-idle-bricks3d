@@ -1,6 +1,13 @@
 // Intentionally no three.js Color import required here — tests expect deterministic strings
 import type { Brick } from '../../store/types';
 
+/**
+ * Determines the visual color of a brick based on its health and hover state.
+ *
+ * @param {Brick} brick - The brick entity.
+ * @param {boolean} isHovered - Whether the brick is currently hovered.
+ * @returns {string} The CSS-compatible color string.
+ */
 export const getDamageColor = (brick: Brick, isHovered: boolean) => {
   if (isHovered) return '#FFFFFF';
 

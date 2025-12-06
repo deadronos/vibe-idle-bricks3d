@@ -11,6 +11,13 @@ import { SettingsPanel } from './SettingsPanel';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 import './UI.css';
 
+/**
+ * Main UI layout component.
+ * Composes all other UI panels and handles global UI state (like settings modal visibility).
+ * Manages keyboard shortcuts and ARIA live region updates.
+ *
+ * @returns {JSX.Element} The complete UI overlay.
+ */
 export function UI() {
   const unlockedAchievements = useGameStore((state) => state.unlockedAchievements);
   const [showSettings, setShowSettings] = React.useState(false);

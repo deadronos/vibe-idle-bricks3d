@@ -1,27 +1,53 @@
 import type { Vector3Tuple } from 'three';
 
+/**
+ * Brick types available in the game.
+ */
 export type BrickType = 'normal' | 'golden' | 'armor';
 
+/**
+ * Represents a single brick in the game world.
+ */
 export interface Brick {
+  /** Unique identifier for the brick. */
   id: string;
+  /** Position in 3D space [x, y, z]. */
   position: Vector3Tuple;
+  /** Current health of the brick. */
   health: number;
+  /** Maximum health of the brick. */
   maxHealth: number;
+  /** Color hex string. */
   color: string;
+  /** Score value awarded upon destruction. */
   value: number;
+  /** The type of the brick. */
   type: BrickType;
+  /** Damage reduction multiplier (0.5 = 50% damage taken). */
   armorMultiplier?: number; // For armor bricks (damage reduction, e.g., 0.5 = 50% reduction)
 }
 
+/**
+ * Represents a ball in the game world.
+ */
 export interface Ball {
+  /** Unique identifier for the ball. */
   id: string;
+  /** Position in 3D space [x, y, z]. */
   position: Vector3Tuple;
+  /** Velocity vector [x, y, z]. */
   velocity: Vector3Tuple;
+  /** Radius of the ball. */
   radius: number;
+  /** Damage inflicted by the ball on collision. */
   damage: number;
+  /** Color hex string. */
   color: string;
 }
 
+/**
+ * Interface for upgrade definitions.
+ */
 export interface Upgrade {
   id: string;
   name: string;
@@ -33,18 +59,34 @@ export interface Upgrade {
   effect: () => void;
 }
 
+/**
+ * Game configuration settings.
+ */
 export interface GameSettings {
+  /** Enable bloom post-processing effect. */
   enableBloom: boolean;
+  /** Enable dynamic shadows. */
   enableShadows: boolean;
+  /** Enable game sounds. */
   enableSound: boolean;
+  /** Enable particle effects. */
   enableParticles: boolean;
+  /** Enable Rapier physics engine. */
   enableFullRigidPhysics?: boolean;
+  /** Graphics quality preset. */
   graphicsQuality?: 'auto' | 'low' | 'medium' | 'high';
+  /** Toggle compact HUD mode. */
   compactHudEnabled?: boolean;
 }
 
+/**
+ * Types of achievements.
+ */
 export type AchievementType = 'score' | 'bricks' | 'wave' | 'upgrade';
 
+/**
+ * Definition of an achievement.
+ */
 export interface AchievementDefinition {
   id: string;
   label: string;
@@ -54,6 +96,9 @@ export interface AchievementDefinition {
   metric?: 'ballDamage' | 'ballSpeed' | 'ballCount';
 }
 
+/**
+ * Persistent game data state (saved to local storage).
+ */
 export interface GameDataState {
   score: number;
   bricksDestroyed: number;
@@ -73,6 +118,9 @@ export interface GameDataState {
   latestAnnouncement?: string | null;
 }
 
+/**
+ * Ephemeral game entities state (reset on reload usually, but some persisted).
+ */
 export interface GameEntitiesState {
   bricks: Brick[];
   balls: Ball[];
@@ -86,12 +134,18 @@ export interface GameEntitiesState {
   rapierInitError?: string | null;
 }
 
+/**
+ * State related to player upgrades.
+ */
 export interface UpgradeState {
   ballDamage: number;
   ballSpeed: number;
   ballCount: number;
 }
 
+/**
+ * Actions available to modify the game state.
+ */
 export interface GameActions {
   addScore: (amount: number) => void;
   spawnBall: () => void;
@@ -127,4 +181,7 @@ export interface GameActions {
   applyHits?: (hits: Array<{ brickId: string; damage: number }>) => void;
 }
 
+/**
+ * Complete game state interface, combining data, entities, upgrades, and actions.
+ */
 export type GameState = GameDataState & GameEntitiesState & UpgradeState & GameActions;

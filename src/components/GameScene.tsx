@@ -11,6 +11,12 @@ import { SceneSetup } from './GameScene/SceneSetup';
 import { getRenderingOptions } from './GameScene/utils';
 import './ui/GameScene.css';
 
+/**
+ * Main 3D game scene component.
+ * Sets up the React Three Fiber Canvas, scene lighting, physics, layers, and post-processing effects.
+ *
+ * @returns {JSX.Element} The rendered game scene.
+ */
 export function GameScene() {
   const enableBloom = useGameStore((state) => state.settings.enableBloom);
   const enableShadows = useGameStore((state) => state.settings.enableShadows);

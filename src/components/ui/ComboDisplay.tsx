@@ -1,6 +1,12 @@
 import { useGameStore } from '../../store/gameStore';
 import './ComboDisplay.css';
 
+/**
+ * Displays the current hit combo and damage multiplier.
+ * Only visible when a combo is active (count > 0).
+ *
+ * @returns {JSX.Element | null} The combo display or null.
+ */
 export function ComboDisplay() {
   const comboCount = useGameStore((state) => state.comboCount);
   const comboMultiplier = useGameStore((state) => state.comboMultiplier);

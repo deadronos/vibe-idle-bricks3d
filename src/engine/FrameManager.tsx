@@ -7,6 +7,13 @@ import { RapierPhysicsSystem } from './rapier/RapierPhysicsSystem';
 import type { RapierWorld, BallState, ContactEvent } from './rapier/rapierWorld';
 import { handleContact } from '../systems/brickBehaviors';
 
+/**
+ * Component that manages the game loop and physics simulation.
+ * Handles both the legacy collision system and the Rapier physics engine.
+ * Synchronizes physics state with the Zustand store.
+ *
+ * @returns {null} This component does not render anything.
+ */
 export function FrameManager() {
   const isPaused = useGameStore((state) => state.isPaused);
   const damageBrick = useGameStore((state) => state.damageBrick);

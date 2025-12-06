@@ -2,6 +2,11 @@ import React from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { PrestigeModal } from './PrestigeModal';
 
+/**
+ * Desktop panel for purchasing upgrades and accessing prestige.
+ *
+ * @returns {JSX.Element} The upgrades panel.
+ */
 export function UpgradesPanel() {
   const score = useGameStore((state) => state.score);
   const ballCount = useGameStore((state) => state.ballCount);

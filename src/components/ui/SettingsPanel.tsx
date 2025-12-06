@@ -3,6 +3,14 @@ import { useGameStore } from '../../store/gameStore';
 import type { GameSettings } from '../../store/types';
 import './UI.css';
 
+/**
+ * Modal panel for game settings configuration.
+ * Allows toggling graphics options, sound, and physics engine.
+ *
+ * @param {Object} props - Component props.
+ * @param {Function} props.onClose - Callback to close the settings panel.
+ * @returns {JSX.Element} The settings panel component.
+ */
 export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const settings = useGameStore((state) => state.settings);
   const toggleSetting = useGameStore((state) => state.toggleSetting);
