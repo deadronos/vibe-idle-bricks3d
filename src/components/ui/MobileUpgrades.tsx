@@ -34,6 +34,18 @@ export function MobileUpgrades() {
   // Attach drag handler hook
   useDrawerDrag({ open, setOpen, drawerRef, headerRef, translateY, setTranslateY, setIsDragging });
 
+  // Close when resizing to desktop view
+  React.useEffect(() => {
+    if (!open) return;
+    const onResize = () => {
+      if (window.innerWidth > 768) {
+        setOpen(false);
+      }
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [open]);
+
   // Keep CSS variable in sync with state for transitions & snaps
   React.useEffect(() => {
     const drawer = drawerRef.current;
