@@ -1,6 +1,10 @@
 import type { GameActions, GameDataState, GameEntitiesState, GameSettings } from '../types';
 import type { GameStoreSlice } from './types';
 
+/**
+ * Graphics quality presets.
+ * 'auto' detects device capabilities.
+ */
 export type GraphicsQuality = 'auto' | 'low' | 'medium' | 'high';
 
 /** Keys of GameSettings that represent toggleable boolean settings */
@@ -11,6 +15,9 @@ type BooleanSettingKeys =
   | 'enableParticles'
   | 'enableFullRigidPhysics';
 
+/**
+ * Set of keys for runtime validation of toggleable settings.
+ */
 const BOOLEAN_SETTING_KEYS: Set<string> = new Set([
   'enableBloom',
   'enableShadows',
@@ -19,6 +26,9 @@ const BOOLEAN_SETTING_KEYS: Set<string> = new Set([
   'enableFullRigidPhysics',
 ]);
 
+/**
+ * UI-related actions for the game store.
+ */
 type UiActions = Pick<
   GameActions,
   | 'togglePause'
@@ -30,19 +40,34 @@ type UiActions = Pick<
   | 'setRapierInitError'
 >;
 
+/**
+ * UI-related state for the game store.
+ */
 type UiState = Pick<
   GameEntitiesState,
   'isPaused' | 'useRapierPhysics' | 'rapierActive' | 'rapierInitError'
 > &
   Pick<GameDataState, 'latestAnnouncement'>;
 
+/**
+ * Represents the capabilities and characteristics of the user's device.
+ */
 type DeviceProfile = {
+  /** Approximate amount of device memory in gigabytes. */
   deviceMemory?: number;
+  /** Number of logical processors available to run threads on the user's computer. */
   hardwareConcurrency?: number;
+  /** Whether the user has requested the system to minimize the amount of non-essential motion. */
   prefersReducedMotion: boolean;
+  /** Whether the screen width is considered small (<= 768px). */
   smallScreen: boolean;
 };
 
+/**
+ * Detects the device's capabilities to determine appropriate graphics settings.
+ *
+ * @returns {DeviceProfile} An object containing device capabilities.
+ */
 const detectDeviceProfile = (): DeviceProfile => {
   const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
   const nav = isBrowser ? (navigator as Navigator & { deviceMemory?: number }) : undefined;
@@ -61,6 +86,13 @@ const detectDeviceProfile = (): DeviceProfile => {
   };
 };
 
+/**
+ * Computes the graphics settings based on the selected quality level and device profile.
+ *
+ * @param {GraphicsQuality} quality - The desired graphics quality level.
+ * @param {DeviceProfile} [profile] - The device profile to use for 'auto' detection. Defaults to current device detection.
+ * @returns {Pick<GameSettings, 'enableBloom' | 'enableShadows' | 'enableParticles' | 'enableFullRigidPhysics'>} Partial settings object with computed values.
+ */
 export const computeGraphicsSettings = (
   quality: GraphicsQuality,
   profile: DeviceProfile = detectDeviceProfile()
@@ -114,6 +146,13 @@ export const computeGraphicsSettings = (
       };
 };
 
+/**
+ * Creates the UI slice of the game store.
+ * Manages pause state, settings, announcements, and physics engine state.
+ *
+ * @param {Function} set - The Zustand set function.
+ * @returns {UiActions & UiState} The UI slice state and actions.
+ */
 export const createUiSlice: GameStoreSlice<UiActions & UiState> = (set) => ({
   isPaused: false,
   useRapierPhysics: true,

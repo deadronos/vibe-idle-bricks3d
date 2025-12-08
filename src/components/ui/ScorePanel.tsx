@@ -1,5 +1,13 @@
 import { useGameStore } from '../../store/gameStore';
 
+/**
+ * Panel displaying the main score, wave progress, and bricks destroyed.
+ * Also contains the entry point for the settings menu.
+ *
+ * @param {Object} props - Component props.
+ * @param {Function} props.onOpenSettings - Callback to open the settings panel.
+ * @returns {JSX.Element} The score panel.
+ */
 export function ScorePanel({ onOpenSettings }: { onOpenSettings: () => void }) {
   const score = useGameStore((state) => state.score);
   const bricksDestroyed = useGameStore((state) => state.bricksDestroyed);

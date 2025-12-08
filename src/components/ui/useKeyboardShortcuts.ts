@@ -1,6 +1,11 @@
 import { useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 
+/**
+ * Custom hook for handling global keyboard shortcuts.
+ * - Space: Toggle pause
+ * - U: Upgrade ball damage
+ */
 export const useKeyboardShortcuts = () => {
   const togglePause = useGameStore((state) => state.togglePause);
   const upgradeBallDamage = useGameStore((state) => state.upgradeBallDamage);

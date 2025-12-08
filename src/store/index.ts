@@ -1,3 +1,7 @@
+/**
+ * Main entry point for the game store.
+ * Exports the hook, utilities, constants, and types.
+ */
 export { useGameStore } from './createStore';
 export { buildInitialState } from './slices/persistence';
 export {

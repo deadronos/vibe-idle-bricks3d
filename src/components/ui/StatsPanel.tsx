@@ -1,5 +1,10 @@
 import { useGameStore } from '../../store/gameStore';
 
+/**
+ * Displays current game statistics (ball count, damage, speed).
+ *
+ * @returns {JSX.Element} The stats panel component.
+ */
 export function StatsPanel() {
   const ballCount = useGameStore((state) => state.ballCount);
   const ballDamage = useGameStore((state) => state.ballDamage);

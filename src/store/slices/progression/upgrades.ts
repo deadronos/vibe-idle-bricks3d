@@ -4,19 +4,45 @@ import { createInitialBall } from '../../createInitials';
 import { updateBallDamages, updateBallSpeeds } from '../balls';
 import type { GameState } from '../../types';
 
+/**
+ * Calculates the cost to upgrade ball damage.
+ *
+ * @param {number} ballDamage - The current ball damage level.
+ * @returns {number} The cost for the next upgrade.
+ */
 export const calculateBallDamageCost = (ballDamage: number): number => {
   return Math.floor(50 * Math.pow(1.5, ballDamage - 1));
 };
 
+/**
+ * Calculates the cost to upgrade ball speed.
+ *
+ * @param {number} ballSpeed - The current ball speed.
+ * @returns {number} The cost for the next upgrade.
+ */
 export const calculateBallSpeedCost = (ballSpeed: number): number => {
   const level = getBallSpeedLevel(ballSpeed) - 1;
   return Math.floor(30 * Math.pow(1.3, level));
 };
 
+/**
+ * Calculates the cost to upgrade ball count.
+ *
+ * @param {number} ballCount - The current ball count.
+ * @returns {number} The cost for the next upgrade.
+ */
 export const calculateBallCountCost = (ballCount: number): number => {
   return Math.floor(100 * Math.pow(2, ballCount - 1));
 };
 
+/**
+ * Creates the upgrades slice of the game store.
+ * Manages upgrading ball properties (damage, speed, count).
+ *
+ * @param {Function} set - The Zustand set function.
+ * @param {Function} get - The Zustand get function.
+ * @returns {Object} The upgrades slice actions.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createUpgradesSlice = (set: any, get: any) => ({
   getBallDamageCost: () => {

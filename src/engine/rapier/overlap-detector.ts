@@ -1,6 +1,14 @@
 import type { BallState, ContactEvent, RapierBody, Vec3 } from './types';
 import { readTranslation } from './runtime-probes';
 
+/**
+ * Detects overlaps between balls and bricks using AABB intersection.
+ * Used as a fallback when the physics engine doesn't report contacts directly.
+ *
+ * @param {BallState[]} ballStates - The current states of all balls.
+ * @param {Map<string, { body: RapierBody | undefined; size: { x: number; y: number; z: number } }>} brickBodies - Map of brick bodies and their sizes.
+ * @returns {ContactEvent[]} A list of detected contact events.
+ */
 export function detectOverlaps(
   ballStates: BallState[],
   brickBodies: Map<

@@ -1,5 +1,11 @@
 import { useGameStore } from '../../store/gameStore';
 
+/**
+ * Game controls panel and help instructions.
+ * Provides a button to toggle pause/resume.
+ *
+ * @returns {JSX.Element} The controls component.
+ */
 export function Controls() {
   const isPaused = useGameStore((state) => state.isPaused);
   const togglePause = useGameStore((state) => state.togglePause);

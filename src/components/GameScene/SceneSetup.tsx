@@ -5,10 +5,21 @@ import { useEffect } from 'react';
 import { GeometricBackground } from '../GeometricBackground';
 import { CameraRig } from '../effects/CameraRig';
 
+/**
+ * Props for the SceneSetup component.
+ */
 type SceneSetupProps = PropsWithChildren<{
+  /** Target pixel ratio for the renderer. */
   pixelRatio: number;
 }>;
 
+/**
+ * Helper component to imperatively set the WebGL pixel ratio.
+ *
+ * @param {Object} props - Component props.
+ * @param {number} props.target - The target pixel ratio.
+ * @returns {null}
+ */
 function SetPixelRatio({ target }: { target: number }) {
   const { gl } = useThree();
   useEffect(() => {
@@ -23,6 +34,12 @@ function SetPixelRatio({ target }: { target: number }) {
   return null;
 }
 
+/**
+ * Configures the fundamental scene elements: camera, controls, background, and pixel ratio.
+ *
+ * @param {SceneSetupProps} props - Component props.
+ * @returns {JSX.Element} The scene setup wrapper.
+ */
 export function SceneSetup({ pixelRatio, children }: SceneSetupProps) {
   return (
     <>

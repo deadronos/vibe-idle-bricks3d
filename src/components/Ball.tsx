@@ -4,10 +4,21 @@ import { getRenderingOptions } from './GameScene/utils';
 import type { Mesh } from 'three';
 import type { Ball as BallType } from '../store/types';
 
+/**
+ * Props for the Ball component.
+ */
 interface BallProps {
+  /** The ball entity data. */
   ball: BallType;
 }
 
+/**
+ * Renders a single ball in the scene.
+ * Used when instanced rendering is not active (e.g., legacy physics).
+ *
+ * @param {BallProps} props - Component props.
+ * @returns {JSX.Element} The ball mesh.
+ */
 export function Ball({ ball }: BallProps) {
   const meshRef = useRef<Mesh>(null);
   const settings = useGameStore((state) => state.settings);

@@ -107,4 +107,18 @@ describe('Mobile Upgrades Drawer — Drag & Swipe', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).toBeNull();
   });
+
+  it('closes when window is resized to desktop width', () => {
+    render(<MobileUpgrades />);
+    const openButton = screen.getByLabelText('Open upgrades drawer');
+    fireEvent.click(openButton);
+
+    expect(screen.getByRole('dialog')).toBeDefined();
+
+    // Resize window
+    window.innerWidth = 1024;
+    fireEvent.resize(window);
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
 });

@@ -1,8 +1,21 @@
 import type { RapierBody, Vec3, Quat } from './types';
 
+/**
+ * Heuristic to extract the handle from a Rapier object.
+ *
+ * @param {unknown} obj - The object to inspect.
+ * @returns {unknown} The handle or the object itself.
+ */
 export const maybeHandle = (obj: unknown) =>
   obj && typeof obj === 'object' ? ((obj as { handle?: unknown }).handle ?? obj) : obj;
 
+/**
+ * Reads the translation (position) from a Rapier body.
+ * Handles different API shapes (function vs property, array vs object).
+ *
+ * @param {RapierBody} body - The Rapier body.
+ * @returns {Vec3} The translation vector [x, y, z].
+ */
 export function readTranslation(body: RapierBody): Vec3 {
   const tRaw = typeof body.translation === 'function' ? body.translation() : body.translation;
   const px = Array.isArray(tRaw) ? (tRaw[0] ?? 0) : ((tRaw as { x?: number })?.x ?? 0);
@@ -11,6 +24,13 @@ export function readTranslation(body: RapierBody): Vec3 {
   return [px, py, pz];
 }
 
+/**
+ * Reads the linear velocity from a Rapier body.
+ * Handles different API shapes.
+ *
+ * @param {RapierBody} body - The Rapier body.
+ * @returns {Vec3} The linear velocity vector [x, y, z].
+ */
 export function readLinvel(body: RapierBody): Vec3 {
   const vRaw = typeof body.linvel === 'function' ? body.linvel() : body.linvel;
   const vx = Array.isArray(vRaw) ? (vRaw[0] ?? 0) : ((vRaw as { x?: number })?.x ?? 0);
@@ -19,6 +39,13 @@ export function readLinvel(body: RapierBody): Vec3 {
   return [vx, vy, vz];
 }
 
+/**
+ * Reads the rotation (quaternion) from a Rapier body.
+ * Handles different API shapes.
+ *
+ * @param {RapierBody} body - The Rapier body.
+ * @returns {Quat} The rotation quaternion [x, y, z, w].
+ */
 export function readRotation(body: RapierBody): Quat {
   const qRaw = typeof body.rotation === 'function' ? body.rotation() : body.rotation;
   let qx = 0;
@@ -42,6 +69,13 @@ export function readRotation(body: RapierBody): Quat {
   return [qx, qy, qz, qw];
 }
 
+/**
+ * Reads the angular velocity from a Rapier body.
+ * Handles different API shapes.
+ *
+ * @param {RapierBody} body - The Rapier body.
+ * @returns {Vec3} The angular velocity vector [x, y, z].
+ */
 export function readAngvel(body: RapierBody): Vec3 {
   const aRaw = typeof body.angvel === 'function' ? body.angvel() : body.angvel;
   const avx = Array.isArray(aRaw) ? (aRaw[0] ?? 0) : ((aRaw as { x?: number })?.x ?? 0);
@@ -50,6 +84,15 @@ export function readAngvel(body: RapierBody): Vec3 {
   return [avx, avy, avz];
 }
 
+/**
+ * Safely applies an impulse to a Rapier body.
+ * Attempts different API methods (applyImpulse, applyImpulseAtPoint) and fallbacks.
+ *
+ * @param {RapierBody} body - The Rapier body.
+ * @param {Vec3} impulse - The impulse vector.
+ * @param {Vec3} [point] - The application point (optional).
+ * @returns {boolean} True if successful.
+ */
 export function safeApplyImpulse(body: RapierBody, impulse: Vec3, point?: Vec3): boolean {
   try {
     const impObj = { x: impulse[0], y: impulse[1], z: impulse[2] };
@@ -115,6 +158,14 @@ export function safeApplyImpulse(body: RapierBody, impulse: Vec3, point?: Vec3):
   return false;
 }
 
+/**
+ * Safely applies torque to a Rapier body.
+ * Attempts different API methods and fallbacks.
+ *
+ * @param {RapierBody} body - The Rapier body.
+ * @param {Vec3} torque - The torque vector.
+ * @returns {boolean} True if successful.
+ */
 export function safeApplyTorque(body: RapierBody, torque: Vec3): boolean {
   try {
     const anyB = body as unknown as {

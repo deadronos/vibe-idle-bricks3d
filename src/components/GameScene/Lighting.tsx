@@ -3,6 +3,13 @@ type LightingProps = {
   shadowSize: number;
 };
 
+/**
+ * Sets up the 3D lighting for the scene.
+ * Includes ambient, directional (sun), and point lights for atmosphere.
+ *
+ * @param {LightingProps} props - Component props.
+ * @returns {JSX.Element} The lighting setup.
+ */
 export function Lighting({ enableShadows, shadowSize }: LightingProps) {
   return (
     <>

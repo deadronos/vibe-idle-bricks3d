@@ -7,6 +7,9 @@ import {
   resolveBrickCollision as resolveBrickCollisionImpl,
 } from './collision/math';
 
+/**
+ * Dimensions of the game arena.
+ */
 export interface ArenaSize {
   width: number;
   height: number;
@@ -15,18 +18,37 @@ export interface ArenaSize {
 
 // BRICK_SIZE is defined in ./collision/constants and re-exported below.
 
+/**
+ * Result of a single simulation frame for a ball.
+ */
 export interface BallFrameResult {
+  /** The new position of the ball. */
   nextPosition: Vector3Tuple;
+  /** The new velocity of the ball. */
   nextVelocity: Vector3Tuple;
+  /** The ID of the brick hit, if any. */
   hitBrickId?: string;
 }
 
+/**
+ * Clamps the time delta.
+ */
 export const clampDelta = clampDeltaImpl;
 
 const reflectIfOutOfBounds = reflectIfOutOfBoundsImpl;
 
 const resolveBrickCollision = resolveBrickCollisionImpl;
 
+/**
+ * Simulates a single frame of movement for a ball, handling collisions with walls and bricks.
+ * This is the "legacy" collision system, likely replaced by Rapier.
+ *
+ * @param {Ball} ball - The ball to simulate.
+ * @param {number} delta - The time delta in seconds.
+ * @param {ArenaSize} arena - The dimensions of the arena.
+ * @param {Brick[]} bricks - The list of active bricks.
+ * @returns {BallFrameResult} The result of the simulation frame.
+ */
 export const stepBallFrame = (
   ball: Ball,
   delta: number,

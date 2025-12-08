@@ -3,6 +3,14 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { effectBus, type EffectEvent } from '../../systems/EffectEventBus';
 
+/**
+ * Camera rig wrapper that adds screen shake effects based on game events.
+ * Subscribes to the effect bus to trigger shakes on hits and destruction.
+ *
+ * @param {Object} props - Component props.
+ * @param {React.ReactNode} props.children - The camera component to wrap.
+ * @returns {JSX.Element} The camera rig group.
+ */
 export function CameraRig({ children }: { children: React.ReactNode }) {
   const group = useRef<THREE.Group>(null);
   const shakeIntensity = useRef(0);

@@ -1,5 +1,11 @@
 import { ACHIEVEMENTS, useGameStore } from '../../store/gameStore';
 
+/**
+ * Panel displaying unlocked achievements.
+ * Shows a summary count and a list of recently unlocked achievements.
+ *
+ * @returns {JSX.Element} The achievements panel.
+ */
 export function AchievementsPanel() {
   const unlockedAchievements = useGameStore((state) => state.unlockedAchievements);
   const unlockedList = ACHIEVEMENTS.filter((achievement) =>

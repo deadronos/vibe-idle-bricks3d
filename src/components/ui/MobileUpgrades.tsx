@@ -3,6 +3,13 @@ import { useGameStore } from '../../store/gameStore';
 import { PrestigeModal } from './PrestigeModal';
 import './UI.css';
 
+/**
+ * Mobile-specific upgrade drawer and quick actions.
+ * Provides a slide-up drawer for upgrades and a sticky footer with quick upgrade buttons.
+ * Includes gesture support for dragging the drawer closed.
+ *
+ * @returns {JSX.Element} The mobile upgrades component.
+ */
 export function MobileUpgrades() {
   const [open, setOpen] = React.useState(false);
   const [showPrestige, setShowPrestige] = React.useState(false);
@@ -26,6 +33,18 @@ export function MobileUpgrades() {
 
   // Attach drag handler hook
   useDrawerDrag({ open, setOpen, drawerRef, headerRef, translateY, setTranslateY, setIsDragging });
+
+  // Close when resizing to desktop view
+  React.useEffect(() => {
+    if (!open) return;
+    const onResize = () => {
+      if (window.innerWidth > 768) {
+        setOpen(false);
+      }
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [open]);
 
   // Keep CSS variable in sync with state for transitions & snaps
   React.useEffect(() => {
@@ -220,6 +239,18 @@ export function MobileUpgrades() {
 
 // Implement pointer drag behavior via a lightweight hook on mount
 // to avoid re-creating handlers when not open.
+/**
+ * Hook to handle pointer interactions for dragging the drawer.
+ *
+ * @param {Object} props - Hook props.
+ * @param {boolean} props.open - Whether the drawer is open.
+ * @param {Function} props.setOpen - State setter for drawer visibility.
+ * @param {React.RefObject<HTMLDivElement | null>} props.drawerRef - Ref to the drawer element.
+ * @param {React.RefObject<HTMLDivElement | null>} props.headerRef - Ref to the drawer header (drag handle).
+ * @param {number} props.translateY - Current vertical translation.
+ * @param {Function} props.setTranslateY - Setter for vertical translation.
+ * @param {Function} props.setIsDragging - Setter for dragging state.
+ */
 function useDrawerDrag({
   open,
   setOpen,

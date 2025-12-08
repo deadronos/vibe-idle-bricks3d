@@ -1,5 +1,13 @@
 import type { ContactEvent, Vec3 } from './types';
 
+/**
+ * Attempts to parse runtime contact events from the Rapier engine.
+ * Navigates different API shapes that might be exposed by different Rapier builds.
+ *
+ * @param {unknown} runtime - The Rapier world runtime instance.
+ * @param {Map<unknown, { type: 'ball' | 'brick'; id: string }>} handleToEntity - Map of handles to game entities.
+ * @returns {ContactEvent[]} A list of parsed contact events.
+ */
 export function parseRuntimeEvents(
   runtime: unknown,
   handleToEntity: Map<unknown, { type: 'ball' | 'brick'; id: string }>

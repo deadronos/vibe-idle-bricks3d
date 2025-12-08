@@ -4,10 +4,22 @@ import { useInstancedBricks } from './useInstancedBricks';
 import { useGameStore } from '../../store/gameStore';
 import { getRenderingOptions } from '../GameScene/utils';
 
+/**
+ * Props for the BricksInstanced component.
+ */
 interface BricksInstancedProps {
+  /** List of bricks to render. */
   bricks: Brick[];
 }
 
+/**
+ * Renders all bricks in the scene using a single InstancedMesh for performance.
+ * Handles pointer interactions for hover effects.
+ * Adapts material quality based on game settings.
+ *
+ * @param {BricksInstancedProps} props - Component props.
+ * @returns {JSX.Element} The instanced mesh.
+ */
 export function BricksInstanced({ bricks }: BricksInstancedProps) {
   const { meshRef, handlePointerMove, handlePointerOut } = useInstancedBricks(bricks);
   const settings = useGameStore((state) => state.settings);
