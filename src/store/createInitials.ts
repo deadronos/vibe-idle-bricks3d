@@ -108,17 +108,20 @@ export const createInitialBall = (
   speed: number = DEFAULT_BALL_SPEED,
   damage: number = DEFAULT_BALL_DAMAGE
 ): Ball => {
+  // Generate a random direction vector with positive Y (upward)
+  // We use cylindrical coordinates to ensure uniform distribution
   const angle = Math.random() * Math.PI * 2;
-  const elevation = (Math.random() - 0.5) * Math.PI * 0.5;
+  // Restrict Y component to be between 0.2 and 0.8 to avoid too shallow or too vertical launches
+  const y = 0.2 + Math.random() * 0.6;
+  const r = Math.sqrt(1 - y * y);
+
+  const x = r * Math.cos(angle);
+  const z = r * Math.sin(angle);
 
   return {
     id: generateBallId(),
     position: [0, -3, 0],
-    velocity: [
-      Math.cos(angle) * Math.cos(elevation) * speed,
-      Math.abs(Math.sin(elevation)) * speed + 0.5,
-      Math.sin(angle) * Math.cos(elevation) * speed,
-    ],
+    velocity: [x * speed, y * speed, z * speed],
     radius: 0.3,
     damage,
     color: '#FFFFFF',
