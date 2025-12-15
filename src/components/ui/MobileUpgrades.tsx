@@ -21,13 +21,17 @@ export function MobileUpgrades() {
   const upgradeBallDamage = useGameStore((s) => s.upgradeBallDamage);
   const upgradeBallSpeed = useGameStore((s) => s.upgradeBallSpeed);
   const upgradeBallCount = useGameStore((s) => s.upgradeBallCount);
+  const upgradeCritChance = useGameStore((s) => s.upgradeCritChance);
   const getBallDamageCost = useGameStore((s) => s.getBallDamageCost);
   const getBallSpeedCost = useGameStore((s) => s.getBallSpeedCost);
   const getBallCountCost = useGameStore((s) => s.getBallCountCost);
+  const getCritChanceCost = useGameStore((s) => s.getCritChanceCost);
+  const critChance = useGameStore((s) => s.critChance);
 
   const damageCost = getBallDamageCost();
   const speedCost = getBallSpeedCost();
   const ballCost = getBallCountCost();
+  const critCost = getCritChanceCost();
   const drawerRef = React.useRef<HTMLDivElement | null>(null);
   const headerRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -214,6 +218,19 @@ export function MobileUpgrades() {
                 <div className="upgrade-info">
                   <span className="upgrade-name">🔮 New Ball</span>
                   <span className="upgrade-cost">{ballCost.toLocaleString()} pts</span>
+                </div>
+              </button>
+
+              <button
+                className="upgrade-button"
+                onClick={upgradeCritChance}
+                disabled={score < critCost || (critChance || 0) >= 0.5}
+              >
+                <div className="upgrade-info">
+                  <span className="upgrade-name">⚡ Crit Chance +1%</span>
+                  <span className="upgrade-cost">
+                    {(critChance || 0) >= 0.5 ? 'MAX' : `${critCost.toLocaleString()} pts`}
+                  </span>
                 </div>
               </button>
 

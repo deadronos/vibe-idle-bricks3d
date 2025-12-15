@@ -67,15 +67,48 @@ export const createHitsSlice = (set: any, get: any) => ({
       if (newHealth <= 0) {
         effects.emitBrickDestroy(brick.position, brick.color);
 
-        const scoreGain = Math.floor(brick.value * state.prestigeMultiplier);
-        const score = state.score + scoreGain;
-        const bricksDestroyed = state.bricksDestroyed + 1;
+        let scoreGain = Math.floor(brick.value * state.prestigeMultiplier);
+        let score = state.score + scoreGain;
+        let bricksDestroyed = state.bricksDestroyed + 1;
+
+        let remainingBricks = state.bricks.filter((b) => b.id !== id);
+
+        if (brick.type === 'explosive') {
+          const radiusSq = 2.5 * 2.5;
+          const damageAmount = Math.max(1, Math.floor(brick.maxHealth * 0.5));
+          const survivors: typeof remainingBricks = [];
+
+          for (const other of remainingBricks) {
+            const dx = other.position[0] - brick.position[0];
+            const dy = other.position[1] - brick.position[1];
+            const dz = other.position[2] - brick.position[2];
+            const distSq = dx * dx + dy * dy + dz * dz;
+
+            if (distSq <= radiusSq) {
+              const h = other.health - damageAmount;
+              effects.emitBrickHit(other.position, other.color, damageAmount);
+
+              if (h <= 0) {
+                effects.emitBrickDestroy(other.position, other.color);
+                scoreGain += Math.floor(other.value * state.prestigeMultiplier);
+                score += Math.floor(other.value * state.prestigeMultiplier);
+                bricksDestroyed++;
+              } else {
+                survivors.push({ ...other, health: h });
+              }
+            } else {
+              survivors.push(other);
+            }
+          }
+          remainingBricks = survivors;
+        }
+
         const unlockedAchievements = checkAndUnlockAchievements(state, {
           score,
           bricksDestroyed,
         });
         return {
-          bricks: state.bricks.filter((b) => b.id !== id),
+          bricks: remainingBricks,
           score,
           bricksDestroyed,
           unlockedAchievements,

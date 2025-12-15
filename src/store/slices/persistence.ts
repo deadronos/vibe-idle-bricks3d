@@ -35,6 +35,7 @@ type PersistedState = Pick<
   | 'ballDamage'
   | 'ballSpeed'
   | 'ballCount'
+  | 'critChance'
   | 'unlockedAchievements'
   | 'settings'
   | 'vibeCrystals'
@@ -99,6 +100,7 @@ export const buildInitialState = (): GameDataState & GameEntitiesState & Upgrade
     ballDamage: DEFAULT_BALL_DAMAGE,
     ballSpeed: DEFAULT_BALL_SPEED,
     ballCount: DEFAULT_BALL_COUNT,
+    critChance: 0,
     ballSpawnQueue: 0,
     lastBallSpawnTime: 0,
     lastSaveTime: Date.now(),
@@ -149,6 +151,7 @@ export const createPersistOptions = (
     ballDamage: state.ballDamage,
     ballSpeed: state.ballSpeed,
     ballCount: state.ballCount,
+    critChance: state.critChance,
     unlockedAchievements: state.unlockedAchievements,
     settings: state.settings,
     vibeCrystals: state.vibeCrystals,
