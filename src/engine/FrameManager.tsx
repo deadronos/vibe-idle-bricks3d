@@ -155,9 +155,16 @@ export function FrameManager() {
         if (events.length > 0) {
           // Aggregate for damage/combo then call behavior hooks for visuals/impulses.
           const hitsForStore: { brickId: string; damage: number }[] = [];
+          const { critChance } = useGameStore.getState();
+
           for (const e of events) {
             const by = balls.find((x) => x.id === e.ballId);
-            const damage = by ? by.damage : 1;
+            let damage = by ? by.damage : 1;
+
+            if (critChance && Math.random() < critChance) {
+              damage *= 2;
+            }
+
             hitsForStore.push({ brickId: e.brickId, damage });
           }
 
@@ -238,6 +245,8 @@ export function FrameManager() {
 
     const hits: { brickId: string; damage: number }[] = [];
     const contactInfos: ContactEvent[] = [];
+    const { critChance } = useGameStore.getState();
+
     const nextBalls = balls.map((ball) => {
       const { nextPosition, nextVelocity, hitBrickId } = stepBallFrame(
         ball,
@@ -247,7 +256,12 @@ export function FrameManager() {
       );
 
       if (hitBrickId) {
-        hits.push({ brickId: hitBrickId, damage: ball.damage });
+        let damage = ball.damage;
+        if (critChance && Math.random() < critChance) {
+          damage *= 2;
+        }
+
+        hits.push({ brickId: hitBrickId, damage });
         // Build a best-effort contactInfo for non-rapier path
         const relVel = ball.velocity;
         const speed = Math.sqrt(

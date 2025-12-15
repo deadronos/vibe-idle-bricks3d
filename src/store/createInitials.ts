@@ -65,6 +65,10 @@ export const createInitialBricks = (wave: number): Brick[] => {
           type = 'armor';
           color = '#B0C4DE'; // Steel blue
           armorMultiplier = 0.5; // 50% damage reduction
+        } else if (rand < 0.20) {
+          // 5% chance for Explosive Brick (15-20% range)
+          type = 'explosive';
+          color = '#FF4500'; // OrangeRed
         }
 
         // Ensure the very first brick is a normal brick (keeps behavior deterministic for tests)

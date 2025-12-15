@@ -15,9 +15,12 @@ export function UpgradesPanel() {
   const upgradeBallDamage = useGameStore((state) => state.upgradeBallDamage);
   const upgradeBallSpeed = useGameStore((state) => state.upgradeBallSpeed);
   const upgradeBallCount = useGameStore((state) => state.upgradeBallCount);
+  const upgradeCritChance = useGameStore((state) => state.upgradeCritChance);
   const damageCost = useGameStore((state) => state.getBallDamageCost());
   const speedCost = useGameStore((state) => state.getBallSpeedCost());
   const ballCost = useGameStore((state) => state.getBallCountCost());
+  const critCost = useGameStore((state) => state.getCritChanceCost());
+  const critChance = useGameStore((state) => state.critChance);
 
   const [showPrestige, setShowPrestige] = React.useState(false);
   const canPrestige = maxWaveReached >= 5;
@@ -59,6 +62,20 @@ export function UpgradesPanel() {
         <div className="upgrade-info">
           <span className="upgrade-name">🔮 New Ball</span>
           <span className="upgrade-cost">{ballCost.toLocaleString()} pts</span>
+        </div>
+      </button>
+
+      <button
+        className="upgrade-button"
+        onClick={upgradeCritChance}
+        disabled={score < critCost || (critChance || 0) >= 0.5}
+        aria-label={`Upgrade Crit Chance — costs ${critCost.toLocaleString()} points`}
+      >
+        <div className="upgrade-info">
+          <span className="upgrade-name">⚡ Crit Chance +1%</span>
+          <span className="upgrade-cost">
+            {(critChance || 0) >= 0.5 ? 'MAX' : `${critCost.toLocaleString()} pts`}
+          </span>
         </div>
       </button>
 

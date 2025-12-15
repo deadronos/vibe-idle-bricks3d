@@ -36,6 +36,17 @@ export const calculateBallCountCost = (ballCount: number): number => {
 };
 
 /**
+ * Calculates the cost to upgrade critical hit chance.
+ *
+ * @param {number} critChance - The current critical hit chance.
+ * @returns {number} The cost for the next upgrade.
+ */
+export const calculateCritChanceCost = (critChance: number): number => {
+  const level = Math.round(critChance * 100);
+  return Math.floor(200 * Math.pow(1.5, level));
+};
+
+/**
  * Creates the upgrades slice of the game store.
  * Manages upgrading ball properties (damage, speed, count).
  *
@@ -58,6 +69,11 @@ export const createUpgradesSlice = (set: any, get: any) => ({
   getBallCountCost: () => {
     const { ballCount } = get();
     return calculateBallCountCost(ballCount);
+  },
+
+  getCritChanceCost: () => {
+    const { critChance } = get();
+    return calculateCritChanceCost(critChance || 0);
   },
 
   upgradeBallDamage: () =>
@@ -107,6 +123,24 @@ export const createUpgradesSlice = (set: any, get: any) => ({
           ballCount,
           balls: [...state.balls, newBall],
           unlockedAchievements,
+        };
+      }
+      return state;
+    }),
+
+  upgradeCritChance: () =>
+    set((state: GameState) => {
+      const currentCrit = state.critChance || 0;
+      if (currentCrit >= 0.5) return state;
+
+      const cost = calculateCritChanceCost(currentCrit);
+      if (state.score >= cost) {
+        const critChance = currentCrit + 0.01;
+        const score = state.score - cost;
+        // No achievements for crit yet
+        return {
+          score,
+          critChance,
         };
       }
       return state;

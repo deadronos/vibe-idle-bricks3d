@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHitsSlice, effects } from '../../store/slices/progression/hits';
+import type { Brick } from '../../store/types';
 
 vi.mock('../../store/achievements', () => ({
   checkAndUnlockAchievements: vi.fn(() => ['mock-achievement']),
@@ -75,6 +76,49 @@ describe('hits slice', () => {
         expect(effects.emitBrickHit).toHaveBeenCalled();
         expect(effects.emitBrickDestroy).toHaveBeenCalled();
       });
+
+    it('should explode neighbors when explosive brick is destroyed', () => {
+      const state = {
+        bricks: [
+          {
+            id: 'explosive1',
+            health: 5,
+            maxHealth: 10,
+            position: [0, 0, 0],
+            color: 'red',
+            value: 10,
+            type: 'explosive',
+          },
+          { id: 'neighbor1', health: 10, position: [1, 0, 0], color: 'blue', value: 10 }, // dist 1 (<= 2.5)
+          { id: 'far1', health: 10, position: [3, 0, 0], color: 'green', value: 10 }, // dist 3 (> 2.5)
+        ],
+        comboMultiplier: 1,
+        prestigeMultiplier: 1,
+        score: 0,
+        bricksDestroyed: 0,
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mockSet.mockImplementation((fn: any) => fn(state));
+
+      slice.damageBrick('explosive1', 10);
+
+      const updater = mockSet.mock.calls[0][0];
+      const result = updater(state);
+
+      // explosive1 is removed.
+      // neighbor1 took damage.
+      // far1 is untouched.
+      expect(result.bricks.length).toBe(2);
+      const neighbor = result.bricks.find((b: Brick) => b.id === 'neighbor1');
+      const far = result.bricks.find((b: Brick) => b.id === 'far1');
+
+      expect(neighbor).toBeDefined();
+      // TypeScript doesn't use `expect` as a type guard, assert non-null here
+      expect(neighbor!.health).toBe(5); // 10 - (10 * 0.5)
+      expect(far).toBeDefined();
+      expect(far!.health).toBe(10);
+    });
   });
 
   describe('applyHits', () => {
