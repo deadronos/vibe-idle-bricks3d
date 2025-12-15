@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHitsSlice, effects } from '../../store/slices/progression/hits';
+import type { Brick } from '../../store/types';
 
 vi.mock('../../store/achievements', () => ({
   checkAndUnlockAchievements: vi.fn(() => ['mock-achievement']),
@@ -109,13 +110,14 @@ describe('hits slice', () => {
       // neighbor1 took damage.
       // far1 is untouched.
       expect(result.bricks.length).toBe(2);
-      const neighbor = result.bricks.find((b: any) => b.id === 'neighbor1');
-      const far = result.bricks.find((b: any) => b.id === 'far1');
+      const neighbor = result.bricks.find((b: Brick) => b.id === 'neighbor1');
+      const far = result.bricks.find((b: Brick) => b.id === 'far1');
 
       expect(neighbor).toBeDefined();
-      expect(neighbor.health).toBe(5); // 10 - (10 * 0.5)
+      // TypeScript doesn't use `expect` as a type guard, assert non-null here
+      expect(neighbor!.health).toBe(5); // 10 - (10 * 0.5)
       expect(far).toBeDefined();
-      expect(far.health).toBe(10);
+      expect(far!.health).toBe(10);
     });
   });
 
