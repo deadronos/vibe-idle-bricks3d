@@ -29,10 +29,18 @@ export function Brick({ brick }: BrickProps) {
     healthRatio > 0.5 ? brick.color : `hsl(${Math.floor(healthRatio * 60)}, 80%, 50%)`;
 
   // Subtle animation when damaged
-  useFrame(() => {
-    if (meshRef.current && healthRatio < 1) {
-      const shake = Math.sin(Date.now() * 0.01) * (1 - healthRatio) * 0.02;
-      meshRef.current.rotation.z = shake;
+  useFrame(({ clock }) => {
+    if (meshRef.current) {
+      if (brick.type === 'explosive') {
+        const t = clock.getElapsedTime();
+        const pulse = 1 + Math.sin(t * 10) * 0.05;
+        meshRef.current.scale.set(pulse, pulse, pulse);
+      }
+
+      if (healthRatio < 1) {
+        const shake = Math.sin(Date.now() * 0.01) * (1 - healthRatio) * 0.02;
+        meshRef.current.rotation.z = shake;
+      }
     }
   });
 
@@ -49,7 +57,7 @@ export function Brick({ brick }: BrickProps) {
       <meshStandardMaterial
         color={hovered ? '#FFFFFF' : damageColor}
         emissive={brick.color}
-        emissiveIntensity={0.1}
+        emissiveIntensity={brick.type === 'explosive' ? 0.8 : 0.1}
         metalness={0.3}
         roughness={0.7}
         transparent

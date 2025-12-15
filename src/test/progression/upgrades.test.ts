@@ -3,6 +3,7 @@ import {
   calculateBallDamageCost,
   calculateBallSpeedCost,
   calculateBallCountCost,
+  calculateCritChanceCost,
   createUpgradesSlice,
 } from '../../store/slices/progression/upgrades';
 import * as createInitials from '../../store/createInitials';
@@ -44,6 +45,13 @@ describe('upgrades slice', () => {
     it('calculateBallCountCost', () => {
       expect(calculateBallCountCost(1)).toBe(100);
       expect(calculateBallCountCost(2)).toBe(200);
+    });
+
+    it('calculateCritChanceCost', () => {
+      // level 0 (chance 0) -> 200
+      expect(calculateCritChanceCost(0)).toBe(200);
+      // level 1 (chance 0.01) -> 200 * 1.5 = 300
+      expect(calculateCritChanceCost(0.01)).toBe(300);
     });
   });
 
@@ -120,6 +128,48 @@ describe('upgrades slice', () => {
         const updater = mockSet.mock.calls[0][0];
         const result = updater(state);
 
+        expect(result).toEqual(state);
+      });
+
+      it('upgradeCritChance should upgrade if score is sufficient', () => {
+        mockSet.mockClear();
+        const slice = createUpgradesSlice(mockSet, mockGet);
+        const state = {
+          score: 300,
+          critChance: 0,
+        };
+
+        slice.upgradeCritChance();
+        const updater = mockSet.mock.calls[0][0];
+        const result = updater(state);
+
+        expect(result.score).toBe(100); // 300 - 200
+        expect(result.critChance).toBeCloseTo(0.01);
+      });
+
+      it('upgradeCritChance should not upgrade if score insufficient', () => {
+        mockSet.mockClear();
+        const slice = createUpgradesSlice(mockSet, mockGet);
+        const state = {
+          score: 0,
+          critChance: 0,
+        };
+        slice.upgradeCritChance();
+        const updater = mockSet.mock.calls[0][0];
+        const result = updater(state);
+        expect(result).toEqual(state);
+      });
+
+      it('upgradeCritChance should not upgrade if maxed out', () => {
+        mockSet.mockClear();
+        const slice = createUpgradesSlice(mockSet, mockGet);
+        const state = {
+          score: 10000,
+          critChance: 0.5,
+        };
+        slice.upgradeCritChance();
+        const updater = mockSet.mock.calls[0][0];
+        const result = updater(state);
         expect(result).toEqual(state);
       });
   });

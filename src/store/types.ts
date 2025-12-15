@@ -3,7 +3,7 @@ import type { Vector3Tuple } from 'three';
 /**
  * Brick types available in the game.
  */
-export type BrickType = 'normal' | 'golden' | 'armor';
+export type BrickType = 'normal' | 'golden' | 'armor' | 'explosive';
 
 /**
  * Represents a single brick in the game world.
@@ -141,6 +141,7 @@ export interface UpgradeState {
   ballDamage: number;
   ballSpeed: number;
   ballCount: number;
+  critChance: number;
 }
 
 /**
@@ -159,9 +160,11 @@ export interface GameActions {
   upgradeBallDamage: () => void;
   upgradeBallSpeed: () => void;
   upgradeBallCount: () => void;
+  upgradeCritChance: () => void;
   getBallDamageCost: () => number;
   getBallSpeedCost: () => number;
   getBallCountCost: () => number;
+  getCritChanceCost: () => number;
   resetGame: () => void;
   queueBallSpawns: (count: number) => void;
   tryProcessBallSpawnQueue: () => void;
