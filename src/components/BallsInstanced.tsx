@@ -29,7 +29,8 @@ interface BallsInstancedProps {
  */
 export function BallsInstanced({ world, maxInstances = 128, radius = 0.25, geometrySegments }: BallsInstancedProps) {
   const meshRef = useRef<THREE.InstancedMesh | null>(null);
-  const idToIndex = useRef<Map<string, number>>(new Map());
+  // Optimization: Removed idToIndex Map and per-frame Set allocation.
+  // Since all balls are visually identical, we can assign instances 0..N directly.
   const tmpMat = useMemo(() => new THREE.Matrix4(), []);
   const settings = useGameStore((state) => state.settings);
   const { computedQuality } = getRenderingOptions(settings);
@@ -42,36 +43,26 @@ export function BallsInstanced({ world, maxInstances = 128, radius = 0.25, geome
 
     const states: BallState[] = w.getBallStates();
 
-    // Assign each ball an instance index (first-seen)
-    for (const s of states) {
-      if (!idToIndex.current.has(s.id)) {
-        if (idToIndex.current.size >= maxInstances) break;
-        idToIndex.current.set(s.id, idToIndex.current.size);
-      }
+    // Clamp to maxInstances
+    const count = Math.min(states.length, maxInstances);
+
+    // Update the instance count if it changed
+    if (meshRef.current.count !== count) {
+      meshRef.current.count = count;
     }
 
-    // Clear absent ids
-    const present = new Set(states.map((s) => s.id));
-    for (const id of Array.from(idToIndex.current.keys())) {
-      if (!present.has(id)) idToIndex.current.delete(id);
-    }
-
-    // Update instance matrices
-    let updated = false;
-    for (const s of states) {
-      const idx = idToIndex.current.get(s.id);
-      if (idx === undefined) continue;
-
+    // Direct assignment loop - O(count) with no allocations
+    for (let i = 0; i < count; i++) {
+      const s = states[i];
       tmpMat.identity();
-      tmpMat.setPosition(new THREE.Vector3(s.position[0], s.position[1], s.position[2]));
+      tmpMat.setPosition(s.position[0], s.position[1], s.position[2]);
       // simple uniform scale from radius
       tmpMat.scale(new THREE.Vector3(radius, radius, radius));
 
-      meshRef.current.setMatrixAt(idx, tmpMat);
-      updated = true;
+      meshRef.current.setMatrixAt(i, tmpMat);
     }
 
-    if (updated) {
+    if (count > 0) {
       meshRef.current.instanceMatrix.needsUpdate = true;
     }
   });
