@@ -83,6 +83,22 @@ Manual integration test flow (dev)
 4. Observe the **Initialized: Yes** status and verify the simulation continues to advance.
 5. Toggle **Shutdown SAB** to verify the worker shuts down cleanly and the app falls back to the transferable-worker or main-thread path.
 
+Cross-platform dev server (Windows users)
+
+- To start a dev server with COOP/COEP + SAB on any platform you can use the included convenience script (adds `cross-env` for Windows):
+
+```bash
+npm run dev:sab
+```
+
+- Or run with `npx` explicitly:
+
+```bash
+npx cross-env VITE_ENABLE_COOP=1 VITE_ENABLE_SAB=1 npm run dev
+```
+
+This avoids errors like `"VITE_ENABLE_COOP" is not recognized` that occur when trying to set env vars directly on Windows shells.
+
 Optional CI: GitHub Actions (manual opt-in)
 
 - A manual GitHub Actions workflow is provided to run the SAB E2E test that starts a dev server with COOP/COEP and runs Playwright against the app.

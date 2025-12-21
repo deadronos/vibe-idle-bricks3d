@@ -17,7 +17,8 @@ export default defineConfig({
 
   // Start vite in dev mode with COOP/COEP enabled for SAB testing
   webServer: {
-    command: 'VITE_ENABLE_COOP=1 VITE_ENABLE_SAB=1 npm run dev',
+    // Use cross-env for cross-platform env var support (works on Windows)
+    command: 'npx cross-env VITE_ENABLE_COOP=1 VITE_ENABLE_SAB=1 npm run dev',
     port: 5173,
     reuseExistingServer: false,
     timeout: 120_000,

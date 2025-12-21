@@ -16,6 +16,7 @@
     "test:ui": "vitest --ui",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
+    "dev:sab": "cross-env VITE_ENABLE_COOP=1 VITE_ENABLE_SAB=1 npm run dev",
     "test:e2e": "playwright test",
     "test:run": "vitest run"
   },
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.57.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^24.10.1",
@@ -40,7 +42,7 @@
     "@types/three": "^0.181.0",
     "@vitejs/plugin-react": "^5.1.1",
     "@vitest/coverage-v8": "4.0.15",
-    "@playwright/test": "^1.35.0",
+    "cross-env": "^10.1.0",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.0.1",
