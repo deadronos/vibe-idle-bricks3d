@@ -77,6 +77,8 @@ export interface GameSettings {
   graphicsQuality?: 'auto' | 'low' | 'medium' | 'high';
   /** Toggle compact HUD mode. */
   compactHudEnabled?: boolean;
+  /** Enable SharedArrayBuffer-backed physics runtime (experimental). */
+  enableSABPhysics?: boolean;
 }
 
 /**

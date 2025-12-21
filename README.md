@@ -66,6 +66,32 @@ pnpm run build
 # or: npm run build
 ```
 
+### Experimental: SharedArrayBuffer-based physics (POC)
+
+An experimental POC is available that uses SharedArrayBuffer + Atomics to run the per-ball physics simulation in a worker with zero-copy in-place buffers. This is intended to demonstrate potential latency and CPU improvements for high ball counts.
+
+Notes:
+
+- This feature requires cross-origin isolation (COOP/COEP). Use `VITE_ENABLE_COOP=1` when running the dev server.
+
+- Enable the POC via `VITE_ENABLE_SAB=1`.
+
+Example (macOS / Linux):
+
+```bash
+VITE_ENABLE_COOP=1 VITE_ENABLE_SAB=1 npm run dev
+```
+
+Example (Windows PowerShell):
+
+```powershell
+$Env:VITE_ENABLE_COOP = '1'; $Env:VITE_ENABLE_SAB = '1'; npm run dev
+```
+
+When enabled, `FrameManager` will attempt to initialize the SAB worker and use it; otherwise the system falls back to the transferable-worker path or single-threaded simulation.
+
+See `docs/SHAREDARRAYBUFFER.md` for more details and caveats about cross-origin isolation and testing.
+
 ## Testing
 
 The repository uses Vitest for unit and integration tests. Useful scripts are available in `package.json` (run with `pnpm` / `npm`):
@@ -204,6 +230,7 @@ Every source file in this repository is fully documented with JSDoc/TSDoc commen
 These comments provide detailed information about the purpose, parameters, and return values of all public functions, components, and interfaces.
 
 Key areas to explore:
+
 - `src/store/`: Comprehensive state management documentation (Zustand slices).
 - `src/engine/`: Physics integration and simulation loop details.
 - `src/components/`: Component props and rendering behavior.

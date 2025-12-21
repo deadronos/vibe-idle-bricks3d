@@ -13,7 +13,8 @@ type BooleanSettingKeys =
   | 'enableShadows'
   | 'enableSound'
   | 'enableParticles'
-  | 'enableFullRigidPhysics';
+  | 'enableFullRigidPhysics'
+  | 'enableSABPhysics';
 
 /**
  * Set of keys for runtime validation of toggleable settings.
@@ -24,6 +25,7 @@ const BOOLEAN_SETTING_KEYS: Set<string> = new Set([
   'enableSound',
   'enableParticles',
   'enableFullRigidPhysics',
+  'enableSABPhysics',
 ]);
 
 /**

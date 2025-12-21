@@ -79,6 +79,7 @@ export const buildInitialState = (): GameDataState & GameEntitiesState & Upgrade
     enableFullRigidPhysics: defaultSettingsFlags.enableFullRigidPhysics,
     graphicsQuality: defaultGraphicsQuality,
     compactHudEnabled: detectCompactHud(),
+    enableSABPhysics: false,
   };
 
   return {
