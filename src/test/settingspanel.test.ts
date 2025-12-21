@@ -1,0 +1,1 @@
+// Empty shim removed. Tests moved to settingspanel.test.tsx

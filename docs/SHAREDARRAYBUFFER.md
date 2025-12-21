@@ -83,6 +83,21 @@ Manual integration test flow (dev)
 4. Observe the **Initialized: Yes** status and verify the simulation continues to advance.
 5. Toggle **Shutdown SAB** to verify the worker shuts down cleanly and the app falls back to the transferable-worker or main-thread path.
 
+Optional CI: GitHub Actions (manual opt-in)
+
+- A manual GitHub Actions workflow is provided to run the SAB E2E test that starts a dev server with COOP/COEP and runs Playwright against the app.
+- Trigger it manually from the repository Actions tab: select **SAB E2E (opt-in)** and click **Run workflow** (you don't need to provide any inputs).
+- The workflow installs browsers and runs the `e2e/sab.spec.ts` Playwright test; it will only run when triggered manually or when a PR label `run-sab-e2e` is added to a PR (opt-in by label).
+- For local runs, install Playwright locally and run:
+
+```bash
+npm ci
+npx playwright install --with-deps
+npm run test:e2e -- --project=chromium e2e/sab.spec.ts
+```
+
+Note: The CI workflow is intentionally opt-in because cross-origin isolation and Playwright browser dependencies can be disruptive in shared CI runs.
+
 
 Security
 

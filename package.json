@@ -16,6 +16,7 @@
     "test:ui": "vitest --ui",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
     "test:run": "vitest run"
   },
   "dependencies": {
@@ -39,6 +40,7 @@
     "@types/three": "^0.181.0",
     "@vitejs/plugin-react": "^5.1.1",
     "@vitest/coverage-v8": "4.0.15",
+    "@playwright/test": "^1.35.0",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.0.1",
