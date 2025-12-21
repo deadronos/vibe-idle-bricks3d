@@ -25,9 +25,27 @@ let bricksCache: Brick[] = [];
 let initialized = false;
 let ringSize = 0; // number of slots in ring buffer (1 = single-control mode)
 
+/** Create a SharedArrayBuffer when available, otherwise fallback to ArrayBuffer (useful for tests). */
+function createBuffer(byteLength: number): SharedArrayBuffer | ArrayBuffer {
+  if (typeof SharedArrayBuffer !== 'undefined') return new SharedArrayBuffer(byteLength);
+  return new ArrayBuffer(byteLength);
+}
+
+/** Minimal Atomics wrapper with fallbacks for test environments where Atomics/SharedArrayBuffer aren't available */
+const A = {
+  load: (arr: Int32Array, idx: number) =>
+    typeof Atomics !== 'undefined' && typeof Atomics.load === 'function' ? Atomics.load(arr, idx) : arr[idx],
+  store: (arr: Int32Array, idx: number, val: number) =>
+    typeof Atomics !== 'undefined' && typeof Atomics.store === 'function' ? Atomics.store(arr, idx, val) : ((arr[idx] = val), val),
+  add: (arr: Int32Array, idx: number, val: number) =>
+    typeof Atomics !== 'undefined' && typeof Atomics.add === 'function' ? Atomics.add(arr, idx, val) : ((arr[idx] = (arr[idx] ?? 0) + val), arr[idx]),
+  notify: (arr: Int32Array, idx: number, count = 1) =>
+    typeof Atomics !== 'undefined' && typeof Atomics.notify === 'function' ? Atomics.notify(arr, idx, count) : 0,
+};
+
 export function available(): boolean {
   return typeof SharedArrayBuffer !== 'undefined' && !!((globalThis as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated);
-}
+} 
 
 export function isInitialized() {
   return initialized;
@@ -42,18 +60,18 @@ function allocSABArrays(newCapacity: number, newRingSize = 4) {
 
   // When ringSize === 1, this is the simple single-control mode; allocate minimal arrays
   if (ringSize === 1) {
-    positions = new Float32Array(new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity * 3));
-    velocities = new Float32Array(new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity * 3));
-    radii = new Float32Array(new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity));
-    damages = new Float32Array(new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity));
-    outHitIndices = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * perSlotCapacity));
+    positions = new Float32Array(createBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity * 3) as ArrayBuffer);
+    velocities = new Float32Array(createBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity * 3) as ArrayBuffer);
+    radii = new Float32Array(createBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity) as ArrayBuffer);
+    damages = new Float32Array(createBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity) as ArrayBuffer);
+    outHitIndices = new Int32Array(createBuffer(Int32Array.BYTES_PER_ELEMENT * perSlotCapacity) as ArrayBuffer);
     // control meta
-    control = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 1));
-    metaFloats = new Float64Array(new SharedArrayBuffer(Float64Array.BYTES_PER_ELEMENT * 4));
-    metaInts = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 1));
+    control = new Int32Array(createBuffer(Int32Array.BYTES_PER_ELEMENT * 1) as ArrayBuffer);
+    metaFloats = new Float64Array(createBuffer(Float64Array.BYTES_PER_ELEMENT * 4) as ArrayBuffer);
+    metaInts = new Int32Array(createBuffer(Int32Array.BYTES_PER_ELEMENT * 1) as ArrayBuffer);
 
     // Initialize control to 0 (idle)
-    Atomics.store(control, 0, 0);
+    A.store(control!, 0, 0);
     return;
   }
 
@@ -71,34 +89,34 @@ function allocSABArrays(newCapacity: number, newRingSize = 4) {
   // Per-slot flags: 0=free,1=pending,2=processing,3=done
   control = null;
   // store flags and notify/counters in separate views
-  const flagsBuf = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * ringSize);
+  const flagsBuf = createBuffer(Int32Array.BYTES_PER_ELEMENT * ringSize);
   // notify counter to wake worker when new jobs arrive
-  const notifyBuf = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 1);
-  const countsBuf = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * ringSize);
-  const metaBuf = new SharedArrayBuffer(Float64Array.BYTES_PER_ELEMENT * 4 * ringSize);
+  const notifyBuf = createBuffer(Int32Array.BYTES_PER_ELEMENT * 1);
+  const countsBuf = createBuffer(Int32Array.BYTES_PER_ELEMENT * ringSize);
+  const metaBuf = createBuffer(Float64Array.BYTES_PER_ELEMENT * 4 * ringSize);
 
   // Attach views
   // We'll keep the previously named variables but repurpose metaFloats/metaInts to the per-slot arrays
-  metaFloats = new Float64Array(metaBuf);
-  metaInts = new Int32Array(countsBuf);
+  metaFloats = new Float64Array(metaBuf as ArrayBuffer);
+  metaInts = new Int32Array(countsBuf as ArrayBuffer);
   // Create flags/notify as Int32Array but keep them as 'control' and 'metaInts' where appropriate
-  const flagsView = new Int32Array(flagsBuf);
-  const notifyView = new Int32Array(notifyBuf);
+  const flagsView = new Int32Array(flagsBuf as ArrayBuffer);
+  const notifyView = new Int32Array(notifyBuf as ArrayBuffer);
 
   // Assign to existing globals in a way that worker and runtime expect
   // We'll reuse `control` to point to a single-element view for shutdown detection in ring mode (not used for job signaling)
-  control = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 1));
+  control = new Int32Array(createBuffer(Int32Array.BYTES_PER_ELEMENT * 1) as ArrayBuffer);
 
   // Initialize flags and counters
   for (let i = 0; i < ringSize; i++) {
-    Atomics.store(flagsView, i, 0);
-    Atomics.store(metaInts, i, 0);
+    A.store(flagsView, i, 0);
+    A.store(metaInts, i, 0);
     metaFloats[i * 4 + 0] = 0; // delta
     metaFloats[i * 4 + 1] = 0; // arena.w
     metaFloats[i * 4 + 2] = 0; // arena.h
     metaFloats[i * 4 + 3] = 0; // arena.d
   }
-  Atomics.store(notifyView, 0, 0);
+  A.store(notifyView, 0, 0);
 
   // Save references for init-time worker transfer
   flags = flagsView;
@@ -219,7 +237,7 @@ export function submitJobIfIdle(balls: Ball[], delta: number, arena: ArenaSize):
     // Find a free slot (simple scan)
     let found = -1;
     for (let s = 0; s < ringSize; s++) {
-      if (Atomics.load(flags, s) === 0) {
+      if (A.load(flags!, s) === 0) {
         found = s;
         break;
       }
@@ -247,17 +265,17 @@ export function submitJobIfIdle(balls: Ball[], delta: number, arena: ArenaSize):
     }
 
     // Set per-slot meta
-    Atomics.store(counts, found, count);
+    A.store(counts!, found, count);
     metaFloats![found * 4 + 0] = delta;
     metaFloats![found * 4 + 1] = arena.width;
     metaFloats![found * 4 + 2] = arena.height;
     metaFloats![found * 4 + 3] = arena.depth;
 
     // Mark pending and notify worker. 1 = pending
-    Atomics.store(flags, found, 1);
+    A.store(flags!, found, 1);
     // Bump notify counter to wake worker
-    Atomics.add(notify, 0, 1);
-    Atomics.notify(notify, 0);
+    A.add(notify!, 0, 1);
+    A.notify(notify!, 0);
 
     return true;
   }
@@ -292,9 +310,9 @@ export function submitJobIfIdle(balls: Ball[], delta: number, arena: ArenaSize):
   metaFloats![3] = arena.depth;
 
   // Signal request: set to 1 and notify worker
-  Atomics.store(control, 0, 1);
-  Atomics.notify(control, 0, 1);
-  return true;
+  A.store(control!, 0, 1);
+  A.notify(control!, 0);
+  return true; 
 }
 
 /** Check for a completed job and collect result if available; returns null if not ready. */
@@ -333,10 +351,10 @@ export function takeResultIfReady():
   // Fallback single-control mode
   if (!control || !metaInts) return null;
 
-  const cur = Atomics.load(control, 0);
+  const cur = A.load(control!, 0);
   if (cur !== 2) return null; // not ready
 
-  const count = metaInts[0];
+  const count = metaInts![0];
 
   // Create views that point to the same underlying buffers (no copy)
   const p = positions.subarray(0, count * 3);
@@ -344,9 +362,39 @@ export function takeResultIfReady():
   const hi = outHitIndices.subarray(0, count);
 
   // Reset control to idle (0) after reading results so the worker can accept a new job
-  Atomics.store(control, 0, 0);
+  A.store(control!, 0, 0);
 
-  return { positions: p, velocities: v, hitIndices: hi, count };
+  return { positions: p, velocities: v, hitIndices: hi, count }; 
+}
+
+/** Test helpers (test-only; do not use in production) */
+export function _test_initInProcess(capacityHint = 64, requestedRingSize = 4) {
+  try {
+    allocSABArrays(capacityHint, requestedRingSize);
+    initialized = true;
+    return true;
+  } catch (err) {
+    console.warn('[sabRuntime] _test_initInProcess failed', err);
+    destroy();
+    return false;
+  }
+}
+
+export function _test_getInternals() {
+  return {
+    flags,
+    notify,
+    counts,
+    positions,
+    velocities,
+    radii,
+    damages,
+    outHitIndices,
+    metaFloats,
+    metaInts,
+    capacity,
+    ringSize,
+  };
 }
 
 export default {
@@ -357,4 +405,7 @@ export default {
   updateBricks,
   submitJobIfIdle,
   takeResultIfReady,
+  // Test helpers
+  _test_initInProcess,
+  _test_getInternals,
 };
