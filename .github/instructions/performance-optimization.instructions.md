@@ -412,19 +412,15 @@ p.sort_stats('cumulative').print_stats(10)
 ### Example 7: Using Redis for Caching in Node.js
 
 ```javascript
-const redis = require('redis');
-const client = redis.createClient();
+import { createClient } from 'redis';
+const client = createClient();
 
-function getCachedData(key, fetchFunction) {
-  return new Promise((resolve, reject) => {
-    client.get(key, (err, data) => {
-      if (data) return resolve(JSON.parse(data));
-      fetchFunction().then((result) => {
-        client.setex(key, 3600, JSON.stringify(result));
-        resolve(result);
-      });
-    });
-  });
+async function getCachedData(key, fetchFunction) {
+  const data = await client.get(key);
+  if (data) return JSON.parse(data);
+  const result = await fetchFunction();
+  await client.setEx(key, 3600, JSON.stringify(result));
+  return result;
 }
 ```
 
