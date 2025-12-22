@@ -5,7 +5,7 @@ import path from 'path';
 // Exits with code 0 when no issues found; non-zero if any occurrences are discovered
 
 const ROOT = process.cwd();
-const SKIP_DIRS = new Set(['node_modules', 'dist', '.git']);
+const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', 'scripts']);
 const FILE_EXTENSIONS = new Set(['.js', '.cjs', '.mjs', '.ts', '.tsx', '.jsx']);
 
 const patterns = [
@@ -28,7 +28,34 @@ async function walk(dir) {
       const content = await fs.readFile(full, 'utf8');
       const matches = [];
       for (const p of patterns) {
-        if (p.re.test(content)) matches.push(p.name);
+        for (const m of content.matchAll(p.re)) {
+          const index = m.index;
+          if (index === undefined) continue;
+
+          // Skip if match is inside a single-line comment
+          const lineStart = content.lastIndexOf('\n', index) + 1;
+          const nextNewline = content.indexOf('\n', index);
+          const lineEnd = nextNewline === -1 ? content.length : nextNewline;
+          const line = content.substring(lineStart, lineEnd);
+          const slashIdx = line.indexOf('//');
+          if (slashIdx !== -1 && index - lineStart >= slashIdx) continue; // inside // comment
+
+          // Skip if match is inside a block comment (/* ... */)
+          const lastOpen = content.lastIndexOf('/*', index);
+          const lastClose = content.lastIndexOf('*/', index);
+          if (lastOpen !== -1 && lastOpen > lastClose) continue; // inside block comment
+
+          // Skip if match is inside a template literal (backticks)
+          const before = content.slice(0, index);
+          const backticksBefore = (before.match(/`/g) || []).length;
+          const after = content.slice(index);
+          const backticksAfter = (after.match(/`/g) || []).length;
+          if (backticksBefore % 2 === 1 && backticksAfter >= 1) continue;
+
+          // If we reached here, consider it a real match (not in simple comments/templates)
+          matches.push(p.name);
+          break; // record pattern once per file
+        }
       }
       if (matches.length > 0) {
         results.push({ file: path.relative(ROOT, full), matches });

@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import type { Ball } from '../store/types';
 import { useGameStore, ARENA_SIZE } from '../store/gameStore';
 import { stepBallFrame } from './collision';
+import { applyWorkerResultToBalls } from './multithread/resultApplier';
 import { RapierPhysicsSystem } from './rapier/RapierPhysicsSystem';
 import type { RapierWorld, BallState, ContactEvent } from './rapier/rapierWorld';
 import { handleContact } from '../systems/brickBehaviors';
@@ -345,46 +346,25 @@ export function FrameManager() {
               try {
                 const r = typeof mt.takeSABResult === 'function' ? mt.takeSABResult() : null;
                 if (r) {
-                  const hits: { brickId: string; damage: number }[] = [];
-                  const contactInfos: ContactEvent[] = [];
+                  // Defensive: handle scenario where the number of balls changed between
+                  // job submission and completion (e.g., a new ball spawned). In that case
+                  // we only apply the overlapping prefix of results to avoid reading
+                  // out-of-bounds data and introducing ghost/jittery balls.
+                  if (r.count !== balls.length) {
+                    // eslint-disable-next-line no-console
+                    console.warn(
+                      '[FrameManager] SAB result count',
+                      r.count,
+                      'does not match current balls length',
+                      balls.length,
+                      '- applying min(count, balls.length)'
+                    );
+                  }
 
-                  const next: typeof balls = balls.map((b, i) => {
-                    const off = i * 3;
-                    const nextPosition: [number, number, number] = [r.positions[off], r.positions[off + 1], r.positions[off + 2]];
-                    const nextVelocity: [number, number, number] = [r.velocities[off], r.velocities[off + 1], r.velocities[off + 2]];
-
-                    const hitIdx = r.hitIndices[i];
-                    if (hitIdx >= 0) {
-                      const hitBrickId = bricks[hitIdx]?.id;
-                      if (hitBrickId) {
-                        let damage = b.damage;
-                        if (critChance && Math.random() < critChance) damage *= 2;
-
-                        hits.push({ brickId: hitBrickId, damage });
-
-                        const relVel = b.velocity;
-                        const speed = Math.sqrt(
-                          relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]
-                        );
-                        const normal: [number, number, number] =
-                          speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
-
-                        contactInfos.push({
-                          ballId: b.id,
-                          brickId: hitBrickId,
-                          point: nextPosition,
-                          normal,
-                          relativeVelocity: relVel,
-                          impulse: b.damage,
-                        });
-                      }
-                    }
-
-                    return {
-                      ...b,
-                      position: nextPosition,
-                      velocity: nextVelocity,
-                    };
+                  const { nextBalls, hits, contactInfos } = applyWorkerResultToBalls(balls, r.positions, r.velocities, {
+                    hitIndices: r.hitIndices,
+                    bricks,
+                    critChance,
                   });
 
                   if (hits.length > 0) {
@@ -408,7 +388,7 @@ export function FrameManager() {
                     for (const info of contactInfos) handleContact(info, { applyDamage: false });
                   }
 
-                  useGameStore.setState({ balls: next });
+                  useGameStore.setState({ balls: nextBalls });
 
                   return; // done for this frame
                 }
@@ -452,51 +432,25 @@ export function FrameManager() {
           try {
             const res: ReturnType<typeof mt.takePendingResult> = typeof mt.takePendingResult === 'function' ? mt.takePendingResult() : null;
             if (res) {
-              const hits: { brickId: string; damage: number }[] = [];
-              const contactInfos: ContactEvent[] = [];
+              // Defensive: detect mismatch between worker result length and current balls
+              const resCount = Math.floor(res.positions.length / 3);
+              if (resCount !== balls.length) {
+                // eslint-disable-next-line no-console
+                console.warn(
+                  '[FrameManager] transferable worker result count',
+                  resCount,
+                  'does not match current balls length',
+                  balls.length,
+                  '- applying min(count, balls.length)'
+                );
+              }
 
-              const next: typeof balls = balls.map((b, i) => {
-                const off = i * 3;
-                const nextPosition: [number, number, number] = [
-                  res.positions[off],
-                  res.positions[off + 1],
-                  res.positions[off + 2],
-                ];
-                const nextVelocity: [number, number, number] = [
-                  res.velocities[off],
-                  res.velocities[off + 1],
-                  res.velocities[off + 2],
-                ];
+              const hitIds = (res.hitBrickIds ?? (res.hitBrickId ? res.hitBrickId : null)) as (string | null)[] | null;
 
-                const hitBrickId = res.hitBrickIds?.[i] ?? (res.hitBrickId ? res.hitBrickId[i] : undefined);
-                if (hitBrickId) {
-                  let damage = b.damage;
-                  if (critChance && Math.random() < critChance) damage *= 2;
-
-                  hits.push({ brickId: hitBrickId, damage });
-
-                  const relVel = b.velocity;
-                  const speed = Math.sqrt(
-                    relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]
-                  );
-                  const normal: [number, number, number] =
-                    speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
-
-                  contactInfos.push({
-                    ballId: b.id,
-                    brickId: hitBrickId,
-                    point: nextPosition,
-                    normal,
-                    relativeVelocity: relVel,
-                    impulse: b.damage,
-                  });
-                }
-
-                return {
-                  ...b,
-                  position: nextPosition,
-                  velocity: nextVelocity,
-                };
+              const { nextBalls, hits, contactInfos } = applyWorkerResultToBalls(balls, res.positions, res.velocities, {
+                hitIds,
+                bricks,
+                critChance,
               });
 
               if (hits.length > 0) {
@@ -520,7 +474,7 @@ export function FrameManager() {
                 for (const info of contactInfos) handleContact(info, { applyDamage: false });
               }
 
-              useGameStore.setState({ balls: next });
+              useGameStore.setState({ balls: nextBalls });
 
               return; // done for this frame
             }
