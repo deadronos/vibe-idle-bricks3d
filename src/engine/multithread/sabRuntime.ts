@@ -142,6 +142,29 @@ export function ensure(capacityHint = 256, requestedRingSize = 4) {
     allocSABArrays(capacityHint, requestedRingSize);
     worker = new Worker(new URL('./worker-sab.ts', import.meta.url), { type: 'module' });
 
+    // Pipe worker-side safeLog messages to host console for debugging
+    try {
+      worker.addEventListener('message', (e: MessageEvent) => {
+        const data = e.data as { type?: string; args?: unknown[] } | undefined;
+        if (data && data.type === 'log' && Array.isArray(data.args)) {
+          // eslint-disable-next-line no-console
+          console.warn('[worker-sab]', ...data.args);
+        }
+      });
+
+      worker.addEventListener('error', (err) => {
+        // eslint-disable-next-line no-console
+        console.warn('[sabRuntime] worker error', err);
+      });
+
+      worker.addEventListener('messageerror', (err) => {
+        // eslint-disable-next-line no-console
+        console.warn('[sabRuntime] worker messageerror', err);
+      });
+    } catch {
+      /* ignore */
+    }
+
     // Build buffers payload including ring-mode buffers when present
     const buffers: Record<string, SharedArrayBuffer | ArrayBuffer> = {
       positions: positions!.buffer,

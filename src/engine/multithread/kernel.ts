@@ -40,6 +40,11 @@ export interface SimResult {
 export function simulateStep(input: SimInput): SimResult {
   const { count, delta, arena, positions, velocities, radii, ids, damages, bricks } = input;
 
+  // Validate buffer lengths to avoid reading out-of-bounds and generating NaN values
+  if (positions.length < count * 3 || velocities.length < count * 3 || radii.length < count || damages.length < count) {
+    throw new Error(`simulateStep: input buffer size mismatch (count=${count}, positions=${positions.length}, velocities=${velocities.length}, radii=${radii.length}, damages=${damages.length})`);
+  }
+
   const outPositions = new Float32Array(count * 3);
   const outVelocities = new Float32Array(count * 3);
   const hitBrickIds: (string | null)[] = new Array(count).fill(null);

@@ -53,17 +53,37 @@ function loop() {
             const posBase = s * capacity * 3;
             const scalarBase = s * capacity;
 
-            simulateStepInPlace(
-              count,
-              delta,
-              arena,
-              positions.subarray(posBase, posBase + count * 3),
-              velocities.subarray(posBase, posBase + count * 3),
-              radii.subarray(scalarBase, scalarBase + count),
-              damages.subarray(scalarBase, scalarBase + count),
-              bricks,
-              outHitIndices.subarray(scalarBase, scalarBase + count)
-            );
+            // Defensive bounds check before calling kernel
+            if (
+              positions.length < posBase + count * 3 ||
+              velocities.length < posBase + count * 3 ||
+              radii.length < scalarBase + count ||
+              damages.length < scalarBase + count ||
+              outHitIndices.length < scalarBase + count
+            ) {
+              safeLog('[worker-sab] buffer length mismatch before simulateStepInPlace', {
+                count,
+                posBase,
+                scalarBase,
+                positionsLength: positions.length,
+                velocitiesLength: velocities.length,
+                radiiLength: radii.length,
+                damagesLength: damages.length,
+                outHitIndicesLength: outHitIndices.length,
+              });
+            } else {
+              simulateStepInPlace(
+                count,
+                delta,
+                arena,
+                positions.subarray(posBase, posBase + count * 3),
+                velocities.subarray(posBase, posBase + count * 3),
+                radii.subarray(scalarBase, scalarBase + count),
+                damages.subarray(scalarBase, scalarBase + count),
+                bricks,
+                outHitIndices.subarray(scalarBase, scalarBase + count)
+              );
+            }
           } catch (err) {
             safeLog('[worker-sab] error during simulateStepInPlace (ring-mode)', err);
           } finally {
