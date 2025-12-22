@@ -561,3 +561,21 @@ button:focus,
 .sab-controls button {
   margin-right: 8px;
 }
+
+.sab-check {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #ccc;
+}
+
+.coop-info {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.coop-info .error {
+  color: #ff6b6b;
+  font-weight: 600;
+  margin-top: 6px;
+}

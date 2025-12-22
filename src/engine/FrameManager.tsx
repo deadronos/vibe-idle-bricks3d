@@ -7,6 +7,26 @@ import { RapierPhysicsSystem } from './rapier/RapierPhysicsSystem';
 import type { RapierWorld, BallState, ContactEvent } from './rapier/rapierWorld';
 import { handleContact } from '../systems/brickBehaviors';
 
+// Lazy dynamic loader for the multithread runtime to avoid synchronous `require()`
+// in browser environments. The import is started in the background and the
+// resulting module is cached so subsequent frames can use it synchronously.
+let mtModulePromise: Promise<any> | null = null;
+let mtModuleCached: any | null = null;
+
+async function importMultithreadRuntime(): Promise<any> {
+  if (mtModuleCached) return mtModuleCached;
+  if (!mtModulePromise) {
+    mtModulePromise = import('./multithread/runtime')
+      .then((m) => ((mtModuleCached = (m && (m as any).default) || m)))
+      .catch((err) => {
+        // Reset promise so future attempts can retry
+        mtModulePromise = null;
+        throw err;
+      });
+  }
+  return mtModulePromise;
+}
+
 /**
  * Component that manages the game loop and physics simulation.
  * Handles both the legacy collision system and the Rapier physics engine.
@@ -277,43 +297,178 @@ export function FrameManager() {
 
       // Start a non-blocking simulation job and apply any pending result.
       try {
-        // Lazy-load the runtime so it doesn't run in environments where workers are unavailable.
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const mt = require('./multithread/runtime').default;
+        // If the runtime isn't cached yet, start loading it in the background.
+        if (!mtModuleCached && !mtModulePromise) {
+          void importMultithreadRuntime().catch((err) => {
+            // Non-fatal background import failure; we'll fallback to single-thread path.
+            // eslint-disable-next-line no-console
+            console.warn('[FrameManager] background import of multithread runtime failed', err);
+          });
+        }
+
+        // Use cached module if available (synchronous use on subsequent frames)
+        const mt = mtModuleCached as any | null;
 
         // Preferred path: SharedArrayBuffer + Atomics (zero-copy) if available and explicitly enabled
         const sabEnabledEnv = Boolean((import.meta as unknown as { env?: Record<string, string> }).env?.VITE_ENABLE_SAB);
         const sabEnabledSetting = Boolean(state.settings?.enableSABPhysics);
         const sabEnabled = sabEnabledEnv && sabEnabledSetting;
 
-        if (sabEnabled && mt.supportsSharedArrayBuffer && mt.ensureSABRuntime) {
-          // Ensure the SAB worker/runtime is initialized
-          mt.ensureSABRuntime(Math.max(64, count));
-
-          // Update brick cache in worker (best-effort)
+        if (sabEnabled && mt) {
           try {
-            mt.updateSABBricks(bricks);
+            const sabSupported =
+              typeof mt.supportsSharedArrayBuffer === 'function'
+                ? mt.supportsSharedArrayBuffer()
+                : Boolean(mt.supportsSharedArrayBuffer);
+
+            if (sabSupported && typeof mt.ensureSABRuntime === 'function') {
+              // Ensure the SAB worker/runtime is initialized (best-effort)
+              try {
+                mt.ensureSABRuntime(Math.max(64, count));
+              } catch {
+                /* ignore init failures (fallback next frame) */
+              }
+
+              try {
+                mt.updateSABBricks(bricks);
+              } catch {
+                /* ignore */
+              }
+
+              try {
+                mt.submitSABJob(balls, delta, ARENA_SIZE);
+              } catch {
+                /* ignore submit failures */
+              }
+
+              // Try to take a completed result from the SAB worker
+              try {
+                const r = typeof mt.takeSABResult === 'function' ? mt.takeSABResult() : null;
+                if (r) {
+                  const hits: { brickId: string; damage: number }[] = [];
+                  const contactInfos: ContactEvent[] = [];
+
+                  const next: typeof balls = balls.map((b, i) => {
+                    const off = i * 3;
+                    const nextPosition: [number, number, number] = [r.positions[off], r.positions[off + 1], r.positions[off + 2]];
+                    const nextVelocity: [number, number, number] = [r.velocities[off], r.velocities[off + 1], r.velocities[off + 2]];
+
+                    const hitIdx = r.hitIndices[i];
+                    if (hitIdx >= 0) {
+                      const hitBrickId = bricks[hitIdx]?.id;
+                      if (hitBrickId) {
+                        let damage = b.damage;
+                        if (critChance && Math.random() < critChance) damage *= 2;
+
+                        hits.push({ brickId: hitBrickId, damage });
+
+                        const relVel = b.velocity;
+                        const speed = Math.sqrt(
+                          relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]
+                        );
+                        const normal: [number, number, number] =
+                          speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
+
+                        contactInfos.push({
+                          ballId: b.id,
+                          brickId: hitBrickId,
+                          point: nextPosition,
+                          normal,
+                          relativeVelocity: relVel,
+                          impulse: b.damage,
+                        });
+                      }
+                    }
+
+                    return {
+                      ...b,
+                      position: nextPosition,
+                      velocity: nextVelocity,
+                    };
+                  });
+
+                  if (hits.length > 0) {
+                    const apply = useGameStore.getState().applyHits;
+                    if (apply) apply(hits);
+                    else {
+                      for (const hit of hits) damageBrick(hit.brickId, hit.damage);
+
+                      if (hits.length >= 2) {
+                        const s = useGameStore.getState();
+                        const newComboCount = s.comboCount + 1;
+                        const newComboMultiplier = Math.min(1 + newComboCount * 0.05, 3);
+                        useGameStore.setState({
+                          comboCount: newComboCount,
+                          comboMultiplier: newComboMultiplier,
+                          lastHitTime: Date.now(),
+                        });
+                      }
+                    }
+
+                    for (const info of contactInfos) handleContact(info, { applyDamage: false });
+                  }
+
+                  useGameStore.setState({ balls: next });
+
+                  return; // done for this frame
+                }
+              } catch {
+                // treat as no result and continue to fallback
+              }
+            }
+          } catch (err) {
+            // Best-effort: log and continue to transferable or main-thread fallback
+            // eslint-disable-next-line no-console
+            console.warn('[FrameManager] error during SAB runtime use — falling back', err);
+          }
+        }
+
+        // Fallback: transferable worker runtime (non-SAB) if runtime module is loaded
+        if (mt && typeof mt.ensureRuntime === 'function') {
+          try {
+            mt.ensureRuntime();
           } catch {
             /* ignore */
           }
 
-          // Submit job non-blocking if worker is idle
-          mt.submitSABJob(balls, delta, ARENA_SIZE);
+          try {
+            mt.tickSimulation({
+              count,
+              delta,
+              arena: ARENA_SIZE,
+              positions,
+              velocities: velocitiesArr,
+              radii: radiiArr,
+              ids,
+              damages: damagesArr,
+              bricks,
+            });
+          } catch (err) {
+            // If tickSimulation fails, fall back to main-thread path this frame
+            // eslint-disable-next-line no-console
+            console.warn('[FrameManager] tickSimulation failed, falling back', err);
+          }
 
-          // Try to take a completed result from the SAB worker
-          const r = mt.takeSABResult();
-          if (r) {
-            const hits: { brickId: string; damage: number }[] = [];
-            const contactInfos: ContactEvent[] = [];
+          try {
+            const res: ReturnType<typeof mt.takePendingResult> = typeof mt.takePendingResult === 'function' ? mt.takePendingResult() : null;
+            if (res) {
+              const hits: { brickId: string; damage: number }[] = [];
+              const contactInfos: ContactEvent[] = [];
 
-            const next: typeof balls = balls.map((b, i) => {
-              const off = i * 3;
-              const nextPosition: [number, number, number] = [r.positions[off], r.positions[off + 1], r.positions[off + 2]];
-              const nextVelocity: [number, number, number] = [r.velocities[off], r.velocities[off + 1], r.velocities[off + 2]];
+              const next: typeof balls = balls.map((b, i) => {
+                const off = i * 3;
+                const nextPosition: [number, number, number] = [
+                  res.positions[off],
+                  res.positions[off + 1],
+                  res.positions[off + 2],
+                ];
+                const nextVelocity: [number, number, number] = [
+                  res.velocities[off],
+                  res.velocities[off + 1],
+                  res.velocities[off + 2],
+                ];
 
-              const hitIdx = r.hitIndices[i];
-              if (hitIdx >= 0) {
-                const hitBrickId = bricks[hitIdx]?.id;
+                const hitBrickId = res.hitBrickIds?.[i] ?? (res.hitBrickId ? res.hitBrickId[i] : undefined);
                 if (hitBrickId) {
                   let damage = b.damage;
                   if (critChance && Math.random() < critChance) damage *= 2;
@@ -336,130 +491,44 @@ export function FrameManager() {
                     impulse: b.damage,
                   });
                 }
-              }
 
-              return {
-                ...b,
-                position: nextPosition,
-                velocity: nextVelocity,
-              };
-            });
-
-            if (hits.length > 0) {
-              const apply = useGameStore.getState().applyHits;
-              if (apply) apply(hits);
-              else {
-                for (const hit of hits) damageBrick(hit.brickId, hit.damage);
-
-                if (hits.length >= 2) {
-                  const s = useGameStore.getState();
-                  const newComboCount = s.comboCount + 1;
-                  const newComboMultiplier = Math.min(1 + newComboCount * 0.05, 3);
-                  useGameStore.setState({
-                    comboCount: newComboCount,
-                    comboMultiplier: newComboMultiplier,
-                    lastHitTime: Date.now(),
-                  });
-                }
-              }
-
-              for (const info of contactInfos) handleContact(info, { applyDamage: false });
-            }
-
-            useGameStore.setState({ balls: next });
-
-            return; // done for this frame
-          }
-        }
-
-        // Fallback: transferable worker runtime (non-SAB)
-        mt.ensureRuntime();
-        mt.tickSimulation({
-          count,
-          delta,
-          arena: ARENA_SIZE,
-          positions,
-          velocities: velocitiesArr,
-          radii: radiiArr,
-          ids,
-          damages: damagesArr,
-          bricks,
-        });
-
-        const res: ReturnType<typeof mt.takePendingResult> = mt.takePendingResult();
-        if (res) {
-          // Build results and hit lists based on worker output
-          const hits: { brickId: string; damage: number }[] = [];
-          const contactInfos: ContactEvent[] = [];
-
-          const next: typeof balls = balls.map((b, i) => {
-            const off = i * 3;
-            const nextPosition: [number, number, number] = [
-              res.positions[off],
-              res.positions[off + 1],
-              res.positions[off + 2],
-            ];
-            const nextVelocity: [number, number, number] = [
-              res.velocities[off],
-              res.velocities[off + 1],
-              res.velocities[off + 2],
-            ];
-
-            const hitBrickId = res.hitBrickIds[i];
-            if (hitBrickId) {
-              let damage = b.damage;
-              if (critChance && Math.random() < critChance) damage *= 2;
-
-              hits.push({ brickId: hitBrickId, damage });
-
-              const relVel = b.velocity;
-              const speed = Math.sqrt(
-                relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]
-              );
-              const normal: [number, number, number] =
-                speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
-
-              contactInfos.push({
-                ballId: b.id,
-                brickId: hitBrickId,
-                point: nextPosition,
-                normal,
-                relativeVelocity: relVel,
-                impulse: b.damage,
+                return {
+                  ...b,
+                  position: nextPosition,
+                  velocity: nextVelocity,
+                };
               });
-            }
 
-            return {
-              ...b,
-              position: nextPosition,
-              velocity: nextVelocity,
-            };
-          });
+              if (hits.length > 0) {
+                const apply = useGameStore.getState().applyHits;
+                if (apply) apply(hits);
+                else {
+                  for (const hit of hits) damageBrick(hit.brickId, hit.damage);
 
-          if (hits.length > 0) {
-            const apply = useGameStore.getState().applyHits;
-            if (apply) apply(hits);
-            else {
-              for (const hit of hits) damageBrick(hit.brickId, hit.damage);
+                  if (hits.length >= 2) {
+                    const s = useGameStore.getState();
+                    const newComboCount = s.comboCount + 1;
+                    const newComboMultiplier = Math.min(1 + newComboCount * 0.05, 3);
+                    useGameStore.setState({
+                      comboCount: newComboCount,
+                      comboMultiplier: newComboMultiplier,
+                      lastHitTime: Date.now(),
+                    });
+                  }
+                }
 
-              if (hits.length >= 2) {
-                const s = useGameStore.getState();
-                const newComboCount = s.comboCount + 1;
-                const newComboMultiplier = Math.min(1 + newComboCount * 0.05, 3);
-                useGameStore.setState({
-                  comboCount: newComboCount,
-                  comboMultiplier: newComboMultiplier,
-                  lastHitTime: Date.now(),
-                });
+                for (const info of contactInfos) handleContact(info, { applyDamage: false });
               }
+
+              useGameStore.setState({ balls: next });
+
+              return; // done for this frame
             }
-
-            for (const info of contactInfos) handleContact(info, { applyDamage: false });
+          } catch (err) {
+            // Nothing critical; fall through to main-thread path
+            // eslint-disable-next-line no-console
+            console.warn('[FrameManager] error reading pending runtime result — falling back', err);
           }
-
-          useGameStore.setState({ balls: next });
-
-          return; // done for this frame
         }
       } catch (err) {
         // If the multithread runtime isn't available or failed, fall back to main-thread

@@ -53,6 +53,7 @@ Testing
 Runtime toggle & inspection
 
 - Open the **Settings** modal (gear icon) and look for **"SharedArrayBuffer Physics (Experimental)"**. Toggle it on to allow the app to try initializing the SAB-based runtime.
+- Use the **Refresh support** button in the same panel to re-check COOP/COEP headers (handy when you've just started the dev server or changed server flags).
 - If the runtime is supported by the browser and COOP/COEP is active, an **Initialize SAB** button will appear in the settings. Click it to initialize the worker and buffers.
 - After initialization the panel will show **Initialized: Yes** and the runtime will begin accepting zero-copy simulation jobs. Use **Shutdown SAB** to cleanly stop the worker.
 
@@ -98,6 +99,59 @@ npx cross-env VITE_ENABLE_COOP=1 VITE_ENABLE_SAB=1 npm run dev
 ```
 
 This avoids errors like `"VITE_ENABLE_COOP" is not recognized` that occur when trying to set env vars directly on Windows shells.
+
+Quick verification of COOP/COEP headers
+
+- After starting `npm run dev:sab`, run:
+
+  - macOS / Linux:
+
+    ```bash
+    curl -I http://localhost:5173/coop-check
+    ```
+
+  - Windows PowerShell:
+
+    ```powershell
+    (Invoke-WebRequest -Uri 'http://localhost:5173/coop-check' -Method Head).Headers
+    ```
+
+  The response should include the headers:
+
+  - Cross-Origin-Embedder-Policy: require-corp
+  - Cross-Origin-Opener-Policy: same-origin
+
+- If the headers are present but `globalThis.crossOriginIsolated` is still false in the browser console, check the DevTools Console for messages about blocked cross-origin resources (fonts, analytics, 3rd-party scripts). Those resources must be served with appropriate CORP/CORS headers or be self-hosted.
+
+Troubleshooting tips
+
+- Check the debug endpoint and headers (server must be started with `npm run dev:sab`):
+
+  - macOS / Linux:
+
+    ```bash
+    curl -I http://localhost:5173/coop-check
+    ```
+
+  - Windows PowerShell:
+
+    ```powershell
+    (Invoke-WebRequest -Uri 'http://localhost:5173/coop-check' -Method Head).Headers
+    ```
+
+- If headers are present but `globalThis.crossOriginIsolated` is false in the browser, inspect the page for cross-origin resources. Run this snippet in the DevTools Console to find externally-hosted resources that may break isolation:
+
+```js
+Array.from(document.querySelectorAll('link[href], script[src], img[src]'))
+  .map(el => ({ tag: el.tagName.toLowerCase(), src: el.href || el.src }))
+  .filter(r => {
+    try { return new URL(r.src).origin !== location.origin; } catch { return false; }
+  });
+```
+
+- Disable browser extensions during local testing — extension-injected scripts can be cross-origin and block isolation.
+- If you find a problematic resource (fonts, analytics, 3rd-party widgets), either serve it locally or add the appropriate CORP/CORS headers on the resource host (only possible when you control it). For local dev it's easiest to self-host small assets like fonts.
+- If you are still stuck, run the `Refresh support` control in Settings (added to the UI) and use the new `/coop-check` debug info displayed in the panel to help diagnose the missing header or other issues.
 
 Optional CI: GitHub Actions (manual opt-in)
 

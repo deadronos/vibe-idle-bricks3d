@@ -31,25 +31,92 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   // SAB runtime info and runtime actions (defensive: require at runtime)
   const [sabAvailable, setSabAvailable] = React.useState<boolean>(false);
   const [sabInitialized, setSabInitialized] = React.useState<boolean>(false);
+  const [checkingCoop, setCheckingCoop] = React.useState<boolean>(false);
+  const [coopInfo, setCoopInfo] = React.useState<{
+    coop?: string | null;
+    coep?: string | null;
+    lastChecked?: string;
+    error?: string | null;
+  } | null>(null);
 
-  React.useEffect(() => {
+  const checkCoopEndpoint = React.useCallback(async () => {
+    setCheckingCoop(true);
     try {
-      // import at runtime to avoid bundling worker setup into initial app bundle
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mt = require('../../engine/multithread/runtime').default;
-      setSabAvailable(Boolean(mt.supportsSharedArrayBuffer));
+      const res = await fetch('/coop-check', { method: 'GET', cache: 'no-store' });
+      const coop = res.headers.get('Cross-Origin-Opener-Policy');
+      const coep = res.headers.get('Cross-Origin-Embedder-Policy');
+      setCoopInfo({ coop, coep, lastChecked: new Date().toISOString() });
+
+      // re-evaluate runtime support: crossOriginIsolated and runtime helper
+      const isIsolated = !!(globalThis as any).crossOriginIsolated;
+      let mtSupports = false;
       try {
-        // require the sabRuntime to check initialized state
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const sabRuntime = require('../../engine/multithread/sabRuntime').default;
+        const mtModule = await import('../../engine/multithread/runtime');
+        const mt = (mtModule && (mtModule as any).default) || mtModule;
+        mtSupports =
+          typeof mt?.supportsSharedArrayBuffer === 'function'
+            ? mt.supportsSharedArrayBuffer()
+            : Boolean(mt?.supportsSharedArrayBuffer);
+      } catch {
+        // ignore - runtime may not be present in test environments
+      }
+
+      // Also attempt to determine initialized state of SAB runtime when available
+      try {
+        const sabModule = await import('../../engine/multithread/sabRuntime');
+        const sabRuntime = (sabModule && (sabModule as any).default) || sabModule;
         setSabInitialized(Boolean(sabRuntime && (sabRuntime as any).isInitialized?.()));
       } catch {
-        setSabInitialized(false);
+        // ignore
       }
-    } catch {
-      setSabAvailable(false);
-      setSabInitialized(false);
+
+      setSabAvailable((typeof SharedArrayBuffer !== 'undefined' && isIsolated) || mtSupports);
+    } catch (err: any) {
+      setCoopInfo({ error: String(err), lastChecked: new Date().toISOString() });
+    } finally {
+      setCheckingCoop(false);
     }
+  }, []);
+
+  React.useEffect(() => {
+    let mounted = true;
+
+    async function detectSAB() {
+      try {
+        let dynamicAvailable = typeof SharedArrayBuffer !== 'undefined' && !!(globalThis as any).crossOriginIsolated;
+
+        // import at runtime to avoid bundling worker setup into initial app bundle
+        try {
+          const mtModule = await import('../../engine/multithread/runtime');
+          const mt = (mtModule && (mtModule as any).default) || mtModule;
+          const mtSupports =
+            typeof mt?.supportsSharedArrayBuffer === 'function'
+              ? mt.supportsSharedArrayBuffer()
+              : Boolean(mt?.supportsSharedArrayBuffer);
+          dynamicAvailable = dynamicAvailable || mtSupports;
+        } catch {
+          // ignore - runtime not present in this environment
+        }
+
+        if (mounted) setSabAvailable(dynamicAvailable);
+
+        try {
+          // dynamically import sabRuntime to check initialized state
+          const sabModule = await import('../../engine/multithread/sabRuntime');
+          const sabRuntime = (sabModule && (sabModule as any).default) || sabModule;
+          if (mounted) setSabInitialized(Boolean(sabRuntime && (sabRuntime as any).isInitialized?.()));
+        } catch {
+          if (mounted) setSabInitialized(false);
+        }
+      } catch {
+        if (mounted) {
+          setSabAvailable(false);
+          setSabInitialized(false);
+        }
+      }
+    }
+
+    void detectSAB();
 
     const root = modalRef.current;
     if (!root) return;
@@ -86,6 +153,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
     document.addEventListener('keydown', onEsc);
 
     return () => {
+      mounted = false;
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('keydown', onEsc);
       if (prevActive) prevActive.focus();
@@ -150,20 +218,31 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
             <div id="sab-supported">Supported: {sabAvailable ? 'Yes' : 'No (cross-origin isolation required)'}</div>
             <div id="sab-initialized">Initialized: {sabInitialized ? 'Yes' : 'No'}</div>
             <div className="sab-controls">
+              <button type="button" onClick={checkCoopEndpoint} disabled={checkingCoop}>
+                {checkingCoop ? 'Checking...' : 'Refresh support'}
+              </button>
+
               {sabAvailable && (
                 <>
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       try {
-                        // eslint-disable-next-line @typescript-eslint/no-var-requires
-                        const mt = require('../../engine/multithread/runtime').default;
+                        await checkCoopEndpoint();
+                        const mtModule = await import('../../engine/multithread/runtime');
+                        const mt = (mtModule && (mtModule as any).default) || mtModule;
+                        if (!mt || typeof mt.ensureSABRuntime !== 'function') {
+                          throw new Error('SAB runtime not available in this build');
+                        }
                         mt.ensureSABRuntime(128);
-                        // eslint-disable-next-line @typescript-eslint/no-var-requires
-                        const sabRuntime = require('../../engine/multithread/sabRuntime').default;
+                        const sabModule = await import('../../engine/multithread/sabRuntime');
+                        const sabRuntime = (sabModule && (sabModule as any).default) || sabModule;
                         setSabInitialized(Boolean(sabRuntime && (sabRuntime as any).isInitialized?.()));
-                      } catch (err) {
-                        // ignore
+                        setCoopInfo((prev) => ({ ...(prev ?? {}), error: null }));
+                      } catch (err: any) {
+                        // eslint-disable-next-line no-console
+                        console.warn('Initialize SAB failed', err);
+                        setCoopInfo((prev) => ({ ...(prev ?? {}), error: String(err) }));
                       }
                     }}
                   >
@@ -171,22 +250,34 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       try {
-                        // eslint-disable-next-line @typescript-eslint/no-var-requires
-                        const mt = require('../../engine/multithread/runtime').default;
-                        mt.destroySABRuntime();
-                        // eslint-disable-next-line @typescript-eslint/no-var-requires
-                        const sabRuntime = require('../../engine/multithread/sabRuntime').default;
+                        const mtModule = await import('../../engine/multithread/runtime');
+                        const mt = (mtModule && (mtModule as any).default) || mtModule;
+                        if (mt && typeof mt.destroySABRuntime === 'function') mt.destroySABRuntime();
+                        const sabModule = await import('../../engine/multithread/sabRuntime');
+                        const sabRuntime = (sabModule && (sabModule as any).default) || sabModule;
                         setSabInitialized(Boolean(sabRuntime && (sabRuntime as any).isInitialized?.()));
-                      } catch (err) {
-                        // ignore
+                        setCoopInfo((prev) => ({ ...(prev ?? {}), error: null }));
+                      } catch (err: any) {
+                        // eslint-disable-next-line no-console
+                        console.warn('Shutdown SAB failed', err);
+                        setCoopInfo((prev) => ({ ...(prev ?? {}), error: String(err) }));
                       }
                     }}
                   >
                     Shutdown SAB
                   </button>
                 </>
+              )}
+
+              {coopInfo && (
+                <div className="coop-info">
+                  <div>COOP: {coopInfo.coop ?? '—'}</div>
+                  <div>COEP: {coopInfo.coep ?? '—'}</div>
+                  <div>Last checked: {coopInfo.lastChecked ?? '—'}</div>
+                  {coopInfo.error && <div className="error">Error: {coopInfo.error}</div>}
+                </div>
               )}
             </div>
           </div>

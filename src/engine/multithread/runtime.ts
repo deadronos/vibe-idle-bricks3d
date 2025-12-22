@@ -9,9 +9,10 @@ let jobInFlight = false;
 let pendingResult: SimResult | null = null;
 let runtimeDisabled = false;
 
-const SAB_AVAILABLE =
-  typeof SharedArrayBuffer !== 'undefined' &&
-  !!((globalThis as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated);
+/** Returns whether SharedArrayBuffer + crossOriginIsolated are currently available. Evaluates dynamically to avoid stale module-level snapshots. */
+export function supportsSharedArrayBuffer() {
+  return typeof SharedArrayBuffer !== 'undefined' && !!((globalThis as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated);
+}
 
 /** Number of workers to use when initializing the runtime. */
 function defaultWorkerCount(): number {
@@ -40,8 +41,7 @@ export function ensureRuntime(maxWorkers?: number) {
   }
 }
 
-/** Whether SharedArrayBuffer + crossOriginIsolated are available. */
-export const supportsSharedArrayBuffer = SAB_AVAILABLE;
+
 
 // Optional SAB-based runtime for zero-copy updates
 import sabRuntime from './sabRuntime';

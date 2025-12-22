@@ -7,26 +7,39 @@ const isGitHubPages = !!repoName;
 
 const enableCoop = !!process.env.VITE_ENABLE_COOP;
 
+// Simple plugin to add COOP/COEP headers and provide a /coop-check endpoint for debugging
+const coopPlugin = enableCoop
+  ? {
+      name: 'vite-coop-coep-headers',
+      configureServer(server: any) {
+        server.middlewares.use((req: any, res: any, next: any) => {
+          try {
+            res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+            res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+          } catch {
+            /* ignore */
+          }
+
+          // Provide a simple debug endpoint to verify headers quickly
+          if (req.url && req.url.startsWith('/coop-check')) {
+            res.statusCode = 200;
+            res.end('coop-check');
+            return;
+          }
+
+          next();
+        });
+      },
+    }
+  : undefined;
+
 export default defineConfig({
   // When running in GitHub Actions for Pages, automatically set the base
   // so assets are referenced under /<repo>/ instead of the domain root.
   base: isGitHubPages ? `/${repoName}/` : '/',
-  plugins: [react()],
+  plugins: [react(), ...(enableCoop && coopPlugin ? [coopPlugin] : [])],
   // Ensure WASM assets from dependencies are included by Vite when building/tests
   assetsInclude: ['**/*.wasm'],
-  // Optional: enable Cross-Origin-Opener-Policy / Cross-Origin-Embedder-Policy
-  // headers for local development so SharedArrayBuffer (and WASM threads)
-  // can be tested. Toggle by setting VITE_ENABLE_COOP=1 in your environment.
-  ...(enableCoop
-    ? {
-        server: {
-          headers: {
-            'Cross-Origin-Embedder-Policy': 'require-corp',
-            'Cross-Origin-Opener-Policy': 'same-origin',
-          },
-        },
-      }
-    : {}),
   test: {
     globals: true,
     watch: false,
