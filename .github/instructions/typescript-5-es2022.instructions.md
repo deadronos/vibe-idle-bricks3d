@@ -18,6 +18,9 @@ applyTo: '**/*.ts'
 
 - Target TypeScript 5.x / ES2022 and prefer native features over polyfills.
 - Use pure ES modules; never emit `require`, `module.exports`, or CommonJS helpers.
+
+  - Exception / allow-list: **Node-only helper scripts or CLI tools** (for example, files under `scripts/` or repository automation in `.github/`) may use CommonJS when necessary due to runtime constraints. Keep such files isolated, add a short top-of-file comment explaining why CommonJS is required, and prefer ESM when feasible.
+
 - Rely on the project's build, lint, and test scripts unless asked otherwise.
 - Note design trade-offs when intent is not obvious.
 
