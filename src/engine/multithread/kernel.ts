@@ -27,6 +27,8 @@ export interface SimResult {
   hitBrickIds: (string | null)[]; // length === count
   // Optional job id injected by the runtime for debugging/tracing
   jobId?: number | null;
+  // Optional array of original job ball ids used to map result indices to current store
+  jobIds?: (string | null)[] | null;
 }
 
 /**

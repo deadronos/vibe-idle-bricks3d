@@ -6,10 +6,10 @@
     - region "Score" [ref=e8]:
       - button "Settings" [ref=e9] [cursor=pointer]: ⚙️
       - heading "Score" [level=2] [ref=e10]
-      - generic [ref=e11]: "10"
+      - generic [ref=e11]: "0"
       - generic [ref=e12]:
         - generic [ref=e13]: "Bricks Destroyed:"
-        - generic [ref=e14]: "1"
+        - generic [ref=e14]: "0"
       - generic [ref=e15]:
         - generic [ref=e16]: "Wave:"
         - generic [ref=e17]: 1 / 1
@@ -95,7 +95,7 @@
             - generic [ref=e97]:
               - generic [ref=e98]: "COOP: same-origin"
               - generic [ref=e99]: "COEP: require-corp"
-              - generic [ref=e100]: "Last checked: 2025-12-22T09:12:47.092Z"
+              - generic [ref=e100]: "Last checked: 2025-12-22T09:30:11.787Z"
     - button "Pause game" [ref=e102] [cursor=pointer]: ⏸️ Pause
     - generic:
       - paragraph: 🖱️ Drag to rotate camera • Scroll to zoom

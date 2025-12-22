@@ -38,6 +38,12 @@ export default defineConfig({
   // so assets are referenced under /<repo>/ instead of the domain root.
   base: isGitHubPages ? `/${repoName}/` : '/',
   plugins: [react(), ...(enableCoop && coopPlugin ? [coopPlugin] : [])],
+  // Avoid pre-bundling 'multithreading' which can generate dev-only worker artifacts
+  // that Vite's dependency optimizer may not resolve correctly (missing worker.js?worker_file).
+  // Excluding it keeps worker script resolution intact during dev.
+  optimizeDeps: {
+    exclude: ['multithreading'],
+  },
   // Ensure WASM assets from dependencies are included by Vite when building/tests
   assetsInclude: ['**/*.wasm'],
   test: {

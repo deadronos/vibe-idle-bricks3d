@@ -364,6 +364,7 @@ export function FrameManager() {
                     hitIndices: r.hitIndices,
                     bricks,
                     critChance,
+                    jobIds: (r as any).jobIds ?? null,
                   });
 
                   if (hits.length > 0) {
@@ -449,6 +450,7 @@ export function FrameManager() {
                 hitIds,
                 bricks,
                 critChance,
+                jobIds: (res as any).jobIds ?? null,
               });
 
               if (hits.length > 0) {
@@ -493,6 +495,20 @@ export function FrameManager() {
     }
 
     // Fallback: single-threaded simulation (original behaviour)
+    // If a multithread job is in flight (SAB or transferable), run a predictive update
+    // that updates ball positions for smoothness but does NOT apply hits/damage to
+    // bricks — the worker result is authoritative and will apply hits when it arrives.
+    let workerBusy = false;
+    try {
+      const mt = mtModuleCached as any | null;
+      if (mt) {
+        if (typeof mt.isJobInFlight === 'function' && mt.isJobInFlight()) workerBusy = true;
+        if (!workerBusy && typeof mt.isSABJobInFlight === 'function' && mt.isSABJobInFlight()) workerBusy = true;
+      }
+    } catch {
+      /* ignore detection failures — treat as not busy */
+    }
+
     const hits: { brickId: string; damage: number }[] = [];
     const contactInfos: ContactEvent[] = [];
 
@@ -534,6 +550,13 @@ export function FrameManager() {
         velocity: nextVelocity,
       };
     });
+
+    if (workerBusy) {
+      // Do not apply hits in predictive mode; the worker result will reconcile
+      // authoritative positions and hits when it completes.
+      useGameStore.setState({ balls: nextBalls });
+      return;
+    }
 
     if (hits.length > 0) {
       // Use the centralized applyHits if available so combo logic is consistent

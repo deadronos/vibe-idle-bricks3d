@@ -401,12 +401,17 @@ export function takeResultIfReady():
 
         // Retrieve job id for this slot if available
         const jobId = slotJobIds[s] ?? null;
+        // Retrieve job ids from metadata for id-based mapping (if present)
+        const jobIds = jobId ? (jobMeta.get(jobId)?.ids ?? null) : null;
 
         // Reset flag to free and clear slot job tracking
         Atomics.store(flags, s, 0);
         slotJobIds[s] = null;
 
-        return { positions: p, velocities: v, hitIndices: hi, count, jobId };
+        // Remove job metadata now that result is being consumed
+        if (jobId) jobMeta.delete(jobId);
+
+        return { positions: p, velocities: v, hitIndices: hi, count, jobId, jobIds };
       }
     }
 
@@ -428,12 +433,15 @@ export function takeResultIfReady():
 
   // Retrieve and clear job id for this single-control job, if any
   const jobId = slotJobIds[0] ?? null;
+  // Retrieve jobIds from metadata and then delete metadata entry
+  const jobIds = jobId ? (jobMeta.get(jobId)?.ids ?? null) : null;
+  if (jobId) jobMeta.delete(jobId);
   slotJobIds[0] = null;
 
   // Reset control to idle (0) after reading results so the worker can accept a new job
   A.store(control!, 0, 0);
 
-  return { positions: p, velocities: v, hitIndices: hi, count, jobId }; 
+  return { positions: p, velocities: v, hitIndices: hi, count, jobId, jobIds }; 
 }
 
 /** Test helpers (test-only; do not use in production) */
@@ -464,6 +472,15 @@ export function _test_getInternals() {
     capacity,
     ringSize,
   };
+}
+
+/** Returns true if any submitted SAB job is still in flight (pending/processing) */
+export function isJobInFlight() {
+  try {
+    return slotJobIds.some((id) => id != null);
+  } catch {
+    return false;
+  }
 }
 
 export default {

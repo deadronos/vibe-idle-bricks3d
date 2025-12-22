@@ -116,36 +116,60 @@ export function tickSimulation(input: SimInput) {
         const r = res as { ok?: boolean; value?: unknown; error?: unknown };
         if (r.ok) {
           pendingResult = r.value as SimResult;
-          // Attach job id to the result for traceability
+
+          // Attach job id and original job ids (if available) to the result for traceability
           try {
             (pendingResult as SimResult).jobId = jobId;
+            // Attach a copy of the job ids array if metadata exists
+            if (meta && Array.isArray(meta.ids)) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (pendingResult as any).jobIds = (meta.ids as string[]).slice();
+            } else {
+              // ensure property exists for consumers
+              (pendingResult as any).jobIds = null;
+            }
           } catch {
             /* ignore */
           }
+
           // Log success with job metadata for tracing
           console.debug('[multithread/runtime] job', jobId, 'completed successfully', meta ?? {});
         } else {
           // Log richer error details for debugging and include job id/meta
           const errObj = r.error;
+
+          // Normalize to a message + stack where possible
+          let messageStr: string | undefined;
+          let stackStr: string | undefined;
           if (errObj instanceof Error) {
-            console.warn('[multithread/runtime] worker job failed - job', jobId, 'error:', errObj.message, meta ?? {});
-            console.warn(errObj.stack);
-          } else if (errObj && typeof errObj === 'object' && 'message' in (errObj as object)) {
-            // Error-like object that crossed the worker boundary - try to log its message/stack
+            messageStr = errObj.message;
+            stackStr = errObj.stack;
+          } else if (errObj && typeof errObj === 'object') {
             try {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const eAny = errObj as any;
-              console.warn('[multithread/runtime] worker job failed - job', jobId, 'error.message:', eAny.message, meta ?? {});
-              if (eAny.stack) console.warn(eAny.stack);
-            } catch (e) {
-              try {
-                console.warn('[multithread/runtime] worker job failed - job', jobId, 'error (serial):', JSON.stringify(errObj), meta ?? {});
-              } catch {
-                console.warn('[multithread/runtime] worker job failed - job', jobId, errObj ?? r, meta ?? {});
-              }
+              messageStr = eAny.message ?? (typeof eAny === 'string' ? eAny : undefined);
+              stackStr = eAny.stack ?? undefined;
+            } catch {
+              /* ignore */
             }
+          } else if (typeof errObj === 'string') {
+            messageStr = errObj;
+          }
+
+          if (messageStr) {
+            console.warn('[multithread/runtime] worker job failed - job', jobId, 'error.message:', messageStr, meta ?? {});
+            if (stackStr) console.warn(stackStr);
           } else {
             console.warn('[multithread/runtime] worker job failed or returned an error - job', jobId, errObj ?? r, meta ?? {});
+          }
+
+          // Helpful hint for a common Vite dev-time issue: missing worker file from the dep optimizer
+          const lower = (messageStr || '').toLowerCase();
+          if (lower.includes('worker.js') || lower.includes('?worker_file') || lower.includes('worker_file') || lower.includes('failed to construct') || lower.includes('failed to load') || lower.includes('404')) {
+            console.warn(
+              '[multithread/runtime] It appears the worker script failed to load. When running with Vite dev server, try adding `optimizeDeps.exclude = ["multithreading"]` to `vite.config.ts` (restart dev server after change).'
+            );
           }
         }
       } else {
@@ -156,24 +180,38 @@ export function tickSimulation(input: SimInput) {
       const meta = jobMeta.get(jobId);
       jobMeta.delete(jobId);
 
+      // Normalize to a message string where possible
+      let messageStr: string | undefined;
+      let stackStr: string | undefined;
       if (err instanceof Error) {
-        console.warn('[multithread/runtime] worker.join() rejected - job', jobId, 'error:', err.message, meta ?? {});
-        console.warn(err.stack);
-      } else if (err && typeof err === 'object' && 'message' in (err as object)) {
+        messageStr = err.message;
+        stackStr = err.stack;
+      } else if (err && typeof err === 'object') {
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const errAny = err as any;
-          console.warn('[multithread/runtime] worker.join() rejected - job', jobId, 'error.message:', errAny.message, meta ?? {});
-          if (errAny.stack) console.warn(errAny.stack);
+          messageStr = errAny.message ?? (typeof errAny === 'string' ? errAny : undefined);
+          stackStr = errAny.stack ?? undefined;
         } catch {
-          try {
-            console.warn('[multithread/runtime] worker.join() rejected - job', jobId, 'error (serial):', JSON.stringify(err), meta ?? {});
-          } catch {
-            console.warn('[multithread/runtime] worker.join() rejected - job', jobId, err, meta ?? {});
-          }
+          /* ignore parsing error */
         }
+      } else if (typeof err === 'string') {
+        messageStr = err;
+      }
+
+      if (messageStr) {
+        console.warn('[multithread/runtime] worker.join() rejected - job', jobId, 'error.message:', messageStr, meta ?? {});
+        if (stackStr) console.warn(stackStr);
       } else {
         console.warn('[multithread/runtime] worker.join() rejected - job', jobId, err, meta ?? {});
+      }
+
+      // Helpful hint for a common Vite dev-time issue: missing worker file from the dep optimizer
+      const lower = (messageStr || '').toLowerCase();
+      if (lower.includes('worker.js') || lower.includes('?worker_file') || lower.includes('worker_file') || lower.includes('failed to construct') || lower.includes('failed to load') || lower.includes('404')) {
+        console.warn(
+          '[multithread/runtime] It appears the worker script failed to load. When running with Vite dev server, try adding `optimizeDeps.exclude = ["multithreading"]` to `vite.config.ts` (restart dev server after change).'
+        );
       }
     });
   } catch (err) {
@@ -203,6 +241,23 @@ export function isRuntimeUsable(): boolean {
   return !runtimeDisabled && runtimeReady;
 }
 
+/** Returns true if a transferable-worker job is currently in flight */
+export function isJobInFlight(): boolean {
+  return jobInFlight;
+}
+
+/** Returns true if the SAB runtime has any pending job slots */
+export function isSABJobInFlight(): boolean {
+  try {
+    if (!sabRuntime) return false;
+    // sabRuntime exposes isJobInFlight
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (sabRuntime as any).isJobInFlight ? (sabRuntime as any).isJobInFlight() : false;
+  } catch {
+    return false;
+  }
+}
+
 export default {
   ensureRuntime,
   tickSimulation,
@@ -210,6 +265,9 @@ export default {
   destroyRuntime,
   isRuntimeUsable,
   supportsSharedArrayBuffer,
+  // Job info
+  isJobInFlight,
+  isSABJobInFlight,
   // SAB helpers
   ensureSABRuntime,
   submitSABJob,
