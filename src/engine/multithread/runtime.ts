@@ -1,6 +1,5 @@
 import { initRuntime, move, spawn } from 'multithreading';
 import type { SimInput, SimResult } from './kernel';
-import { simulateStep } from './kernel';
 import type { ArenaSize } from '../collision';
 import type { Ball, Brick } from '../../store/types';
 
@@ -79,7 +78,14 @@ export function tickSimulation(input: SimInput) {
     // Use `move` helper to transfer/mark large buffers for zero-copy transfer when possible.
     const movable = move({ ...input });
 
-    const handle = spawn(movable, simulateStep as unknown as (args: SimInput) => unknown);
+    // Wrapper function that dynamically imports the kernel inside the worker.
+    // Extracted to a variable to avoid inline casting syntax mistakes.
+    const workerWrapper = async (args: unknown) => {
+      const mod = await import('./kernel');
+      return (mod as typeof import('./kernel')).simulateStep(args as SimInput);
+    };
+
+    const handle = spawn(movable, workerWrapper);
 
     // join the handle and store the result as pending; don't block the caller.
     void handle.join().then((res: unknown) => {
@@ -89,7 +95,14 @@ export function tickSimulation(input: SimInput) {
         if (r.ok) {
           pendingResult = r.value as SimResult;
         } else {
-          console.warn('[multithread/runtime] worker job failed or returned an error', r.error ?? r);
+          // Log richer error details for debugging
+          const errObj = r.error;
+          if (errObj instanceof Error) {
+            console.warn('[multithread/runtime] worker job failed - error:', errObj.message);
+            console.warn(errObj.stack);
+          } else {
+            console.warn('[multithread/runtime] worker job failed or returned an error', errObj ?? r);
+          }
         }
       } else {
         console.warn('[multithread/runtime] worker returned unexpected result', res);

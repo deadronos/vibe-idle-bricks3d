@@ -18,7 +18,8 @@
     "test:coverage": "vitest run --coverage",
     "dev:sab": "cross-env VITE_ENABLE_COOP=1 VITE_ENABLE_SAB=1 npm run dev",
     "test:e2e": "playwright test",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "check:commonjs": "node ./scripts/check-commonjs.mjs"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.19.3",

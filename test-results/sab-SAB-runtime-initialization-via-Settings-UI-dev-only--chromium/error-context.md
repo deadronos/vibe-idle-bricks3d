@@ -1,0 +1,104 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic:
+    - region "Score" [ref=e8]:
+      - button "Settings" [ref=e9] [cursor=pointer]: ⚙️
+      - heading "Score" [level=2] [ref=e10]
+      - generic [ref=e11]: "0"
+      - generic [ref=e12]:
+        - generic [ref=e13]: "Bricks Destroyed:"
+        - generic [ref=e14]: "0"
+      - generic [ref=e15]:
+        - generic [ref=e16]: "Wave:"
+        - generic [ref=e17]: 1 / 1
+    - region "Stats" [ref=e18]:
+      - heading "Stats" [level=2] [ref=e19]
+      - generic [ref=e20]:
+        - generic [ref=e21]: "Balls:"
+        - generic [ref=e22]: "1"
+      - generic [ref=e23]:
+        - generic [ref=e24]: "Damage:"
+        - generic [ref=e25]: "1"
+      - generic [ref=e26]:
+        - generic [ref=e27]: "Speed:"
+        - generic [ref=e28]: 10%
+    - region "Upgrades" [ref=e29]:
+      - heading "Upgrades" [level=2] [ref=e30]
+      - button "Upgrade Ball Damage — costs 50 points" [disabled] [ref=e31]:
+        - generic [ref=e32]:
+          - generic [ref=e33]: ⚔️ Ball Damage +1
+          - generic [ref=e34]: 50 pts
+      - button "Upgrade Ball Speed — costs 30 points" [disabled] [ref=e35]:
+        - generic [ref=e36]:
+          - generic [ref=e37]: 💨 Ball Speed +2%
+          - generic [ref=e38]: 30 pts
+      - button "Add Ball — costs 100 points" [disabled] [ref=e39]:
+        - generic [ref=e40]:
+          - generic [ref=e41]: 🔮 New Ball
+          - generic [ref=e42]: 100 pts
+      - button "Upgrade Crit Chance — costs 200 points" [disabled] [ref=e43]:
+        - generic [ref=e44]:
+          - generic [ref=e45]: ⚡ Crit Chance +1%
+          - generic [ref=e46]: 200 pts
+      - button "🌟 Prestige" [ref=e48] [cursor=pointer]:
+        - generic [ref=e49]: 🌟
+        - generic [ref=e50]: Prestige
+    - region "Achievements" [ref=e51]:
+      - heading "Achievements" [level=2] [ref=e52]
+      - generic [ref=e53]:
+        - generic [ref=e54]: "Unlocked:"
+        - generic [ref=e55]: 0 / 9
+      - generic [ref=e57]: No unlocks yet.
+    - dialog "Settings" [ref=e59]:
+      - generic [ref=e60]:
+        - heading "Settings" [level=2] [ref=e61]
+        - button "✕" [ref=e62] [cursor=pointer]
+      - generic [ref=e63]:
+        - generic [ref=e65] [cursor=pointer]:
+          - checkbox "Bloom" [checked] [ref=e66]
+          - text: Bloom
+        - generic [ref=e68] [cursor=pointer]:
+          - checkbox "Shadows" [checked] [ref=e69]
+          - text: Shadows
+        - generic [ref=e71] [cursor=pointer]:
+          - checkbox "Particles" [checked] [ref=e72]
+          - text: Particles
+        - generic [ref=e74] [cursor=pointer]:
+          - checkbox "Full Rigid Physics (Rapier)" [checked] [ref=e75]
+          - text: Full Rigid Physics (Rapier)
+        - generic [ref=e77] [cursor=pointer]:
+          - checkbox "Sound" [checked] [ref=e78]
+          - text: Sound
+        - generic [ref=e80] [cursor=pointer]:
+          - checkbox "Compact HUD" [ref=e81]
+          - text: Compact HUD
+        - generic [ref=e83] [cursor=pointer]:
+          - checkbox "SharedArrayBuffer Physics (Experimental)" [checked] [ref=e84]
+          - text: SharedArrayBuffer Physics (Experimental)
+        - generic [ref=e85]:
+          - generic [ref=e86] [cursor=pointer]: Graphics Quality
+          - combobox "Graphics Quality" [ref=e87]:
+            - option "Auto" [selected]
+            - option "Low"
+            - option "Medium"
+            - option "High"
+        - generic [ref=e88]:
+          - strong [ref=e90]: SharedArrayBuffer Runtime
+          - generic [ref=e91]: "Supported: Yes"
+          - generic [ref=e92]: "Initialized: Yes"
+          - generic [ref=e93]:
+            - button "Refresh support" [ref=e94]
+            - button "Initialize SAB" [ref=e95]
+            - button "Shutdown SAB" [active] [ref=e96]
+            - generic [ref=e97]:
+              - generic [ref=e98]: "COOP: same-origin"
+              - generic [ref=e99]: "COEP: require-corp"
+              - generic [ref=e100]: "Last checked: 2025-12-22T00:20:27.739Z"
+    - button "Pause game" [ref=e102] [cursor=pointer]: ⏸️ Pause
+    - generic:
+      - paragraph: 🖱️ Drag to rotate camera • Scroll to zoom
+      - paragraph: Watch the balls break bricks automatically!
+      - paragraph: ⎵ Space to pause/resume • U to upgrade damage
+```

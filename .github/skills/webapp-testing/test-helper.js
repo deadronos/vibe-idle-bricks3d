@@ -49,8 +49,5 @@ async function captureScreenshot(page, name) {
   return filename;
 }
 
-module.exports = {
-  waitForCondition,
-  captureConsoleLogs,
-  captureScreenshot
-};
+export { waitForCondition, captureConsoleLogs, captureScreenshot };
+export default { waitForCondition, captureConsoleLogs, captureScreenshot };
