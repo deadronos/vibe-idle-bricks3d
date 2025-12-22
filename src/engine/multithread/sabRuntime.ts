@@ -153,13 +153,30 @@ export function ensure(capacityHint = 256, requestedRingSize = 4) {
       });
 
       worker.addEventListener('error', (err) => {
-        // eslint-disable-next-line no-console
-        console.warn('[sabRuntime] worker error', err);
+        try {
+          // Some browsers deliver ErrorEvent objects; try to extract useful info
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const eAny = err as any;
+          const msg = eAny?.message ?? eAny?.error?.message ?? undefined;
+          const stack = eAny?.error?.stack ?? undefined;
+          if (msg) {
+            console.warn('[sabRuntime] worker error:', msg, { stack });
+          } else {
+            console.warn('[sabRuntime] worker error', err);
+          }
+        } catch (e) {
+          console.warn('[sabRuntime] worker error (unexpected shape)', err);
+        }
       });
 
       worker.addEventListener('messageerror', (err) => {
-        // eslint-disable-next-line no-console
-        console.warn('[sabRuntime] worker messageerror', err);
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const eAny = err as any;
+          console.warn('[sabRuntime] worker messageerror', eAny?.data ?? eAny);
+        } catch {
+          console.warn('[sabRuntime] worker messageerror', err);
+        }
       });
     } catch {
       /* ignore */

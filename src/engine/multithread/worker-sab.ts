@@ -249,3 +249,32 @@ self.addEventListener('message', (e: MessageEvent) => {
     }
   }
 });
+
+// Catch unhandled errors/rejections in the worker and forward them to the host for diagnostics
+self.addEventListener('error', (ev: ErrorEvent) => {
+  try {
+    safeLog('[worker-sab] uncaught error', {
+      message: ev.message,
+      filename: ev.filename,
+      lineno: ev.lineno,
+      colno: ev.colno,
+      errorMessage: (ev.error && (ev.error as Error).message) || undefined,
+      stack: (ev.error && (ev.error as Error).stack) || undefined,
+    });
+  } catch {
+    /* ignore */
+  }
+});
+
+self.addEventListener('unhandledrejection', (ev: PromiseRejectionEvent) => {
+  try {
+    const reason = ev.reason;
+    if (reason instanceof Error) {
+      safeLog('[worker-sab] unhandledrejection', { message: reason.message, stack: reason.stack });
+    } else {
+      safeLog('[worker-sab] unhandledrejection', { reason: String(reason) });
+    }
+  } catch {
+    /* ignore */
+  }
+});

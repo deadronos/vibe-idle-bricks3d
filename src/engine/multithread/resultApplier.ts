@@ -38,9 +38,10 @@ export function applyWorkerResultToBalls(
     hitIds?: (string | null)[] | null;
     bricks?: Brick[] | null;
     critChance?: number;
+    jobIds?: (string | null)[] | null;
   } = {}
 ): { nextBalls: Ball[]; hits: Hit[]; contactInfos: ContactInfo[] } {
-  const { hitIndices = null, hitIds = null, bricks = null, critChance = 0 } = options;
+  const { hitIndices = null, hitIds = null, bricks = null, critChance = 0, jobIds = null } = options;
 
   // Basic validation: lengths and numeric sanity
   if (positions.length % 3 !== 0 || velocities.length % 3 !== 0 || positions.length !== velocities.length) {
@@ -58,11 +59,67 @@ export function applyWorkerResultToBalls(
   }
 
   const resCount = Math.floor(positions.length / 3);
-  const appliedCount = Math.min(balls.length, resCount);
 
-  // Build results for the overlapping portion only
+  // If we have mapping ids from the original job, use id-based mapping to
+  // find the correct ball indices in the current store. This handles inserts/removals.
   const hits: Hit[] = [];
   const contactInfos: ContactInfo[] = [];
+
+  if (jobIds && Array.isArray(jobIds) && jobIds.length > 0) {
+    // Build a current id -> index map for the live balls
+    const idToIndex = new Map<string, number>();
+    for (let i = 0; i < balls.length; i++) idToIndex.set(balls[i].id, i);
+
+    const nextBalls = balls.slice();
+
+    for (let j = 0; j < Math.min(resCount, jobIds.length); j++) {
+      const targetId = jobIds[j];
+      const targetIndex = targetId ? idToIndex.get(targetId) : undefined;
+      if (typeof targetIndex !== 'number') continue; // ball not present anymore
+
+      const off = j * 3;
+      const nextPosition: [number, number, number] = [positions[off], positions[off + 1], positions[off + 2]];
+      const nextVelocity: [number, number, number] = [velocities[off], velocities[off + 1], velocities[off + 2]];
+
+      const originalBall = balls[targetIndex];
+
+      // Determine hit for this index
+      let hitBrickId: string | undefined | null = undefined;
+      if (hitIds && j < hitIds.length) {
+        hitBrickId = hitIds[j] ?? null;
+      } else if (hitIndices && bricks) {
+        const idx = (hitIndices as Int32Array | number[])[j];
+        if (typeof idx === 'number' && idx >= 0) hitBrickId = bricks[idx]?.id ?? null;
+        else hitBrickId = null;
+      }
+
+      if (hitBrickId) {
+        let damage = originalBall.damage;
+        if (critChance && Math.random() < critChance) damage *= 2;
+        hits.push({ brickId: hitBrickId, damage });
+
+        const relVel = originalBall.velocity;
+        const speed = Math.sqrt(relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]);
+        const normal: [number, number, number] = speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
+
+        contactInfos.push({
+          ballId: originalBall.id,
+          brickId: hitBrickId,
+          point: nextPosition,
+          normal,
+          relativeVelocity: relVel,
+          impulse: originalBall.damage,
+        });
+      }
+
+      nextBalls[targetIndex] = { ...originalBall, position: nextPosition, velocity: nextVelocity };
+    }
+
+    return { nextBalls, hits, contactInfos };
+  }
+
+  // Fallback to index-based prefix application (previous behaviour)
+  const appliedCount = Math.min(balls.length, resCount);
 
   const next = balls.map((b, i) => {
     if (i >= appliedCount) return b; // leave unchanged for indices beyond result

@@ -89,8 +89,18 @@ export function tickSimulation(input: SimInput) {
     // Wrapper function that dynamically imports the kernel inside the worker.
     // Extracted to a variable to avoid inline casting syntax mistakes.
     const workerWrapper = async (args: unknown) => {
-      const mod = await import('./kernel');
-      return (mod as typeof import('./kernel')).simulateStep(args as SimInput);
+      try {
+        const mod = await import('./kernel');
+        return (mod as typeof import('./kernel')).simulateStep(args as SimInput);
+      } catch (err) {
+        // Convert to a plain object to avoid non-serializable Error instances and
+        // ensure message/stack survive the cross-worker structured clone.
+        if (err instanceof Error) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          throw { message: err.message, stack: (err as any).stack, name: err.name };
+        }
+        throw { message: String(err) };
+      }
     };
 
     const handle = spawn(movable, workerWrapper);
@@ -120,6 +130,20 @@ export function tickSimulation(input: SimInput) {
           if (errObj instanceof Error) {
             console.warn('[multithread/runtime] worker job failed - job', jobId, 'error:', errObj.message, meta ?? {});
             console.warn(errObj.stack);
+          } else if (errObj && typeof errObj === 'object' && 'message' in (errObj as object)) {
+            // Error-like object that crossed the worker boundary - try to log its message/stack
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const eAny = errObj as any;
+              console.warn('[multithread/runtime] worker job failed - job', jobId, 'error.message:', eAny.message, meta ?? {});
+              if (eAny.stack) console.warn(eAny.stack);
+            } catch (e) {
+              try {
+                console.warn('[multithread/runtime] worker job failed - job', jobId, 'error (serial):', JSON.stringify(errObj), meta ?? {});
+              } catch {
+                console.warn('[multithread/runtime] worker job failed - job', jobId, errObj ?? r, meta ?? {});
+              }
+            }
           } else {
             console.warn('[multithread/runtime] worker job failed or returned an error - job', jobId, errObj ?? r, meta ?? {});
           }
@@ -131,7 +155,26 @@ export function tickSimulation(input: SimInput) {
       jobInFlight = false;
       const meta = jobMeta.get(jobId);
       jobMeta.delete(jobId);
-      console.warn('[multithread/runtime] worker.join() rejected - job', jobId, err, meta ?? {});
+
+      if (err instanceof Error) {
+        console.warn('[multithread/runtime] worker.join() rejected - job', jobId, 'error:', err.message, meta ?? {});
+        console.warn(err.stack);
+      } else if (err && typeof err === 'object' && 'message' in (err as object)) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const errAny = err as any;
+          console.warn('[multithread/runtime] worker.join() rejected - job', jobId, 'error.message:', errAny.message, meta ?? {});
+          if (errAny.stack) console.warn(errAny.stack);
+        } catch {
+          try {
+            console.warn('[multithread/runtime] worker.join() rejected - job', jobId, 'error (serial):', JSON.stringify(err), meta ?? {});
+          } catch {
+            console.warn('[multithread/runtime] worker.join() rejected - job', jobId, err, meta ?? {});
+          }
+        }
+      } else {
+        console.warn('[multithread/runtime] worker.join() rejected - job', jobId, err, meta ?? {});
+      }
     });
   } catch (err) {
     jobInFlight = false;

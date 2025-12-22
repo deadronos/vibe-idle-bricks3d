@@ -9,9 +9,9 @@ const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', 'scripts']);
 const FILE_EXTENSIONS = new Set(['.js', '.cjs', '.mjs', '.ts', '.tsx', '.jsx']);
 
 const patterns = [
-  { name: 'module.exports', re: /\bmodule\s*\.\s*exports\b/ },
-  { name: 'exports.*', re: /\bexports\s*\.\s*\w+/ },
-  { name: "require(...)", re: /\brequire\s*\(/ },
+  { name: 'module.exports', re: /\bmodule\s*\.\s*exports\b/g },
+  { name: 'exports.*', re: /\bexports\s*\.\s*\w+/g },
+  { name: "require(...)", re: /\brequire\s*\(/g },
 ];
 
 async function walk(dir) {
