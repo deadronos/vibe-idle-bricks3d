@@ -351,13 +351,12 @@ export function FrameManager() {
                   // we only apply the overlapping prefix of results to avoid reading
                   // out-of-bounds data and introducing ghost/jittery balls.
                   if (r.count !== balls.length) {
-                    // eslint-disable-next-line no-console
                     console.warn(
                       '[FrameManager] SAB result count',
                       r.count,
                       'does not match current balls length',
                       balls.length,
-                      '- applying min(count, balls.length)'
+                      r.jobId ? `- jobId=${r.jobId}` : ''
                     );
                   }
 
@@ -435,13 +434,12 @@ export function FrameManager() {
               // Defensive: detect mismatch between worker result length and current balls
               const resCount = Math.floor(res.positions.length / 3);
               if (resCount !== balls.length) {
-                // eslint-disable-next-line no-console
                 console.warn(
                   '[FrameManager] transferable worker result count',
                   resCount,
                   'does not match current balls length',
                   balls.length,
-                  '- applying min(count, balls.length)'
+                  (res as any).jobId ? `- jobId=${(res as any).jobId}` : ''
                 );
               }
 

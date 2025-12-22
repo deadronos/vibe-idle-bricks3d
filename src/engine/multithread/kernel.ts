@@ -25,6 +25,8 @@ export interface SimResult {
   positions: Float32Array; // length === count * 3
   velocities: Float32Array; // length === count * 3
   hitBrickIds: (string | null)[]; // length === count
+  // Optional job id injected by the runtime for debugging/tracing
+  jobId?: number | null;
 }
 
 /**

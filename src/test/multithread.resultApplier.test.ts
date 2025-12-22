@@ -53,4 +53,19 @@ describe('applyWorkerResultToBalls', () => {
     expect(hits[0].brickId).toBe('hit-1');
     expect(contactInfos.length).toBe(1);
   });
+
+  it('ignores result with non-finite values', () => {
+    const balls = [createBall('b0'), createBall('b1')];
+
+    const positions = new Float32Array([4, NaN, 6]);
+    const velocities = new Float32Array([0, 0, 0]);
+
+    const { nextBalls, hits, contactInfos } = applyWorkerResultToBalls(balls, positions, velocities, { critChance: 0 });
+
+    // Results should be discarded and balls unchanged
+    expect(nextBalls[0].position).toEqual([0, 0, 0]);
+    expect(nextBalls[1].position).toEqual([0, 0, 0]);
+    expect(hits.length).toBe(0);
+    expect(contactInfos.length).toBe(0);
+  });
 });

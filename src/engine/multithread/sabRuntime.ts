@@ -25,6 +25,11 @@ let bricksCache: Brick[] = [];
 let initialized = false;
 let ringSize = 0; // number of slots in ring buffer (1 = single-control mode)
 
+// Job tracking for debugging and correlation
+let globalJobCounter = 0;
+const slotJobIds: Array<number | null> = []; // tracks jobId per slot (ring-mode) or single-control slot at index 0
+const jobMeta = new Map<number, { count: number; ids?: string[] | null; created: number }>();
+
 /** Create a SharedArrayBuffer when available, otherwise fallback to ArrayBuffer (useful for tests). */
 function createBuffer(byteLength: number): SharedArrayBuffer | ArrayBuffer {
   if (typeof SharedArrayBuffer !== 'undefined') return new SharedArrayBuffer(byteLength);
@@ -122,6 +127,10 @@ function allocSABArrays(newCapacity: number, newRingSize = 4) {
   flags = flagsView;
   notify = notifyView;
   counts = metaInts;
+
+  // Prepare per-slot job id tracking
+  slotJobIds.length = ringSize;
+  for (let i = 0; i < ringSize; i++) slotJobIds[i] = null;
 }
 
 /** Initialize the SAB worker and buffers at the given capacity. Idempotent. */
@@ -245,6 +254,11 @@ export function submitJobIfIdle(balls: Ball[], delta: number, arena: ArenaSize):
 
     if (found === -1) return false; // ring full
 
+    // Assign a job id for debugging and correlation
+    const jobId = ++globalJobCounter;
+    slotJobIds[found] = jobId;
+    jobMeta.set(jobId, { count, ids: balls.map((b) => b.id), created: Date.now() });
+
     // Copy ball data into slot region
     const posBase = found * capacity * 3;
     const scalarBase = found * capacity;
@@ -273,6 +287,7 @@ export function submitJobIfIdle(balls: Ball[], delta: number, arena: ArenaSize):
 
     // Mark pending and notify worker. 1 = pending
     A.store(flags!, found, 1);
+
     // Bump notify counter to wake worker
     A.add(notify!, 0, 1);
     A.notify(notify!, 0);
@@ -285,6 +300,11 @@ export function submitJobIfIdle(balls: Ball[], delta: number, arena: ArenaSize):
 
   const cur = Atomics.load(control, 0);
   if (cur !== 0) return false;
+
+  // Assign job id for this single-control request
+  const jobId = ++globalJobCounter;
+  slotJobIds[0] = jobId;
+  jobMeta.set(jobId, { count, ids: balls.map((b) => b.id), created: Date.now() });
 
   // Copy ball arrays in-place
   for (let i = 0; i < count; i++) {
@@ -322,6 +342,7 @@ export function takeResultIfReady():
       velocities: Float32Array;
       hitIndices: Int32Array;
       count: number;
+      jobId?: number | null;
     }
   | null {
   if (!initialized || !positions || !velocities || !outHitIndices || !metaFloats) return null;
@@ -338,10 +359,14 @@ export function takeResultIfReady():
         const v = velocities.subarray(posBase, posBase + count * 3);
         const hi = outHitIndices.subarray(scalarBase, scalarBase + count);
 
-        // Reset flag to free
-        Atomics.store(flags, s, 0);
+        // Retrieve job id for this slot if available
+        const jobId = slotJobIds[s] ?? null;
 
-        return { positions: p, velocities: v, hitIndices: hi, count };
+        // Reset flag to free and clear slot job tracking
+        Atomics.store(flags, s, 0);
+        slotJobIds[s] = null;
+
+        return { positions: p, velocities: v, hitIndices: hi, count, jobId };
       }
     }
 
@@ -361,10 +386,14 @@ export function takeResultIfReady():
   const v = velocities.subarray(0, count * 3);
   const hi = outHitIndices.subarray(0, count);
 
+  // Retrieve and clear job id for this single-control job, if any
+  const jobId = slotJobIds[0] ?? null;
+  slotJobIds[0] = null;
+
   // Reset control to idle (0) after reading results so the worker can accept a new job
   A.store(control!, 0, 0);
 
-  return { positions: p, velocities: v, hitIndices: hi, count }; 
+  return { positions: p, velocities: v, hitIndices: hi, count, jobId }; 
 }
 
 /** Test helpers (test-only; do not use in production) */

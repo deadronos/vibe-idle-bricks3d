@@ -19,6 +19,14 @@ export type ContactInfo = {
  * the overlapping prefix), an array of damage `hits` to apply to bricks, and an
  * array of `contactInfos` describing the hit events for visuals/impulses.
  */
+function arraysAreFinite(arr: Float32Array) {
+  for (let i = 0; i < arr.length; i++) {
+    const v = arr[i];
+    if (!Number.isFinite(v)) return false;
+  }
+  return true;
+}
+
 export function applyWorkerResultToBalls(
   balls: Ball[],
   positions: Float32Array,
@@ -33,6 +41,21 @@ export function applyWorkerResultToBalls(
   } = {}
 ): { nextBalls: Ball[]; hits: Hit[]; contactInfos: ContactInfo[] } {
   const { hitIndices = null, hitIds = null, bricks = null, critChance = 0 } = options;
+
+  // Basic validation: lengths and numeric sanity
+  if (positions.length % 3 !== 0 || velocities.length % 3 !== 0 || positions.length !== velocities.length) {
+    console.warn('[multithread/resultApplier] invalid result array sizes - discarding result', {
+      positionsLength: positions.length,
+      velocitiesLength: velocities.length,
+    });
+
+    return { nextBalls: balls, hits: [], contactInfos: [] };
+  }
+
+  if (!arraysAreFinite(positions) || !arraysAreFinite(velocities)) {
+    console.warn('[multithread/resultApplier] result arrays contain non-finite values - discarding result');
+    return { nextBalls: balls, hits: [], contactInfos: [] };
+  }
 
   const resCount = Math.floor(positions.length / 3);
   const appliedCount = Math.min(balls.length, resCount);
