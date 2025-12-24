@@ -12,6 +12,36 @@ interface BrickProps {
 }
 
 /**
+ * Helper component that handles brick animations.
+ * Only rendered when animations are actually needed to save performance.
+ */
+function BrickEffects({
+  type,
+  healthRatio,
+  meshRef,
+}: {
+  type: string;
+  healthRatio: number;
+  meshRef: React.RefObject<Mesh | null>;
+}) {
+  useFrame(({ clock }) => {
+    if (meshRef.current) {
+      if (type === 'explosive') {
+        const t = clock.getElapsedTime();
+        const pulse = 1 + Math.sin(t * 10) * 0.05;
+        meshRef.current.scale.set(pulse, pulse, pulse);
+      }
+
+      if (healthRatio < 1) {
+        const shake = Math.sin(Date.now() * 0.01) * (1 - healthRatio) * 0.02;
+        meshRef.current.rotation.z = shake;
+      }
+    }
+  });
+  return null;
+}
+
+/**
  * Renders a single brick in the scene.
  * Used when instanced rendering is disabled or for specific single bricks.
  * Features hover effects and damage visualization.
@@ -28,21 +58,7 @@ export function Brick({ brick }: BrickProps) {
   const damageColor =
     healthRatio > 0.5 ? brick.color : `hsl(${Math.floor(healthRatio * 60)}, 80%, 50%)`;
 
-  // Subtle animation when damaged
-  useFrame(({ clock }) => {
-    if (meshRef.current) {
-      if (brick.type === 'explosive') {
-        const t = clock.getElapsedTime();
-        const pulse = 1 + Math.sin(t * 10) * 0.05;
-        meshRef.current.scale.set(pulse, pulse, pulse);
-      }
-
-      if (healthRatio < 1) {
-        const shake = Math.sin(Date.now() * 0.01) * (1 - healthRatio) * 0.02;
-        meshRef.current.rotation.z = shake;
-      }
-    }
-  });
+  const shouldAnimate = brick.type === 'explosive' || healthRatio < 1;
 
   return (
     <mesh
@@ -63,6 +79,9 @@ export function Brick({ brick }: BrickProps) {
         transparent
         opacity={0.7 + healthRatio * 0.3}
       />
+      {shouldAnimate && (
+        <BrickEffects type={brick.type} healthRatio={healthRatio} meshRef={meshRef} />
+      )}
     </mesh>
   );
 }
