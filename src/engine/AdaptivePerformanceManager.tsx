@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 
 const UPDATE_INTERVAL = 1.0; // Update every 1000ms
+const TARGET_FPS = 60;
 // Lower bound for degrading quality
 const FPS_LOW_THRESHOLD = 55;
 // Upper bound for upgrading quality (hysteresis)

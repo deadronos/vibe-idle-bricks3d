@@ -43,7 +43,7 @@ export function UI() {
       {!compactHudEnabled && <StatsPanel />}
       <UpgradesPanel />
       <MobileUpgrades />
-      {!compactHudEnabled && <AchievementsPanel />}
+      <AchievementsPanel />
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
       <Controls />
     </div>
