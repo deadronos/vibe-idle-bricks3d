@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import React from 'react';
 import { AchievementsPanel } from '../components/ui/AchievementsPanel';
 
@@ -9,6 +9,7 @@ vi.mock('../store/gameStore', () => ({
     { id: 'test1', label: 'Test Achievement', description: 'Description' },
     { id: 'test2', label: 'Locked Achievement', description: 'Locked' },
   ],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   useGameStore: (selector: any) => selector({
     unlockedAchievements: ['test1'],
     settings: { compactHudEnabled: false },
