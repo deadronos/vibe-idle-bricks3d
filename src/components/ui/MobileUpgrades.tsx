@@ -1,5 +1,6 @@
 import React from 'react';
 import { useGameStore } from '../../store/gameStore';
+import { useDrawerDrag } from '../../hooks/useDrawerDrag';
 import { PrestigeModal } from './PrestigeModal';
 import './UI.css';
 
@@ -107,30 +108,6 @@ export function MobileUpgrades() {
   return (
     <>
       <div className="quick-upgrades-row" role="toolbar" aria-label="Quick upgrades">
-        <button
-          className="upgrade-button quick-upgrade"
-          onClick={() => upgradeBallDamage()}
-          disabled={score < damageCost}
-          aria-label={`Upgrade Ball Damage — costs ${damageCost.toLocaleString()} points`}
-        >
-          ⚔️
-        </button>
-        <button
-          className="upgrade-button quick-upgrade"
-          onClick={() => upgradeBallSpeed()}
-          disabled={score < speedCost}
-          aria-label={`Upgrade Ball Speed — costs ${speedCost.toLocaleString()} points`}
-        >
-          💨
-        </button>
-        <button
-          className="upgrade-button quick-upgrade"
-          onClick={() => upgradeBallCount()}
-          disabled={score < ballCost || ballCount >= 20}
-          aria-label={`Add Ball — costs ${ballCost.toLocaleString()} points`}
-        >
-          🔮
-        </button>
         <button
           className="upgrade-button quick-upgrade open-drawer"
           onClick={() => setOpen(true)}
@@ -252,103 +229,4 @@ export function MobileUpgrades() {
       )}
     </>
   );
-}
-
-// Implement pointer drag behavior via a lightweight hook on mount
-// to avoid re-creating handlers when not open.
-/**
- * Hook to handle pointer interactions for dragging the drawer.
- *
- * @param {Object} props - Hook props.
- * @param {boolean} props.open - Whether the drawer is open.
- * @param {Function} props.setOpen - State setter for drawer visibility.
- * @param {React.RefObject<HTMLDivElement | null>} props.drawerRef - Ref to the drawer element.
- * @param {React.RefObject<HTMLDivElement | null>} props.headerRef - Ref to the drawer header (drag handle).
- * @param {number} props.translateY - Current vertical translation.
- * @param {Function} props.setTranslateY - Setter for vertical translation.
- * @param {Function} props.setIsDragging - Setter for dragging state.
- */
-function useDrawerDrag({
-  open,
-  setOpen,
-  drawerRef,
-  headerRef,
-  translateY,
-  setTranslateY,
-  setIsDragging,
-}: {
-  open: boolean;
-  setOpen: (v: boolean) => void;
-  drawerRef: React.RefObject<HTMLDivElement | null>;
-  headerRef: React.RefObject<HTMLDivElement | null>;
-  translateY: number;
-  setTranslateY: (n: number) => void;
-  setIsDragging: (b: boolean) => void;
-}) {
-  const startYRef = React.useRef<number | null>(null);
-  const lastPointerId = React.useRef<number | null>(null);
-
-  React.useEffect(() => {
-    if (!open) return;
-    const header = headerRef.current;
-    const drawer = drawerRef.current;
-    if (!header || !drawer) return;
-
-    const onPointerDown = (e: PointerEvent) => {
-      if (!e.isPrimary) return;
-      startYRef.current = e.clientY;
-      lastPointerId.current = e.pointerId;
-      setIsDragging(true);
-      // Prevent default to avoid page scroll on touch devices when dragging
-      (e.target as Element).setPointerCapture?.(e.pointerId);
-    };
-
-    const onPointerMove = (e: PointerEvent) => {
-      if (startYRef.current === null) return;
-      // Only handle primary pointer
-      if (e.pointerId !== lastPointerId.current) return;
-      const delta = Math.max(0, e.clientY - (startYRef.current ?? 0));
-      const height = Math.max(0, drawer.getBoundingClientRect().height || 0);
-      const capped = Math.min(delta, height);
-      setTranslateY(capped);
-      try {
-        drawer.style.setProperty('--mobile-upgrades-translate', `${capped}px`);
-      } catch {
-        // ignore if style property can't be set in this environment
-      }
-    };
-
-    const onPointerUp = (e: PointerEvent) => {
-      if (startYRef.current === null) return;
-      // Only handle primary pointer
-      if (e.pointerId !== lastPointerId.current) return;
-      // Calculate threshold — 33% of drawer height
-      const height = Math.max(0, drawer.getBoundingClientRect().height || 0);
-      const threshold = height * 0.33;
-      const finalTranslate = translateY;
-      if (finalTranslate > threshold) {
-        setOpen(false);
-      } else {
-        setTranslateY(0);
-      }
-      setIsDragging(false);
-      startYRef.current = null;
-      lastPointerId.current = null;
-      try {
-        (e.target as Element).releasePointerCapture?.(e.pointerId);
-      } catch {
-        // ignore
-      }
-    };
-
-    header.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('pointermove', onPointerMove);
-    document.addEventListener('pointerup', onPointerUp);
-
-    return () => {
-      header.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('pointermove', onPointerMove);
-      document.removeEventListener('pointerup', onPointerUp);
-    };
-  }, [open, headerRef, drawerRef, setOpen, setTranslateY, setIsDragging, translateY]);
 }
