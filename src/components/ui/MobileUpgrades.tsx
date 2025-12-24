@@ -109,30 +109,6 @@ export function MobileUpgrades() {
     <>
       <div className="quick-upgrades-row" role="toolbar" aria-label="Quick upgrades">
         <button
-          className="upgrade-button quick-upgrade"
-          onClick={() => upgradeBallDamage()}
-          disabled={score < damageCost}
-          aria-label={`Upgrade Ball Damage — costs ${damageCost.toLocaleString()} points`}
-        >
-          ⚔️
-        </button>
-        <button
-          className="upgrade-button quick-upgrade"
-          onClick={() => upgradeBallSpeed()}
-          disabled={score < speedCost}
-          aria-label={`Upgrade Ball Speed — costs ${speedCost.toLocaleString()} points`}
-        >
-          💨
-        </button>
-        <button
-          className="upgrade-button quick-upgrade"
-          onClick={() => upgradeBallCount()}
-          disabled={score < ballCost || ballCount >= 20}
-          aria-label={`Add Ball — costs ${ballCost.toLocaleString()} points`}
-        >
-          🔮
-        </button>
-        <button
           className="upgrade-button quick-upgrade open-drawer"
           onClick={() => setOpen(true)}
           aria-label="Open upgrades drawer"

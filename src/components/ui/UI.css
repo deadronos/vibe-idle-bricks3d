@@ -104,9 +104,9 @@
   right: 16px;
   display: flex;
   gap: 8px;
-  justify-content: center;
+  justify-content: flex-end;
   z-index: 120;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .quick-upgrade {
@@ -116,6 +116,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  pointer-events: auto;
 }
 
 /* Hide quick upgrades on desktop */
