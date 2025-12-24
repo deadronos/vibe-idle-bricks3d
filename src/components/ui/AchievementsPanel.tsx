@@ -111,7 +111,16 @@ function MobileAchievements() {
             <div className="mobile-achievements-header" ref={headerRef}>
               <div className="drawer-handle" />
               <h3>Achievements</h3>
-              <div className="header-count">{unlockedList.length} / {ACHIEVEMENTS.length}</div>
+              <div className="header-right-group">
+                <div className="header-count">{unlockedList.length} / {ACHIEVEMENTS.length}</div>
+                <button
+                  className="drawer-close-btn"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
             <div className="mobile-achievements-list">

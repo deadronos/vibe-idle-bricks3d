@@ -11,6 +11,7 @@ vi.mock('../store/gameStore', () => ({
   ],
   useGameStore: (selector: any) => selector({
     unlockedAchievements: ['test1'],
+    settings: { compactHudEnabled: false },
   }),
 }));
 
