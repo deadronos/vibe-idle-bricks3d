@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import React from 'react';
 import { AchievementsPanel } from '../components/ui/AchievementsPanel';
 
 // Mock dependencies
