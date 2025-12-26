@@ -4,6 +4,11 @@ This document describes how AI agents should interact with and develop on the Id
 
 Also see copilot instructions in `.github/copilot-instructions.md`.
 
+## Important
+After code changes, run:
+npm run test && npm run lint && npm run typecheck
+to ensure all tests pass, linting is clean, and types are correct.
+
 ## Project Context
 
 Idle Bricks 3D is a 3D idle breakout game. Agents working on this project should understand:
