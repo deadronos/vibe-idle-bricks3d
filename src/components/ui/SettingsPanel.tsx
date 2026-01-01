@@ -25,9 +25,32 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
     enableFullRigidPhysics: 'Full Rigid Physics (Rapier)',
     compactHudEnabled: 'Compact HUD',
     graphicsQuality: 'Graphics Quality',
+    enableSABPhysics: 'SharedArrayBuffer Physics (Experimental)',
   };
 
+  // SAB runtime info and runtime actions (defensive: require at runtime)
+  const [sabAvailable, setSabAvailable] = React.useState<boolean>(false);
+  const [sabInitialized, setSabInitialized] = React.useState<boolean>(false);
+
   React.useEffect(() => {
+    try {
+      // import at runtime to avoid bundling worker setup into initial app bundle
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const mt = require('../../engine/multithread/runtime').default;
+      setSabAvailable(Boolean(mt.supportsSharedArrayBuffer));
+      try {
+        // require the sabRuntime to check initialized state
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const sabRuntime = require('../../engine/multithread/sabRuntime').default;
+        setSabInitialized(Boolean(sabRuntime && (sabRuntime as any).isInitialized?.()));
+      } catch {
+        setSabInitialized(false);
+      }
+    } catch {
+      setSabAvailable(false);
+      setSabInitialized(false);
+    }
+
     const root = modalRef.current;
     if (!root) return;
     const prevActive = document.activeElement as HTMLElement | null;
@@ -118,6 +141,54 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
               <option value="medium">Medium</option>
               <option value="high">High</option>
             </select>
+          </div>
+
+          <div className="setting-item sab-status">
+            <div>
+              <strong>SharedArrayBuffer Runtime</strong>
+            </div>
+            <div id="sab-supported">Supported: {sabAvailable ? 'Yes' : 'No (cross-origin isolation required)'}</div>
+            <div id="sab-initialized">Initialized: {sabInitialized ? 'Yes' : 'No'}</div>
+            <div className="sab-controls">
+              {sabAvailable && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        // eslint-disable-next-line @typescript-eslint/no-var-requires
+                        const mt = require('../../engine/multithread/runtime').default;
+                        mt.ensureSABRuntime(128);
+                        // eslint-disable-next-line @typescript-eslint/no-var-requires
+                        const sabRuntime = require('../../engine/multithread/sabRuntime').default;
+                        setSabInitialized(Boolean(sabRuntime && (sabRuntime as any).isInitialized?.()));
+                      } catch (err) {
+                        // ignore
+                      }
+                    }}
+                  >
+                    Initialize SAB
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        // eslint-disable-next-line @typescript-eslint/no-var-requires
+                        const mt = require('../../engine/multithread/runtime').default;
+                        mt.destroySABRuntime();
+                        // eslint-disable-next-line @typescript-eslint/no-var-requires
+                        const sabRuntime = require('../../engine/multithread/sabRuntime').default;
+                        setSabInitialized(Boolean(sabRuntime && (sabRuntime as any).isInitialized?.()));
+                      } catch (err) {
+                        // ignore
+                      }
+                    }}
+                  >
+                    Shutdown SAB
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
