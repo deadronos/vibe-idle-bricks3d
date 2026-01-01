@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef } from 'react';
+import { useCallback, useLayoutEffect, useRef, useEffect } from 'react';
 import { Color, Object3D, type InstancedMesh } from 'three';
 import type { ThreeEvent } from '@react-three/fiber';
 import { getBrickFromInstance } from '../../engine/picking';
@@ -21,6 +21,9 @@ export const useInstancedBricks = (bricks: Brick[]) => {
   const meshRef = useRef<InstancedMesh>(null);
   const hoveredIndexRef = useRef<number | null>(null);
   const hoveredBrickIdRef = useRef<string | null>(null);
+
+  // Keep track of IDs we have synced to Rapier to avoid unnecessary recreation
+  const syncedBrickIds = useRef<Set<string>>(new Set());
 
   const applyInstanceColor = useCallback((index: number, brick: Brick, isHovered: boolean) => {
     if (!meshRef.current) return;
@@ -65,6 +68,7 @@ export const useInstancedBricks = (bricks: Brick[]) => {
     if (!meshRef.current) return;
     const mesh = meshRef.current;
 
+    // Direct update of matrices and colors
     mesh.count = bricks.length;
     bricks.forEach((brick, index) => {
       tempObject.position.set(brick.position[0], brick.position[1], brick.position[2]);
@@ -82,33 +86,55 @@ export const useInstancedBricks = (bricks: Brick[]) => {
     }
   }, [bricks]);
 
-  // Register bricks with rapier runtime if available so colliders exist immediately
+  // Optimized Rapier synchronization: Only add/remove modified bricks
   useLayoutEffect(() => {
     const world = getRapierWorld();
     if (!world) return;
 
-    // Track which bricks we've registered
-    const registered = new Set<string>();
+    const currentIdSet = new Set(bricks.map((b) => b.id));
+    const previousIdSet = syncedBrickIds.current;
 
+    // Remove bricks that are no longer present
+    for (const id of previousIdSet) {
+      if (!currentIdSet.has(id)) {
+        try {
+          world.removeBrick(id);
+          previousIdSet.delete(id);
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    // Add or update bricks
+    // Note: addBrick in body-management is safe to call for existing bricks (it updates transforms)
     for (const b of bricks) {
       try {
         world.addBrick(b);
-        registered.add(b.id);
+        previousIdSet.add(b.id);
       } catch {
         // ignore
       }
     }
+  }, [bricks]);
 
+  // Cleanup effect: Remove all physics bodies when the component unmounts
+  useEffect(() => {
+    const ids = syncedBrickIds.current;
     return () => {
-      for (const id of registered) {
+      const world = getRapierWorld();
+      if (!world) return;
+
+      for (const id of ids) {
         try {
           world.removeBrick(id);
         } catch {
           // ignore
         }
       }
+      ids.clear();
     };
-  }, [bricks]);
+  }, []);
 
   useLayoutEffect(() => {
     const hoveredId = hoveredBrickIdRef.current;
