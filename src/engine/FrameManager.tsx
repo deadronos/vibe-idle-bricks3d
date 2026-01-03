@@ -278,7 +278,7 @@ export function FrameManager() {
       // Start a non-blocking simulation job and apply any pending result.
       try {
         // Lazy-load the runtime so it doesn't run in environments where workers are unavailable.
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const mt = require('./multithread/runtime').default;
 
         // Preferred path: SharedArrayBuffer + Atomics (zero-copy) if available and explicitly enabled
@@ -464,7 +464,7 @@ export function FrameManager() {
       } catch (err) {
         // If the multithread runtime isn't available or failed, fall back to main-thread
         // single-thread path below.
-
+        // eslint-disable-next-line no-console
         console.warn('[FrameManager] multithread runtime unavailable — falling back', err);
       }
     } catch {

@@ -12,7 +12,6 @@ Idle Bricks 3D is a 3D idle breakout game. Agents working on this project should
 - **Upgrade System**: Players spend points on damage, speed, and additional balls
 - **3D Rendering**: Uses React Three Fiber for WebGL rendering
 - **State Management**: Zustand store manages all game state
-- **Physics**: Rapier3D via `@dimforge/rapier3d-compat`
 
 ## Repository Structure
 
@@ -25,17 +24,14 @@ Idle Bricks 3D is a 3D idle breakout game. Agents working on this project should
 │   │   ├── GameScene.tsx # Main 3D scene
 │   │   └── UI.tsx        # HUD and upgrade panel
 │   ├── store/
-│   │   ├── index.ts      # Main store entry point
-│   │   ├── gameStore.ts  # Zustand game state (shim/legacy)
-│   │   └── slices/       # Store slices
-│   ├── test/             # Unit and integration test files
+│   │   └── gameStore.ts  # Zustand game state
+│   ├── test/             # Test files
 │   ├── App.tsx           # Root component
 │   └── main.tsx          # Entry point
 ├── .github/
 │   ├── agents/           # Agent configuration files
 │   └── instructions/     # Development instructions
 ├── memory/               # Memory bank for context persistence
-├── tests/                # E2E tests and global setup
 └── public/               # Static assets
 ```
 
@@ -44,24 +40,24 @@ Idle Bricks 3D is a 3D idle breakout game. Agents working on this project should
 ### Before Making Changes
 
 1. Read relevant source files to understand context
-2. Run `pnpm lint` to check current lint status
-3. Run `pnpm typecheck` to verify types
-4. Run `pnpm test:run` to ensure tests pass
+2. Run `npm run lint` to check current lint status
+3. Run `npm run typecheck` to verify types
+4. Run `npm run test:run` to ensure tests pass
 
 ### Making Changes
 
 1. Make minimal, focused changes
 2. Follow existing code patterns
 3. Maintain TypeScript strict mode compliance
-4. Run `pnpm format` to ensure consistent formatting
-5. Run `pnpm lint:fix` to auto-fix lint issues
+4. Run `npm run format` to ensure consistent formatting
+5. Run `npm run lint:fix` to auto-fix lint issues
 
 ### After Making Changes
 
-1. Run `pnpm typecheck` to verify type safety
-2. Run `pnpm lint` to check for issues
-3. Run `pnpm test:run` to verify tests pass
-4. Run `pnpm build` to ensure production build works
+1. Run `npm run typecheck` to verify type safety
+2. Run `npm run lint` to check for issues
+3. Run `npm run test:run` to verify tests pass
+4. Run `npm run build` to ensure production build works
 
 ## Code Quality Standards
 
@@ -69,17 +65,17 @@ Idle Bricks 3D is a 3D idle breakout game. Agents working on this project should
 
 All changes must pass:
 
-- `pnpm typecheck` - TypeScript compilation
-- `pnpm lint` - ESLint rules
-- `pnpm test:run` - All tests
-- `pnpm build` - Production build
+- `npm run typecheck` - TypeScript compilation
+- `npm run lint` - ESLint rules
+- `npm run test:run` - All tests
+- `npm run build` - Production build
 
 ### Formatting
 
 Code must be formatted with Prettier:
 
 ```bash
-pnpm format  # Auto-format all files
+npm run format  # Auto-format all files
 ```
 
 Configuration is in `.prettierrc`:
@@ -103,9 +99,9 @@ Orchestrates planning, implementation, and review cycles. For this project:
 
 When researching context:
 
-- Review `src/store/index.ts` and `src/store/slices/` for state structure
+- Review `gameStore.ts` for state structure
 - Check component props and types
-- Understand game physics in `Ball.tsx` and `src/engine/`
+- Understand game physics in `Ball.tsx`
 
 ### Implementation Agent
 
@@ -114,7 +110,7 @@ When implementing changes:
 - Follow React Three Fiber patterns
 - Use Zustand patterns from existing store
 - Add appropriate TypeScript types
-- Consider render performance (allocations in loop, etc.)
+- Consider render performance
 
 ### Code Review Agent
 
@@ -132,7 +128,7 @@ When reviewing changes:
 | React             | 19.x    | UI framework             |
 | TypeScript        | 5.9.x   | Type safety              |
 | React Three Fiber | 9.x     | React renderer for WebGL |
-| Three.js          | 0.182.x | 3D graphics              |
+| Three.js          | 0.181.x | 3D graphics              |
 | Zustand           | 5.x     | State management         |
 | Vite              | 7.x     | Build tool               |
 | Vitest            | 4.x     | Testing                  |
@@ -141,10 +137,10 @@ When reviewing changes:
 
 ## Testing Approach
 
-- **Unit/Integration Tests**: Store logic and pure functions
+- **Unit Tests**: Store logic and pure functions
 - **Location**: `src/test/`
 - **Framework**: Vitest with React Testing Library
-- **Run**: `pnpm test:run`
+- **Run**: `npm run test:run`
 
 ## Common Tasks
 
@@ -152,13 +148,13 @@ When reviewing changes:
 
 1. Create file in `src/components/`
 2. Use TypeScript with proper prop types
-3. Follow existing component patterns (PascalCase)
+3. Follow existing component patterns
 4. Add to parent component as needed
 
 ### Modifying Game State
 
-1. Update types in `src/store/types.ts`
-2. Add/modify actions in the store slices (`src/store/slices/`)
+1. Update types in `gameStore.ts`
+2. Add/modify actions in the store
 3. Update selectors if needed
 4. Add tests for new logic
 
