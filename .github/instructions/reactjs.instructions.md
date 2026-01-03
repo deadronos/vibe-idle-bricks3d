@@ -13,7 +13,7 @@ Instructions for building high-quality ReactJS applications with modern patterns
 - TypeScript for type safety (when applicable)
 - Functional components with hooks as default
 - Follow React's official style guide and best practices
-- Use modern build tools (Vite, Create React App, or custom Webpack setup)
+- Use modern build tools (Vite)
 - Implement proper component composition and reusability patterns
 
 ## Development Standards
@@ -50,7 +50,7 @@ Instructions for building high-quality ReactJS applications with modern patterns
 - Use `useState` for local component state
 - Implement `useReducer` for complex state logic
 - Leverage `useContext` for sharing state across component trees
-- Consider external state management (Redux Toolkit, Zustand) for complex applications
+- Consider external state management (Zustand) for complex applications
 - Implement proper state normalization and data structures
 - Use React Query or SWR for server state management
 
@@ -121,7 +121,7 @@ Instructions for building high-quality ReactJS applications with modern patterns
 
 - Write unit tests for components using React Testing Library
 - Test component behavior, not implementation details
-- Use Jest for test runner and assertion library
+- Use Vitest for test runner and assertion library
 - Implement integration tests for complex component interactions
 - Mock external dependencies and API calls appropriately
 - Test accessibility features and keyboard navigation

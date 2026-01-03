@@ -24,7 +24,8 @@ applyTo: '**/*.ts'
 ## Project Organization
 
 - Follow the repository's folder and responsibility layout for new code.
-- Use kebab-case filenames (e.g., `user-session.ts`, `data-service.ts`) unless told otherwise.
+- Use kebab-case filenames (e.g., `user-session.ts`, `data-service.ts`) unless told otherwise or for React components.
+- React components must use PascalCase (e.g., `GameScene.tsx`, `Ball.tsx`).
 - Keep tests, types, and helpers near their implementation when it aids discovery.
 - Reuse or extend shared utilities before adding new ones.
 
@@ -36,7 +37,7 @@ applyTo: '**/*.ts'
 
 ## Formatting & Style
 
-- Run the repository's lint/format scripts (e.g., `npm run lint`) before submitting.
+- Run the repository's lint/format scripts (e.g., `pnpm lint`) before submitting.
 - Match the project's indentation, quote style, and trailing comma rules.
 - Keep functions focused; extract helpers when logic branches grow.
 - Favor immutable data and pure functions when practical.
