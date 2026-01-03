@@ -35,13 +35,14 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   React.useEffect(() => {
     try {
       // import at runtime to avoid bundling worker setup into initial app bundle
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const mt = require('../../engine/multithread/runtime').default;
       setSabAvailable(Boolean(mt.supportsSharedArrayBuffer));
       try {
         // require the sabRuntime to check initialized state
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const sabRuntime = require('../../engine/multithread/sabRuntime').default;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setSabInitialized(Boolean(sabRuntime && (sabRuntime as any).isInitialized?.()));
       } catch {
         setSabInitialized(false);
@@ -156,13 +157,14 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                     type="button"
                     onClick={() => {
                       try {
-                        // eslint-disable-next-line @typescript-eslint/no-var-requires
+                        // eslint-disable-next-line @typescript-eslint/no-require-imports
                         const mt = require('../../engine/multithread/runtime').default;
                         mt.ensureSABRuntime(128);
-                        // eslint-disable-next-line @typescript-eslint/no-var-requires
+                        // eslint-disable-next-line @typescript-eslint/no-require-imports
                         const sabRuntime = require('../../engine/multithread/sabRuntime').default;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         setSabInitialized(Boolean(sabRuntime && (sabRuntime as any).isInitialized?.()));
-                      } catch (err) {
+                      } catch {
                         // ignore
                       }
                     }}
@@ -173,13 +175,14 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                     type="button"
                     onClick={() => {
                       try {
-                        // eslint-disable-next-line @typescript-eslint/no-var-requires
+                        // eslint-disable-next-line @typescript-eslint/no-require-imports
                         const mt = require('../../engine/multithread/runtime').default;
                         mt.destroySABRuntime();
-                        // eslint-disable-next-line @typescript-eslint/no-var-requires
+                        // eslint-disable-next-line @typescript-eslint/no-require-imports
                         const sabRuntime = require('../../engine/multithread/sabRuntime').default;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         setSabInitialized(Boolean(sabRuntime && (sabRuntime as any).isInitialized?.()));
-                      } catch (err) {
+                      } catch {
                         // ignore
                       }
                     }}
