@@ -4,6 +4,7 @@ import type { RapierWorld, ContactEvent } from './rapierWorld';
 import { setModule, setWorld, getWorld as _getWorld, resetAll } from './rapierRuntime';
 import { useGameStore } from '../../store/gameStore';
 import type { Ball, Brick } from '../../store/types';
+import { safeExecute, safeVoidExecute } from './safe-execution';
 
 /**
  * Singleton managing the lifecycle and interaction with the Rapier physics engine.
@@ -32,8 +33,8 @@ export const RapierPhysicsSystem = {
         setWorld(w);
         try {
           useGameStore.setState({ rapierActive: true, rapierInitError: null });
-        } catch {
-          // best-effort
+        } catch (e) {
+          console.warn('[RapierPhysicsSystem] init setState error', e);
         }
         return w;
       } catch (err) {
@@ -44,8 +45,8 @@ export const RapierPhysicsSystem = {
             rapierActive: false,
             rapierInitError: msg,
           });
-        } catch {
-          /* ignore */
+        } catch (e) {
+          console.warn('[RapierPhysicsSystem] init fallback setState error', e);
         }
         throw err;
       }
@@ -57,8 +58,8 @@ export const RapierPhysicsSystem = {
           rapierActive: false,
           rapierInitError: msg,
         });
-      } catch {
-        /* ignore */
+      } catch (e) {
+        console.warn('[RapierPhysicsSystem] init outer fallback setState error', e);
       }
       throw err;
     }
@@ -80,28 +81,25 @@ export const RapierPhysicsSystem = {
   destroy(): void {
     try {
       const w = _getWorld();
-      if (w && typeof (w as RapierWorld).destroy === 'function') {
-        try {
-          (w as RapierWorld).destroy();
-        } catch (e) {
-          void e;
-        }
-      }
+      // Use type assertion to satisfy the safeExecute generic constraint Record<string, any>
+      // while acknowledging that RapierWorld is the expected type if defined.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      safeVoidExecute(w as any, 'destroy', []);
     } finally {
       try {
         resetAll();
-      } catch {
-        /* ignore */
+      } catch (e) {
+        console.warn('[RapierPhysicsSystem] destroy resetAll error', e);
       }
       try {
         resetRapier();
-      } catch {
-        /* ignore */
+      } catch (e) {
+        console.warn('[RapierPhysicsSystem] destroy resetRapier error', e);
       }
       try {
         useGameStore.setState({ rapierActive: false });
-      } catch {
-        /* ignore */
+      } catch (e) {
+        console.warn('[RapierPhysicsSystem] destroy setState error', e);
       }
     }
   },
@@ -122,12 +120,8 @@ export const RapierPhysicsSystem = {
    */
   addBall(b: Ball) {
     const w = _getWorld();
-    if (!w) return;
-    try {
-      if (typeof w.addBall === 'function') w.addBall(b);
-    } catch {
-      /* ignore */
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    safeVoidExecute(w as any, 'addBall', [b]);
   },
 
   /**
@@ -137,12 +131,8 @@ export const RapierPhysicsSystem = {
    */
   removeBall(id: string) {
     const w = _getWorld();
-    if (!w) return;
-    try {
-      if (typeof w.removeBall === 'function') w.removeBall(id);
-    } catch {
-      /* ignore */
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    safeVoidExecute(w as any, 'removeBall', [id]);
   },
 
   /**
@@ -152,12 +142,8 @@ export const RapierPhysicsSystem = {
    */
   addBrick(brick: Brick) {
     const w = _getWorld();
-    if (!w) return;
-    try {
-      if (typeof w.addBrick === 'function') w.addBrick(brick);
-    } catch {
-      /* ignore */
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    safeVoidExecute(w as any, 'addBrick', [brick]);
   },
 
   /**
@@ -167,12 +153,8 @@ export const RapierPhysicsSystem = {
    */
   removeBrick(id: string) {
     const w = _getWorld();
-    if (!w) return;
-    try {
-      if (typeof w.removeBrick === 'function') w.removeBrick(id);
-    } catch {
-      /* ignore */
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    safeVoidExecute(w as any, 'removeBrick', [id]);
   },
 
   /**
@@ -182,12 +164,8 @@ export const RapierPhysicsSystem = {
    */
   step(dt?: number) {
     const w = _getWorld();
-    if (!w) return;
-    try {
-      if (typeof w.step === 'function') w.step(dt);
-    } catch {
-      /* ignore */
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    safeVoidExecute(w as any, 'step', [dt]);
   },
 
   /**
@@ -197,12 +175,8 @@ export const RapierPhysicsSystem = {
    */
   drainContactEvents(): ContactEvent[] {
     const w = _getWorld();
-    if (!w || typeof w.drainContactEvents !== 'function') return [];
-    try {
-      return w.drainContactEvents();
-    } catch {
-      return [];
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (safeExecute(w as any, 'drainContactEvents', [], []) ?? []) as ContactEvent[];
   },
 
   /**
@@ -212,12 +186,8 @@ export const RapierPhysicsSystem = {
    */
   getBallStates() {
     const w = _getWorld();
-    if (!w || typeof w.getBallStates !== 'function') return [];
-    try {
-      return w.getBallStates();
-    } catch {
-      return [];
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (safeExecute(w as any, 'getBallStates', [], []) ?? []) as any[];
   },
 
   /**
@@ -234,14 +204,8 @@ export const RapierPhysicsSystem = {
     point?: [number, number, number]
   ) {
     const w = _getWorld();
-    if (!w) return false;
-    const fn = (w as RapierWorld).applyImpulseToBall;
-    if (typeof fn !== 'function') return false;
-    try {
-      return fn.call(w, ballId, impulse, point);
-    } catch {
-      return false;
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return safeExecute(w as any, 'applyImpulseToBall', [ballId, impulse, point], false) as boolean;
   },
 
   /**
@@ -253,14 +217,8 @@ export const RapierPhysicsSystem = {
    */
   applyTorque(ballId: string, torque: [number, number, number]) {
     const w = _getWorld();
-    if (!w) return false;
-    const fn = (w as RapierWorld).applyTorqueToBall;
-    if (typeof fn !== 'function') return false;
-    try {
-      return fn.call(w, ballId, torque);
-    } catch {
-      return false;
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return safeExecute(w as any, 'applyTorqueToBall', [ballId, torque], false) as boolean;
   },
 };
 
