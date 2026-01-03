@@ -464,7 +464,6 @@ export function FrameManager() {
       } catch (err) {
         // If the multithread runtime isn't available or failed, fall back to main-thread
         // single-thread path below.
-
         console.warn('[FrameManager] multithread runtime unavailable — falling back', err);
       }
     } catch {

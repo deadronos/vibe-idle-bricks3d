@@ -42,9 +42,11 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         // require the sabRuntime to check initialized state
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const sabRuntime = require('../../engine/multithread/sabRuntime').default;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setSabInitialized(Boolean(sabRuntime && (sabRuntime as any).isInitialized?.()));
-      } catch {
+        setSabInitialized(
+          Boolean(sabRuntime && (sabRuntime as { isInitialized?: () => boolean }).isInitialized?.())
+        );
+      } catch (e) {
+        console.warn('[SettingsPanel] sabRuntime check error:', e);
         setSabInitialized(false);
       }
     } catch {
@@ -162,10 +164,14 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                         mt.ensureSABRuntime(128);
                         // eslint-disable-next-line @typescript-eslint/no-require-imports
                         const sabRuntime = require('../../engine/multithread/sabRuntime').default;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        setSabInitialized(Boolean(sabRuntime && (sabRuntime as any).isInitialized?.()));
-                      } catch {
-                        // ignore
+                        setSabInitialized(
+                          Boolean(
+                            sabRuntime &&
+                              (sabRuntime as { isInitialized?: () => boolean }).isInitialized?.()
+                          )
+                        );
+                      } catch (e) {
+                        console.warn('[SettingsPanel] Initialize SAB error:', e);
                       }
                     }}
                   >
@@ -180,10 +186,14 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                         mt.destroySABRuntime();
                         // eslint-disable-next-line @typescript-eslint/no-require-imports
                         const sabRuntime = require('../../engine/multithread/sabRuntime').default;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        setSabInitialized(Boolean(sabRuntime && (sabRuntime as any).isInitialized?.()));
-                      } catch {
-                        // ignore
+                        setSabInitialized(
+                          Boolean(
+                            sabRuntime &&
+                              (sabRuntime as { isInitialized?: () => boolean }).isInitialized?.()
+                          )
+                        );
+                      } catch (e) {
+                        console.warn('[SettingsPanel] Shutdown SAB error:', e);
                       }
                     }}
                   >
