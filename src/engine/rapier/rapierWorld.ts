@@ -31,7 +31,8 @@ export function createWorld(rapierParam: unknown, gravity = { x: 0, y: 0, z: 0 }
   } catch (err) {
     // Re-throw with additional context so tests/consumers can decide fallback behaviour.
     throw new Error(
-      `Failed to create Rapier World — runtime may not be initialized or WASM failed to load: ${(err as Error).message}`
+      `Failed to create Rapier World — runtime may not be initialized or WASM failed to load: ${(err as Error).message}`,
+      { cause: err }
     );
   }
 
