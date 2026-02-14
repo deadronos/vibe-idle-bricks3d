@@ -118,7 +118,7 @@ export async function initRapier(): Promise<RapierModule> {
       /* ignore logging failures */
     }
     // Rethrow a helpful message so CI/consumers can see the failure
-    throw new Error(`initRapier failed: ${(err as Error).message}`);
+    throw new Error(`initRapier failed: ${(err as Error).message}`, { cause: err });
   }
 }
 
