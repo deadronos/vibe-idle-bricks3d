@@ -11,16 +11,12 @@ const EPS = 1e-2;
 describe('Rapier PoC — init and single-ball vs single-brick parity', () => {
   it('initRapier() resolves or provides helpful error', async () => {
     // Smoke test: init should resolve in environments with WASM available.
-    let ok = false;
     try {
       const R = await initRapier();
       expect(R).toBeTruthy();
-      ok = true;
     } finally {
       resetRapier();
     }
-
-    expect(ok).toBe(true);
   });
 
   it('single ball vs single brick approximate parity with stepBallFrame', async () => {
