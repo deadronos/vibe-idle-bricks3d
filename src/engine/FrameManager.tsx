@@ -6,6 +6,12 @@ import { stepBallFrame } from './collision';
 import { RapierPhysicsSystem } from './rapier/RapierPhysicsSystem';
 import type { RapierWorld, BallState, ContactEvent } from './rapier/rapierWorld';
 import { handleContact } from '../systems/brickBehaviors';
+import {
+  calculateDamage,
+  createFallbackContactEvent,
+  applyFrameHits,
+  type HitResult,
+} from './physics/utils';
 
 /**
  * Component that manages the game loop and physics simulation.
@@ -16,7 +22,6 @@ import { handleContact } from '../systems/brickBehaviors';
  */
 export function FrameManager() {
   const isPaused = useGameStore((state) => state.isPaused);
-  const damageBrick = useGameStore((state) => state.damageBrick);
   const tryProcessBallSpawnQueue = useGameStore((state) => state.tryProcessBallSpawnQueue);
   const resetCombo = useGameStore((state) => state.resetCombo);
 
@@ -153,29 +158,17 @@ export function FrameManager() {
         // Drain events and forward to the store; also notify behavior hooks.
         const events = w.drainContactEvents();
         if (events.length > 0) {
-          // Aggregate for damage/combo then call behavior hooks for visuals/impulses.
-          const hitsForStore: { brickId: string; damage: number }[] = [];
           const { critChance } = useGameStore.getState();
+          const hitsForStore: HitResult[] = [];
 
           for (const e of events) {
             const by = balls.find((x) => x.id === e.ballId);
-            let damage = by ? by.damage : 1;
-
-            if (critChance && Math.random() < critChance) {
-              damage *= 2;
-            }
+            const baseDamage = by ? by.damage : 1;
+            const damage = calculateDamage(baseDamage, critChance || 0);
 
             hitsForStore.push({ brickId: e.brickId, damage });
-          }
 
-          if (hitsForStore.length > 0) {
-            const apply = useGameStore.getState().applyHits;
-            if (apply) apply(hitsForStore);
-          }
-
-          // Notify behaviors (do NOT re-apply damage here to avoid duplication)
-          for (const e of events) {
-            const by = balls.find((x) => x.id === e.ballId);
+            // Impulse application (Rapier specific)
             const point = e.point ?? (by ? by.position : [0, 0, 0]);
             const relVel = e.relativeVelocity ?? (by ? by.velocity : [0, 0, 0]);
             const normal =
@@ -185,11 +178,9 @@ export function FrameManager() {
                 const speed = Math.sqrt(rv[0] * rv[0] + rv[1] * rv[1] + rv[2] * rv[2]);
                 return speed > 1e-6 ? [rv[0] / speed, rv[1] / speed, rv[2] / speed] : [0, 0, 1];
               })();
-            const impulse = e.impulse ?? (by ? by.damage : 1);
+            const impulse = e.impulse ?? baseDamage;
 
-            // Apply physical impulse/torque to the ball if the runtime supports it.
             try {
-              // Prefer applying an impulse at contact point (world space) so Rapier generates torque naturally
               const impVec: [number, number, number] = [
                 normal[0] * (impulse as number),
                 normal[1] * (impulse as number),
@@ -201,21 +192,15 @@ export function FrameManager() {
                 point as [number, number, number]
               );
             } catch {
-              /* ignore failures */
+              /* ignore */
             }
-
-            handleContact(
-              {
-                ballId: e.ballId,
-                brickId: e.brickId,
-                point,
-                normal,
-                relativeVelocity: relVel,
-                impulse,
-              },
-              { applyDamage: false }
-            );
           }
+
+          // Use shared application logic
+          applyFrameHits(hitsForStore, events, {
+            applyHits: useGameStore.getState().applyHits!,
+            handleContact,
+          });
         }
 
         // Read back ball states and update store so UI/legacy consumers stay consistent
@@ -303,38 +288,33 @@ export function FrameManager() {
           // Try to take a completed result from the SAB worker
           const r = mt.takeSABResult();
           if (r) {
-            const hits: { brickId: string; damage: number }[] = [];
+            const hits: HitResult[] = [];
             const contactInfos: ContactEvent[] = [];
 
             const next: typeof balls = balls.map((b, i) => {
               const off = i * 3;
-              const nextPosition: [number, number, number] = [r.positions[off], r.positions[off + 1], r.positions[off + 2]];
-              const nextVelocity: [number, number, number] = [r.velocities[off], r.velocities[off + 1], r.velocities[off + 2]];
+              const nextPosition: [number, number, number] = [
+                r.positions[off],
+                r.positions[off + 1],
+                r.positions[off + 2],
+              ];
+              const nextVelocity: [number, number, number] = [
+                r.velocities[off],
+                r.velocities[off + 1],
+                r.velocities[off + 2],
+              ];
 
               const hitIdx = r.hitIndices[i];
               if (hitIdx >= 0) {
                 const hitBrickId = bricks[hitIdx]?.id;
                 if (hitBrickId) {
-                  let damage = b.damage;
-                  if (critChance && Math.random() < critChance) damage *= 2;
-
-                  hits.push({ brickId: hitBrickId, damage });
-
-                  const relVel = b.velocity;
-                  const speed = Math.sqrt(
-                    relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]
-                  );
-                  const normal: [number, number, number] =
-                    speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
-
-                  contactInfos.push({
-                    ballId: b.id,
+                  hits.push({
                     brickId: hitBrickId,
-                    point: nextPosition,
-                    normal,
-                    relativeVelocity: relVel,
-                    impulse: b.damage,
+                    damage: calculateDamage(b.damage, critChance || 0),
                   });
+                  contactInfos.push(
+                    createFallbackContactEvent(b, hitBrickId, nextPosition, b.velocity)
+                  );
                 }
               }
 
@@ -345,26 +325,10 @@ export function FrameManager() {
               };
             });
 
-            if (hits.length > 0) {
-              const apply = useGameStore.getState().applyHits;
-              if (apply) apply(hits);
-              else {
-                for (const hit of hits) damageBrick(hit.brickId, hit.damage);
-
-                if (hits.length >= 2) {
-                  const s = useGameStore.getState();
-                  const newComboCount = s.comboCount + 1;
-                  const newComboMultiplier = Math.min(1 + newComboCount * 0.05, 3);
-                  useGameStore.setState({
-                    comboCount: newComboCount,
-                    comboMultiplier: newComboMultiplier,
-                    lastHitTime: Date.now(),
-                  });
-                }
-              }
-
-              for (const info of contactInfos) handleContact(info, { applyDamage: false });
-            }
+            applyFrameHits(hits, contactInfos, {
+              applyHits: useGameStore.getState().applyHits!,
+              handleContact,
+            });
 
             useGameStore.setState({ balls: next });
 
@@ -388,8 +352,7 @@ export function FrameManager() {
 
         const res: ReturnType<typeof mt.takePendingResult> = mt.takePendingResult();
         if (res) {
-          // Build results and hit lists based on worker output
-          const hits: { brickId: string; damage: number }[] = [];
+          const hits: HitResult[] = [];
           const contactInfos: ContactEvent[] = [];
 
           const next: typeof balls = balls.map((b, i) => {
@@ -407,26 +370,13 @@ export function FrameManager() {
 
             const hitBrickId = res.hitBrickIds[i];
             if (hitBrickId) {
-              let damage = b.damage;
-              if (critChance && Math.random() < critChance) damage *= 2;
-
-              hits.push({ brickId: hitBrickId, damage });
-
-              const relVel = b.velocity;
-              const speed = Math.sqrt(
-                relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]
-              );
-              const normal: [number, number, number] =
-                speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
-
-              contactInfos.push({
-                ballId: b.id,
+              hits.push({
                 brickId: hitBrickId,
-                point: nextPosition,
-                normal,
-                relativeVelocity: relVel,
-                impulse: b.damage,
+                damage: calculateDamage(b.damage, critChance || 0),
               });
+              contactInfos.push(
+                createFallbackContactEvent(b, hitBrickId, nextPosition, b.velocity)
+              );
             }
 
             return {
@@ -436,26 +386,10 @@ export function FrameManager() {
             };
           });
 
-          if (hits.length > 0) {
-            const apply = useGameStore.getState().applyHits;
-            if (apply) apply(hits);
-            else {
-              for (const hit of hits) damageBrick(hit.brickId, hit.damage);
-
-              if (hits.length >= 2) {
-                const s = useGameStore.getState();
-                const newComboCount = s.comboCount + 1;
-                const newComboMultiplier = Math.min(1 + newComboCount * 0.05, 3);
-                useGameStore.setState({
-                  comboCount: newComboCount,
-                  comboMultiplier: newComboMultiplier,
-                  lastHitTime: Date.now(),
-                });
-              }
-            }
-
-            for (const info of contactInfos) handleContact(info, { applyDamage: false });
-          }
+          applyFrameHits(hits, contactInfos, {
+            applyHits: useGameStore.getState().applyHits!,
+            handleContact,
+          });
 
           useGameStore.setState({ balls: next });
 
@@ -471,7 +405,7 @@ export function FrameManager() {
     }
 
     // Fallback: single-threaded simulation (original behaviour)
-    const hits: { brickId: string; damage: number }[] = [];
+    const hits: HitResult[] = [];
     const contactInfos: ContactEvent[] = [];
 
     const nextBalls = balls.map((ball) => {
@@ -483,27 +417,18 @@ export function FrameManager() {
       );
 
       if (hitBrickId) {
-        let damage = ball.damage;
-        if (critChance && Math.random() < critChance) {
-          damage *= 2;
-        }
-
-        hits.push({ brickId: hitBrickId, damage });
-        // Build a best-effort contactInfo for non-rapier path
-        const relVel = ball.velocity;
-        const speed = Math.sqrt(
-          relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2]
-        );
-        const normal: [number, number, number] =
-          speed > 1e-6 ? [relVel[0] / speed, relVel[1] / speed, relVel[2] / speed] : [0, 0, 1];
-        contactInfos.push({
-          ballId: ball.id,
+        hits.push({
           brickId: hitBrickId,
-          point: [nextPosition[0], nextPosition[1], nextPosition[2]] as [number, number, number],
-          normal,
-          relativeVelocity: relVel,
-          impulse: ball.damage,
+          damage: calculateDamage(ball.damage, critChance || 0),
         });
+        contactInfos.push(
+          createFallbackContactEvent(
+            ball,
+            hitBrickId,
+            [nextPosition[0], nextPosition[1], nextPosition[2]] as [number, number, number],
+            ball.velocity
+          )
+        );
       }
 
       return {
@@ -513,32 +438,10 @@ export function FrameManager() {
       };
     });
 
-    if (hits.length > 0) {
-      // Use the centralized applyHits if available so combo logic is consistent
-      const apply = useGameStore.getState().applyHits;
-      if (apply) apply(hits);
-      else {
-        for (const hit of hits) {
-          damageBrick(hit.brickId, hit.damage);
-        }
-
-        if (hits.length >= 2) {
-          const s = useGameStore.getState();
-          const newComboCount = s.comboCount + 1;
-          const newComboMultiplier = Math.min(1 + newComboCount * 0.05, 3);
-          useGameStore.setState({
-            comboCount: newComboCount,
-            comboMultiplier: newComboMultiplier,
-            lastHitTime: Date.now(),
-          });
-        }
-      }
-
-      // Notify behaviors (do not re-apply damage here)
-      for (const info of contactInfos) {
-        handleContact(info, { applyDamage: false });
-      }
-    }
+    applyFrameHits(hits, contactInfos, {
+      applyHits: useGameStore.getState().applyHits!,
+      handleContact,
+    });
 
     useGameStore.setState({ balls: nextBalls });
   });
