@@ -80,6 +80,7 @@ export const buildInitialState = (): GameDataState & GameEntitiesState & Upgrade
     graphicsQuality: defaultGraphicsQuality,
     compactHudEnabled: detectCompactHud(),
     enableSABPhysics: false,
+    debugMode: false,
   };
 
   return {
@@ -176,9 +177,11 @@ export const createPersistOptions = (
 
         if (offlineEarnings > 0) {
           state.score += offlineEarnings;
-          console.log(
-            `[Offline Progress] Earned ${offlineEarnings} score over ${secondsOffline.toFixed(0)}s`
-          );
+          if (state.settings.debugMode) {
+            console.log(
+              `[Offline Progress] Earned ${offlineEarnings} score over ${secondsOffline.toFixed(0)}s`
+            );
+          }
         }
       }
 
@@ -194,7 +197,7 @@ export const createPersistOptions = (
             useGameStore: store,
           });
         } catch (e) {
-          console.error('[GameStore] handleRehydrate error:', e);
+          console.error("[GameStore] handleRehydrate error:", e);
         }
       }, 0);
     };
