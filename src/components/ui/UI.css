@@ -561,3 +561,39 @@ button:focus,
 .sab-controls button {
   margin-right: 8px;
 }
+
+/* Multiplier Selector */
+.multiplier-selector {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(74, 144, 226, 0.2);
+}
+
+.multiplier-button {
+  flex: 1;
+  padding: 6px 2px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #888;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+}
+
+.multiplier-button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.multiplier-button.active {
+  background: #4a90e2;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.4);
+}

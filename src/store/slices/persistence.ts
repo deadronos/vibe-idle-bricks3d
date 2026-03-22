@@ -46,8 +46,6 @@ type PersistedState = Pick<
 
 /**
  * Detects if the device screen is small (compact HUD).
- *
- * @returns {boolean} True if compact HUD should be enabled.
  */
 const detectCompactHud = () => {
   const isBrowser = typeof window !== 'undefined';
@@ -57,17 +55,6 @@ const detectCompactHud = () => {
 
 /**
  * Builds the initial game state with default values.
- *
- * When storage exists from a previous session, `balls` and `bricks` arrays are
- * initialized as empty placeholders. The `onRehydrateStorage` callback will
- * populate these arrays during the rehydration process by calling `handleRehydrate`,
- * which creates entities based on the persisted `ballCount`, `ballDamage`, `ballSpeed`,
- * and `wave` values.
- *
- * When no storage exists (fresh start), the function creates initial balls and bricks
- * directly to avoid a flash of empty state.
- *
- * @returns {GameDataState & GameEntitiesState & UpgradeState} Initial game state with data, entities, and upgrade values
  */
 export const buildInitialState = (): GameDataState & GameEntitiesState & UpgradeState => {
   const storageExists = hasExistingStorage();
@@ -107,6 +94,7 @@ export const buildInitialState = (): GameDataState & GameEntitiesState & Upgrade
     ballSpawnQueue: 0,
     lastBallSpawnTime: 0,
     lastSaveTime: Date.now(),
+    buyMultiplier: 1,
     useRapierPhysics: true,
     rapierActive: false,
     rapierInitError: null,
@@ -116,12 +104,6 @@ export const buildInitialState = (): GameDataState & GameEntitiesState & Upgrade
 
 /**
  * Creates the persistence slice of the game store.
- * Manages game reset functionality.
- *
- * @param {Function} set - The Zustand set function.
- * @param {Function} _get - The Zustand get function (unused).
- * @param {Object} store - The Zustand store API.
- * @returns {Object} The persistence slice actions.
  */
 export const createPersistenceSlice: GameStoreSlice<Pick<GameActions, 'resetGame'>> = (
   set,
@@ -136,10 +118,6 @@ export const createPersistenceSlice: GameStoreSlice<Pick<GameActions, 'resetGame
 
 /**
  * Configures the persistence middleware options.
- * Defines what state to save, the storage engine, and rehydration logic (offline progress).
- *
- * @param {Function} getStore - Function to retrieve the bound store instance.
- * @returns {PersistOptions<GameState, PersistedState>} The persistence options.
  */
 export const createPersistOptions = (
   getStore: () => UseBoundStore<StoreApi<GameState>>
@@ -160,7 +138,7 @@ export const createPersistOptions = (
     vibeCrystals: state.vibeCrystals,
     prestigeLevel: state.prestigeLevel,
     prestigeMultiplier: state.prestigeMultiplier,
-    lastSaveTime: Date.now(),
+    lastSaveTime: state.lastSaveTime,
   }),
   storage: createMetaStorage<PersistedState>(),
   onRehydrateStorage: () => {
@@ -169,14 +147,30 @@ export const createPersistOptions = (
 
       const now = Date.now();
       const lastSave = state.lastSaveTime || now;
-      const secondsOffline = (now - lastSave) / 1000;
+      // Cap offline progress to 24 hours to prevent extreme runaway
+      const secondsOffline = Math.min((now - lastSave) / 1000, 86400);
 
       if (secondsOffline > 60) {
-        const dps = state.ballCount * state.ballDamage * state.ballSpeed * 0.5;
-        const offlineEarnings = Math.floor(dps * secondsOffline);
+        // Enhanced Offline Progress Calculation
+        // base dps = balls * damage * speed
+        // factor in crit: average damage multiplier = 1 + (critChance * 2) [assuming 3x damage on crit for simplicity]
+        const critMult = 1 + (state.critChance || 0) * 2;
+        const dps = state.ballCount * state.ballDamage * state.ballSpeed * critMult * 0.4; // 0.4 efficiency factor
+
+        // factor in prestige
+        const offlineEarnings = Math.floor(dps * secondsOffline * state.prestigeMultiplier);
 
         if (offlineEarnings > 0) {
           state.score += offlineEarnings;
+
+          // Show announcement if possible (using setTimeout to wait for store ready)
+          setTimeout(() => {
+            const store = getStore().getState();
+            if (store.announce) {
+              store.announce(`Welcome back! You earned ${offlineEarnings.toLocaleString()} points while away.`);
+            }
+          }, 1000);
+
           if (state.settings.debugMode) {
             console.log(
               `[Offline Progress] Earned ${offlineEarnings} score over ${secondsOffline.toFixed(0)}s`

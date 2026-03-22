@@ -3,59 +3,79 @@ import { checkAndUnlockAchievements, getBallSpeedLevel } from '../../achievement
 import { MAX_BALL_COUNT, MAX_CRIT_CHANCE } from '../../constants';
 import { createInitialBall } from '../../createInitials';
 import { updateBallDamages, updateBallSpeeds } from '../balls';
-import type { GameState } from '../../types';
+import type { GameState, BuyMultiplier } from '../../types';
 
 /**
- * Calculates the cost to upgrade ball damage.
- *
- * @param {number} ballDamage - The current ball damage level.
- * @returns {number} The cost for the next upgrade.
+ * Calculates the cost for a specific level of an upgrade.
  */
-export const calculateBallDamageCost = (ballDamage: number): number => {
-  return Math.floor(50 * Math.pow(1.5, ballDamage - 1));
+const getLevelCost = (base: number, rate: number, level: number): number => {
+  return Math.floor(base * Math.pow(rate, level));
 };
 
 /**
- * Calculates the cost to upgrade ball speed.
- *
- * @param {number} ballSpeed - The current ball speed.
- * @returns {number} The cost for the next upgrade.
+ * Calculates total cost for multiple levels of an upgrade.
  */
+const getTotalCost = (base: number, rate: number, currentLevel: number, count: number): number => {
+  let total = 0;
+  for (let i = 0; i < count; i++) {
+    total += getLevelCost(base, rate, currentLevel + i);
+  }
+  return total;
+};
+
+/**
+ * Calculates how many levels can be bought with a given budget.
+ */
+const getMaxLevels = (
+  base: number,
+  rate: number,
+  currentLevel: number,
+  budget: number,
+  maxLevelsAllowed: number = Infinity
+): number => {
+  let total = 0;
+  let count = 0;
+  while (count < maxLevelsAllowed) {
+    const cost = getLevelCost(base, rate, currentLevel + count);
+    if (total + cost > budget) break;
+    total += cost;
+    count++;
+  }
+  return count;
+};
+
+export const calculateBallDamageCost = (ballDamage: number): number => {
+  return getLevelCost(50, 1.5, ballDamage - 1);
+};
+
 export const calculateBallSpeedCost = (ballSpeed: number): number => {
   const level = getBallSpeedLevel(ballSpeed) - 1;
-  return Math.floor(30 * Math.pow(1.3, level));
+  return getLevelCost(30, 1.3, level);
 };
 
-/**
- * Calculates the cost to upgrade ball count.
- *
- * @param {number} ballCount - The current ball count.
- * @returns {number} The cost for the next upgrade.
- */
 export const calculateBallCountCost = (ballCount: number): number => {
-  return Math.floor(100 * Math.pow(2, ballCount - 1));
+  return getLevelCost(100, 2, ballCount - 1);
 };
 
-/**
- * Calculates the cost to upgrade critical hit chance.
- *
- * @param {number} critChance - The current critical hit chance.
- * @returns {number} The cost for the next upgrade.
- */
 export const calculateCritChanceCost = (critChance: number): number => {
   const level = Math.round(critChance * 100);
-  return Math.floor(200 * Math.pow(1.5, level));
+  return getLevelCost(200, 1.35, level);
 };
 
-/**
- * Creates the upgrades slice of the game store.
- * Manages upgrading ball properties (damage, speed, count).
- *
- * @param {Function} set - The Zustand set function.
- * @param {Function} get - The Zustand get function.
- * @param {Object} store - The Zustand store API.
- * @returns {Object} The upgrades slice actions.
- */
+const getPurchaseCount = (
+  state: GameState,
+  base: number,
+  rate: number,
+  currentLevel: number,
+  maxLevelsAllowed: number = Infinity
+): number => {
+  const mult = state.buyMultiplier || 1;
+  if (mult === 'max') {
+    return getMaxLevels(base, rate, currentLevel, state.score, maxLevelsAllowed);
+  }
+  return Math.min(mult, maxLevelsAllowed);
+};
+
 export const createUpgradesSlice: GameStoreSlice<
   Pick<
     GameState,
@@ -70,30 +90,39 @@ export const createUpgradesSlice: GameStoreSlice<
   >
 > = (set, get) => ({
   getBallDamageCost: () => {
-    const { ballDamage } = get();
-    return calculateBallDamageCost(ballDamage);
+    const state = get();
+    const count = getPurchaseCount(state, 50, 1.5, state.ballDamage - 1);
+    return getTotalCost(50, 1.5, state.ballDamage - 1, Math.max(1, count));
   },
 
   getBallSpeedCost: () => {
-    const { ballSpeed } = get();
-    return calculateBallSpeedCost(ballSpeed);
+    const state = get();
+    const level = getBallSpeedLevel(state.ballSpeed) - 1;
+    const count = getPurchaseCount(state, 30, 1.3, level);
+    return getTotalCost(30, 1.3, level, Math.max(1, count));
   },
 
   getBallCountCost: () => {
-    const { ballCount } = get();
-    return calculateBallCountCost(ballCount);
+    const state = get();
+    const count = getPurchaseCount(state, 100, 2, state.ballCount - 1, MAX_BALL_COUNT - state.ballCount);
+    return getTotalCost(100, 2, state.ballCount - 1, Math.max(1, count));
   },
 
   getCritChanceCost: () => {
-    const { critChance } = get();
-    return calculateCritChanceCost(critChance || 0);
+    const state = get();
+    const level = Math.round((state.critChance || 0) * 100);
+    const maxLevelsAllowed = Math.round((MAX_CRIT_CHANCE - (state.critChance || 0)) * 100);
+    const count = getPurchaseCount(state, 200, 1.35, level, maxLevelsAllowed);
+    return getTotalCost(200, 1.35, level, Math.max(1, count));
   },
 
   upgradeBallDamage: () =>
     set((state) => {
-      const cost = calculateBallDamageCost(state.ballDamage);
+      const count = getPurchaseCount(state, 50, 1.5, state.ballDamage - 1);
+      if (count <= 0) return state;
+      const cost = getTotalCost(50, 1.5, state.ballDamage - 1, count);
       if (state.score >= cost) {
-        const ballDamage = state.ballDamage + 1;
+        const ballDamage = state.ballDamage + count;
         const score = state.score - cost;
         const unlockedAchievements = checkAndUnlockAchievements(state, { score, ballDamage });
         return {
@@ -108,9 +137,12 @@ export const createUpgradesSlice: GameStoreSlice<
 
   upgradeBallSpeed: () =>
     set((state) => {
-      const cost = calculateBallSpeedCost(state.ballSpeed);
+      const level = getBallSpeedLevel(state.ballSpeed) - 1;
+      const count = getPurchaseCount(state, 30, 1.3, level);
+      if (count <= 0) return state;
+      const cost = getTotalCost(30, 1.3, level, count);
       if (state.score >= cost) {
-        const ballSpeed = state.ballSpeed + 0.02;
+        const ballSpeed = state.ballSpeed + 0.02 * count;
         const score = state.score - cost;
         const unlockedAchievements = checkAndUnlockAchievements(state, { score, ballSpeed });
         return {
@@ -125,16 +157,21 @@ export const createUpgradesSlice: GameStoreSlice<
 
   upgradeBallCount: () =>
     set((state) => {
-      const cost = calculateBallCountCost(state.ballCount);
-      if (state.score >= cost && state.ballCount < MAX_BALL_COUNT) {
-        const ballCount = state.ballCount + 1;
+      const count = getPurchaseCount(state, 100, 2, state.ballCount - 1, MAX_BALL_COUNT - state.ballCount);
+      if (count <= 0) return state;
+      const cost = getTotalCost(100, 2, state.ballCount - 1, count);
+      if (state.score >= cost) {
+        const ballCount = state.ballCount + count;
         const score = state.score - cost;
+        const newBalls = [];
+        for (let i = 0; i < count; i++) {
+          newBalls.push(createInitialBall(state.ballSpeed, state.ballDamage));
+        }
         const unlockedAchievements = checkAndUnlockAchievements(state, { score, ballCount });
-        const newBall = createInitialBall(state.ballSpeed, state.ballDamage);
         return {
           score,
           ballCount,
-          balls: [...state.balls, newBall],
+          balls: [...state.balls, ...newBalls],
           unlockedAchievements,
         };
       }
@@ -144,11 +181,13 @@ export const createUpgradesSlice: GameStoreSlice<
   upgradeCritChance: () =>
     set((state) => {
       const currentCrit = state.critChance || 0;
-      if (currentCrit >= MAX_CRIT_CHANCE) return state;
-
-      const cost = calculateCritChanceCost(currentCrit);
+      const level = Math.round(currentCrit * 100);
+      const maxLevelsAllowed = Math.round((MAX_CRIT_CHANCE - currentCrit) * 100);
+      const count = getPurchaseCount(state, 200, 1.35, level, maxLevelsAllowed);
+      if (count <= 0) return state;
+      const cost = getTotalCost(200, 1.35, level, count);
       if (state.score >= cost) {
-        const critChance = currentCrit + 0.01;
+        const critChance = currentCrit + 0.01 * count;
         const score = state.score - cost;
         const unlockedAchievements = checkAndUnlockAchievements(state, { score, critChance });
         return {

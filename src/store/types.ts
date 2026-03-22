@@ -124,6 +124,11 @@ export interface GameDataState {
 }
 
 /**
+ * Multiplier for purchasing multiple upgrades at once.
+ */
+export type BuyMultiplier = 1 | 10 | 100 | 'max';
+
+/**
  * Ephemeral game entities state (reset on reload usually, but some persisted).
  */
 export interface GameEntitiesState {
@@ -133,6 +138,8 @@ export interface GameEntitiesState {
   ballSpawnQueue: number;
   lastBallSpawnTime: number;
   lastSaveTime?: number;
+  /** Multiplier for purchasing multiple upgrades at once. Not persisted. */
+  buyMultiplier?: BuyMultiplier;
   // Rapier runtime control
   useRapierPhysics?: boolean;
   rapierActive?: boolean;
@@ -177,6 +184,8 @@ export interface GameActions {
   toggleSetting: (key: keyof GameSettings) => void;
   setGraphicsQuality?: (value: 'auto' | 'low' | 'medium' | 'high') => void;
   announce?: (msg: string) => void;
+  /** Sets the multiplier for purchasing multiple upgrades. */
+  setBuyMultiplier?: (multiplier: BuyMultiplier) => void;
   // Prestige actions
   performPrestige: () => void;
   getPrestigeReward: () => number;

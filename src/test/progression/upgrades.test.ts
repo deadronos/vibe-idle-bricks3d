@@ -57,8 +57,8 @@ describe('upgrades slice', () => {
     it('calculateCritChanceCost', () => {
       // level 0 (chance 0) -> 200
       expect(calculateCritChanceCost(0)).toBe(200);
-      // level 1 (chance 0.01) -> 200 * 1.5 = 300
-      expect(calculateCritChanceCost(0.01)).toBe(300);
+      // level 1 (chance 0.01) -> 200 * 1.35 = 270
+      expect(calculateCritChanceCost(0.01)).toBe(270);
     });
   });
 
@@ -69,8 +69,10 @@ describe('upgrades slice', () => {
         score: 100,
         ballDamage: 1,
         balls: [{ id: 'ball1', damage: 1 }],
+        buyMultiplier: 1,
       };
 
+      mockGet.mockReturnValue(state);
       slice.upgradeBallDamage();
       const updater = mockSet.mock.calls[0][0];
       const result = updater(state);
@@ -87,8 +89,10 @@ describe('upgrades slice', () => {
           score: 100,
           ballSpeed: 0.1,
           balls: [{ id: 'ball1', speed: 0.1 }],
+          buyMultiplier: 1,
         };
 
+        mockGet.mockReturnValue(state);
         slice.upgradeBallSpeed();
         const updater = mockSet.mock.calls[0][0];
         const result = updater(state);
@@ -107,8 +111,10 @@ describe('upgrades slice', () => {
           ballSpeed: 0.1,
           ballDamage: 1,
           balls: [{ id: 'ball1' }],
+          buyMultiplier: 1,
         };
 
+        mockGet.mockReturnValue(state);
         slice.upgradeBallCount();
         const updater = mockSet.mock.calls[0][0];
         const result = updater(state);
@@ -126,8 +132,10 @@ describe('upgrades slice', () => {
           score: 0,
           ballDamage: 1,
           balls: [],
+          buyMultiplier: 1,
         };
 
+        mockGet.mockReturnValue(state);
         slice.upgradeBallDamage();
         const updater = mockSet.mock.calls[0][0];
         const result = updater(state);
@@ -141,8 +149,10 @@ describe('upgrades slice', () => {
         const state = {
           score: 300,
           critChance: 0,
+          buyMultiplier: 1,
         };
 
+        mockGet.mockReturnValue(state);
         slice.upgradeCritChance();
         const updater = mockSet.mock.calls[0][0];
         const result = updater(state);
@@ -157,7 +167,9 @@ describe('upgrades slice', () => {
         const state = {
           score: 0,
           critChance: 0,
+          buyMultiplier: 1,
         };
+        mockGet.mockReturnValue(state);
         slice.upgradeCritChance();
         const updater = mockSet.mock.calls[0][0];
         const result = updater(state);
@@ -170,7 +182,9 @@ describe('upgrades slice', () => {
         const state = {
           score: 10000,
           critChance: MAX_CRIT_CHANCE,
+          buyMultiplier: 1,
         };
+        mockGet.mockReturnValue(state);
         slice.upgradeCritChance();
         const updater = mockSet.mock.calls[0][0];
         const result = updater(state);
