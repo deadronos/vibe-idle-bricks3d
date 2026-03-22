@@ -1,4 +1,4 @@
-import { initRuntime, move, spawn } from 'multithreading';
+import { initRuntime, move, shutdown, spawn } from 'multithreading';
 import type { SimInput, SimResult } from './kernel';
 import { simulateStep } from './kernel';
 import type { ArenaSize } from '../collision';
@@ -114,10 +114,16 @@ export function takePendingResult(): SimResult | null {
 
 /** Destroy/disable the runtime (best-effort). */
 export function destroyRuntime() {
+  try {
+    shutdown();
+  } catch {
+    /* ignore */
+  }
+
   runtimeReady = false;
   jobInFlight = false;
   pendingResult = null;
-  runtimeDisabled = true;
+  runtimeDisabled = false;
 }
 
 /** Returns true if the runtime appears usable. */

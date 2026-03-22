@@ -25,7 +25,7 @@ export function FrameManager() {
   const tryProcessBallSpawnQueue = useGameStore((state) => state.tryProcessBallSpawnQueue);
   const resetCombo = useGameStore((state) => state.resetCombo);
 
-    // Refs for multithreaded runtime
+  // Refs for multithreaded runtime
   const mtRuntimeRef = useRef<typeof import('./multithread/runtime').default | null>(null);
   const hasLoggedMultithreadError = useRef(false);
 
@@ -49,6 +49,13 @@ export function FrameManager() {
 
     // Clean up rapier resources on unmount
     return () => {
+      try {
+        mtRuntimeRef.current?.destroySABRuntime?.();
+        mtRuntimeRef.current?.destroyRuntime?.();
+      } catch (e) {
+        void e;
+      }
+      mtRuntimeRef.current = null;
       try {
         RapierPhysicsSystem.destroy();
       } catch (e) {
