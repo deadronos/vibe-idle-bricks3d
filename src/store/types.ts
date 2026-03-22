@@ -79,6 +79,8 @@ export interface GameSettings {
   compactHudEnabled?: boolean;
   /** Enable SharedArrayBuffer-backed physics runtime (experimental). */
   enableSABPhysics?: boolean;
+  /** Enable debug logging. */
+  debugMode?: boolean;
 }
 
 /**

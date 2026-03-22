@@ -26,6 +26,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
     compactHudEnabled: 'Compact HUD',
     graphicsQuality: 'Graphics Quality',
     enableSABPhysics: 'SharedArrayBuffer Physics (Experimental)',
+    debugMode: 'Debug Mode (Logs)',
   };
 
   // SAB runtime info and runtime actions (defensive: require at runtime)
