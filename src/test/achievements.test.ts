@@ -20,6 +20,7 @@ const makeState = (overrides: Partial<GameState> = {}): GameState => ({
   wave: DEFAULT_WAVE,
   maxWaveReached: DEFAULT_WAVE,
   unlockedAchievements: [],
+  isRehydrated: false,
   settings: { enableBloom: true, enableShadows: true, enableSound: true, enableParticles: true },
   // Prestige / meta
   vibeCrystals: 0,

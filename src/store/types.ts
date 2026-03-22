@@ -95,7 +95,7 @@ export interface AchievementDefinition {
   description: string;
   type: AchievementType;
   threshold: number;
-  metric?: 'ballDamage' | 'ballSpeed' | 'ballCount';
+  metric?: 'ballDamage' | 'ballSpeed' | 'ballCount' | 'critChance';
 }
 
 /**
@@ -107,6 +107,7 @@ export interface GameDataState {
   wave: number;
   maxWaveReached: number;
   unlockedAchievements: string[];
+  isRehydrated: boolean;
   settings: GameSettings;
   // Prestige system
   vibeCrystals: number;

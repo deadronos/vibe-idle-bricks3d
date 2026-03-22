@@ -18,7 +18,7 @@ describe('score slice', () => {
   describe('addScore', () => {
     it('should update score and achievements', () => {
       const set = vi.fn();
-      const slice = createScoreSlice(set);
+      const slice = createScoreSlice(set, {} as any, {} as any);
 
       // Simulate the set function calling the updater
       // We can't easily mock the set implementation fully here without more boilerplate,

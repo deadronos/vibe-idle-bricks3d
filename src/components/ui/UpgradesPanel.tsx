@@ -1,5 +1,6 @@
 import React from 'react';
 import { useGameStore } from '../../store/gameStore';
+import { MAX_CRIT_CHANCE } from '../../store/constants';
 import { PrestigeModal } from './PrestigeModal';
 
 /**
@@ -68,13 +69,13 @@ export function UpgradesPanel() {
       <button
         className="upgrade-button"
         onClick={upgradeCritChance}
-        disabled={score < critCost || (critChance || 0) >= 0.5}
+        disabled={score < critCost || (critChance || 0) >= MAX_CRIT_CHANCE}
         aria-label={`Upgrade Crit Chance — costs ${critCost.toLocaleString()} points`}
       >
         <div className="upgrade-info">
           <span className="upgrade-name">⚡ Crit Chance +1%</span>
           <span className="upgrade-cost">
-            {(critChance || 0) >= 0.5 ? 'MAX' : `${critCost.toLocaleString()} pts`}
+            {(critChance || 0) >= MAX_CRIT_CHANCE ? 'MAX' : `${critCost.toLocaleString()} pts`}
           </span>
         </div>
       </button>

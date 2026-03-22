@@ -24,7 +24,7 @@ describe('hits slice', () => {
   beforeEach(() => {
     mockSet = vi.fn();
     mockGet = vi.fn();
-    slice = createHitsSlice(mockSet, mockGet);
+    slice = createHitsSlice(mockSet, mockGet, {} as any);
     vi.clearAllMocks();
   });
 

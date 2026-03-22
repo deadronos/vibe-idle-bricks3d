@@ -18,11 +18,12 @@ export function CameraRig({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const handleEffect = (event: EffectEvent) => {
-      if (event.type === 'brick_destroy') {
-        shakeIntensity.current = Math.min(shakeIntensity.current + 0.15, 0.4);
+      if (event.type === 'shake') {
+        shakeIntensity.current = Math.min(shakeIntensity.current + (event.amount || 0.2), 0.5);
         isShaking.current = true;
-      } else if (event.type === 'brick_hit') {
-        shakeIntensity.current = Math.min(shakeIntensity.current + 0.02, 0.1);
+      } else if (event.type === 'brick_destroy') {
+        // Legacy support or fallback
+        shakeIntensity.current = Math.min(shakeIntensity.current + 0.15, 0.4);
         isShaking.current = true;
       }
     };

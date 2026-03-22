@@ -1,7 +1,7 @@
+import type { GameStoreSlice } from '../types';
 import { DEFAULT_BALL_DAMAGE, DEFAULT_BALL_SPEED, DEFAULT_WAVE } from '../../constants';
 import { createInitialBall, createInitialBricks } from '../../createInitials';
 import { buildInitialState } from '../persistence';
-import type { GameState } from '../../types';
 
 /**
  * Calculates the prestige reward based on the maximum wave reached.
@@ -19,17 +19,20 @@ export const calculatePrestigeReward = (maxWaveReached: number): number => {
  *
  * @param {Function} set - The Zustand set function.
  * @param {Function} get - The Zustand get function.
+ * @param {Object} store - The Zustand store API.
  * @returns {Object} The prestige slice actions.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const createPrestigeSlice = (set: any, get: any) => ({
+export const createPrestigeSlice: GameStoreSlice<{
+  getPrestigeReward: () => number;
+  performPrestige: () => void;
+}> = (set, get) => ({
   getPrestigeReward: () => {
     const { maxWaveReached } = get();
     return calculatePrestigeReward(maxWaveReached);
   },
 
   performPrestige: () =>
-    set((state: GameState) => {
+    set((state) => {
       const reward = calculatePrestigeReward(state.maxWaveReached);
       if (reward <= 0) return state;
 

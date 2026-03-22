@@ -31,6 +31,8 @@ export const DEFAULT_BALL_COUNT = 1;
 export const WAVE_SCALE_FACTOR = 0.2;
 /** Maximum number of balls allowed. */
 export const MAX_BALL_COUNT = 20;
+/** Maximum critical hit chance allowed through upgrades. */
+export const MAX_CRIT_CHANCE = 0.5;
 
 /**
  * Key used for local storage persistence.
@@ -106,5 +108,21 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     type: 'upgrade',
     threshold: 5,
     metric: 'ballCount',
+  },
+  {
+    id: 'upgrade-crit-10',
+    label: 'Lucky Strike',
+    description: 'Reach 10% Critical Hit chance',
+    type: 'upgrade',
+    threshold: 0.1,
+    metric: 'critChance',
+  },
+  {
+    id: 'upgrade-crit-50',
+    label: 'Sharpshooter',
+    description: 'Reach 50% Critical Hit chance',
+    type: 'upgrade',
+    threshold: 0.5,
+    metric: 'critChance',
   },
 ];

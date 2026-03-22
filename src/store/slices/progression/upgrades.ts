@@ -1,5 +1,6 @@
+import type { GameStoreSlice } from '../types';
 import { checkAndUnlockAchievements, getBallSpeedLevel } from '../../achievements';
-import { MAX_BALL_COUNT } from '../../constants';
+import { MAX_BALL_COUNT, MAX_CRIT_CHANCE } from '../../constants';
 import { createInitialBall } from '../../createInitials';
 import { updateBallDamages, updateBallSpeeds } from '../balls';
 import type { GameState } from '../../types';
@@ -52,10 +53,22 @@ export const calculateCritChanceCost = (critChance: number): number => {
  *
  * @param {Function} set - The Zustand set function.
  * @param {Function} get - The Zustand get function.
+ * @param {Object} store - The Zustand store API.
  * @returns {Object} The upgrades slice actions.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const createUpgradesSlice = (set: any, get: any) => ({
+export const createUpgradesSlice: GameStoreSlice<
+  Pick<
+    GameState,
+    | 'getBallDamageCost'
+    | 'getBallSpeedCost'
+    | 'getBallCountCost'
+    | 'getCritChanceCost'
+    | 'upgradeBallDamage'
+    | 'upgradeBallSpeed'
+    | 'upgradeBallCount'
+    | 'upgradeCritChance'
+  >
+> = (set, get) => ({
   getBallDamageCost: () => {
     const { ballDamage } = get();
     return calculateBallDamageCost(ballDamage);
@@ -77,7 +90,7 @@ export const createUpgradesSlice = (set: any, get: any) => ({
   },
 
   upgradeBallDamage: () =>
-    set((state: GameState) => {
+    set((state) => {
       const cost = calculateBallDamageCost(state.ballDamage);
       if (state.score >= cost) {
         const ballDamage = state.ballDamage + 1;
@@ -94,7 +107,7 @@ export const createUpgradesSlice = (set: any, get: any) => ({
     }),
 
   upgradeBallSpeed: () =>
-    set((state: GameState) => {
+    set((state) => {
       const cost = calculateBallSpeedCost(state.ballSpeed);
       if (state.score >= cost) {
         const ballSpeed = state.ballSpeed + 0.02;
@@ -111,7 +124,7 @@ export const createUpgradesSlice = (set: any, get: any) => ({
     }),
 
   upgradeBallCount: () =>
-    set((state: GameState) => {
+    set((state) => {
       const cost = calculateBallCountCost(state.ballCount);
       if (state.score >= cost && state.ballCount < MAX_BALL_COUNT) {
         const ballCount = state.ballCount + 1;
@@ -129,18 +142,19 @@ export const createUpgradesSlice = (set: any, get: any) => ({
     }),
 
   upgradeCritChance: () =>
-    set((state: GameState) => {
+    set((state) => {
       const currentCrit = state.critChance || 0;
-      if (currentCrit >= 0.5) return state;
+      if (currentCrit >= MAX_CRIT_CHANCE) return state;
 
       const cost = calculateCritChanceCost(currentCrit);
       if (state.score >= cost) {
         const critChance = currentCrit + 0.01;
         const score = state.score - cost;
-        // No achievements for crit yet
+        const unlockedAchievements = checkAndUnlockAchievements(state, { score, critChance });
         return {
           score,
           critChance,
+          unlockedAchievements,
         };
       }
       return state;

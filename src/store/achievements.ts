@@ -13,6 +13,7 @@ export type AchievementView = Pick<
   | 'ballDamage'
   | 'ballSpeed'
   | 'ballCount'
+  | 'critChance'
   | 'unlockedAchievements'
 >;
 
@@ -43,6 +44,7 @@ export const getAchievementView = (
   ballDamage: overrides.ballDamage ?? state.ballDamage,
   ballSpeed: overrides.ballSpeed ?? state.ballSpeed,
   ballCount: overrides.ballCount ?? state.ballCount,
+  critChance: overrides.critChance ?? state.critChance,
   unlockedAchievements: overrides.unlockedAchievements ?? state.unlockedAchievements,
 });
 
@@ -71,6 +73,9 @@ export const meetsAchievement = (achievement: AchievementDefinition, state: Achi
       }
       if (achievement.metric === 'ballCount') {
         return state.ballCount >= achievement.threshold;
+      }
+      if (achievement.metric === 'critChance') {
+        return state.critChance >= achievement.threshold;
       }
       return false;
     }

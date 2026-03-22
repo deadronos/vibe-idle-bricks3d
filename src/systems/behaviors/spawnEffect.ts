@@ -32,10 +32,20 @@ function emitHitEffect(ctx: BehaviorContext, hit: HitEvent) {
 function emitDestroyEffect(ctx: BehaviorContext, brickId: string) {
   const brick = ctx.getState().bricks.find((b) => b.id === brickId);
   if (!brick) return;
+
+  // Emit traditional destruction effect
   effectBus.emit({
     type: 'brick_destroy',
     position: brick.position,
     color: brick.color,
+  });
+
+  // Emit a dedicated shake effect for better visual feedback
+  effectBus.emit({
+    type: 'shake',
+    position: brick.position,
+    color: brick.color,
+    amount: 0.2,
   });
 }
 

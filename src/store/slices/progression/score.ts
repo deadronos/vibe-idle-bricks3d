@@ -1,5 +1,5 @@
+import type { GameStoreSlice } from '../types';
 import { checkAndUnlockAchievements } from '../../achievements';
-import type { GameState } from '../../types';
 
 /**
  * Calculates the final score amount after applying multipliers.
@@ -17,12 +17,15 @@ export const calculateScoreAmount = (amount: number, prestigeMultiplier: number)
  * Manages score addition and achievement unlocking.
  *
  * @param {Function} set - The Zustand set function.
+ * @param {Function} get - The Zustand get function.
+ * @param {Object} store - The Zustand store API.
  * @returns {Object} The score slice actions.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const createScoreSlice = (set: any) => ({
+export const createScoreSlice: GameStoreSlice<{
+  addScore: (amount: number) => void;
+}> = (set) => ({
   addScore: (amount: number) =>
-    set((state: GameState) => {
+    set((state) => {
       const multipliedAmount = calculateScoreAmount(amount, state.prestigeMultiplier);
       const score = state.score + multipliedAmount;
       const unlockedAchievements = checkAndUnlockAchievements(state, { score });
