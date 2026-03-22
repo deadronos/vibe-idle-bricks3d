@@ -16,6 +16,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const toggleSetting = useGameStore((state) => state.toggleSetting);
   const setGraphicsQuality = useGameStore((state) => state.setGraphicsQuality);
   const modalRef = React.useRef<HTMLDivElement | null>(null);
+  const isMountedRef = React.useRef<boolean>(true);
 
   const settingLabels: Record<keyof GameSettings, string> = {
     enableBloom: 'Bloom',
@@ -33,68 +34,76 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const [sabAvailable, setSabAvailable] = React.useState<boolean>(false);
   const [sabInitialized, setSabInitialized] = React.useState<boolean>(false);
 
-  React.useEffect(() => {
+  const refreshSabStatus = React.useCallback(async () => {
     try {
-      // import at runtime to avoid bundling worker setup into initial app bundle
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const mt = require('../../engine/multithread/runtime').default;
+      const [{ default: mt }, { default: sabRuntime }] = await Promise.all([
+        import('../../engine/multithread/runtime'),
+        import('../../engine/multithread/sabRuntime'),
+      ]);
+
+      if (!isMountedRef.current) return;
+
       setSabAvailable(Boolean(mt.supportsSharedArrayBuffer));
-      try {
-        // require the sabRuntime to check initialized state
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const sabRuntime = require('../../engine/multithread/sabRuntime').default;
-        setSabInitialized(
-          Boolean(sabRuntime && (sabRuntime as { isInitialized?: () => boolean }).isInitialized?.())
-        );
-      } catch (e) {
-        console.warn('[SettingsPanel] sabRuntime check error:', e);
-        setSabInitialized(false);
-      }
-    } catch {
+      setSabInitialized(Boolean(sabRuntime && sabRuntime.isInitialized?.()));
+    } catch (e) {
+      if (!isMountedRef.current) return;
+
+      console.warn('[SettingsPanel] SAB status check error:', e);
       setSabAvailable(false);
       setSabInitialized(false);
     }
+  }, []);
+
+  React.useEffect(() => {
+    isMountedRef.current = true;
+    void refreshSabStatus();
 
     const root = modalRef.current;
-    if (!root) return;
     const prevActive = document.activeElement as HTMLElement | null;
-    // Focus first focusable element
-    const focusables = root.querySelectorAll<HTMLElement>(
-      'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
-    );
-    const first = focusables[0];
-    if (first) first.focus();
+    let onKeyDown: ((e: KeyboardEvent) => void) | null = null;
+    let onEsc: ((e: KeyboardEvent) => void) | null = null;
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
-      if (focusables.length === 0) return;
-      // const focusedIndex = Array.prototype.indexOf.call(focusables, document.activeElement);
-      if (e.shiftKey) {
-        // If shift-tab on first, move to last
-        if (document.activeElement === focusables[0]) {
-          e.preventDefault();
-          focusables[focusables.length - 1].focus();
+    if (root) {
+      // Focus first focusable element
+      const focusables = root.querySelectorAll<HTMLElement>(
+        'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
+      );
+      const first = focusables[0];
+      if (first) first.focus();
+
+      onKeyDown = (e: KeyboardEvent) => {
+        if (e.key !== 'Tab') return;
+        if (focusables.length === 0) return;
+        // const focusedIndex = Array.prototype.indexOf.call(focusables, document.activeElement);
+        if (e.shiftKey) {
+          // If shift-tab on first, move to last
+          if (document.activeElement === focusables[0]) {
+            e.preventDefault();
+            focusables[focusables.length - 1].focus();
+          }
+        } else {
+          // Tab: if on last, go to first
+          if (document.activeElement === focusables[focusables.length - 1]) {
+            e.preventDefault();
+            focusables[0].focus();
+          }
         }
-      } else {
-        // Tab: if on last, go to first
-        if (document.activeElement === focusables[focusables.length - 1]) {
-          e.preventDefault();
-          focusables[0].focus();
-        }
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    const onEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onEsc);
+      };
+      document.addEventListener('keydown', onKeyDown);
+
+      onEsc = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onClose();
+      };
+      document.addEventListener('keydown', onEsc);
+    }
 
     return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.removeEventListener('keydown', onEsc);
+      isMountedRef.current = false;
+      if (onKeyDown) document.removeEventListener('keydown', onKeyDown);
+      if (onEsc) document.removeEventListener('keydown', onEsc);
       if (prevActive) prevActive.focus();
     };
-  }, [onClose]);
+  }, [onClose, refreshSabStatus]);
 
   return (
     <div className="settings-modal-overlay" onClick={onClose}>
@@ -158,19 +167,12 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                 <>
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       try {
-                        // eslint-disable-next-line @typescript-eslint/no-require-imports
-                        const mt = require('../../engine/multithread/runtime').default;
+                        const { default: mt } = await import('../../engine/multithread/runtime');
                         mt.ensureSABRuntime(128);
-                        // eslint-disable-next-line @typescript-eslint/no-require-imports
-                        const sabRuntime = require('../../engine/multithread/sabRuntime').default;
-                        setSabInitialized(
-                          Boolean(
-                            sabRuntime &&
-                              (sabRuntime as { isInitialized?: () => boolean }).isInitialized?.()
-                          )
-                        );
+
+                        await refreshSabStatus();
                       } catch (e) {
                         console.warn('[SettingsPanel] Initialize SAB error:', e);
                       }
@@ -180,19 +182,12 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       try {
-                        // eslint-disable-next-line @typescript-eslint/no-require-imports
-                        const mt = require('../../engine/multithread/runtime').default;
+                        const { default: mt } = await import('../../engine/multithread/runtime');
                         mt.destroySABRuntime();
-                        // eslint-disable-next-line @typescript-eslint/no-require-imports
-                        const sabRuntime = require('../../engine/multithread/sabRuntime').default;
-                        setSabInitialized(
-                          Boolean(
-                            sabRuntime &&
-                              (sabRuntime as { isInitialized?: () => boolean }).isInitialized?.()
-                          )
-                        );
+
+                        await refreshSabStatus();
                       } catch (e) {
                         console.warn('[SettingsPanel] Shutdown SAB error:', e);
                       }

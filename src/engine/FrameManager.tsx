@@ -25,14 +25,37 @@ export function FrameManager() {
   const tryProcessBallSpawnQueue = useGameStore((state) => state.tryProcessBallSpawnQueue);
   const resetCombo = useGameStore((state) => state.resetCombo);
 
+  // Refs for multithreaded runtime
+  const mtRuntimeRef = useRef<typeof import('./multithread/runtime').default | null>(null);
+  const hasLoggedMultithreadError = useRef(false);
+
   // Refs for Rapier runtime when enabled
   const rapierWorldRef = useRef<RapierWorld | null>(null);
   const regBallIds = useRef<Set<string>>(new Set());
   const regBrickIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    // Lazy-load the multithread runtime once on mount
+    import('./multithread/runtime')
+      .then((m) => {
+        mtRuntimeRef.current = m.default;
+      })
+      .catch((err) => {
+        if (!hasLoggedMultithreadError.current) {
+          console.warn('[FrameManager] failed to load multithread runtime', err);
+          hasLoggedMultithreadError.current = true;
+        }
+      });
+
     // Clean up rapier resources on unmount
     return () => {
+      try {
+        mtRuntimeRef.current?.destroySABRuntime?.();
+        mtRuntimeRef.current?.destroyRuntime?.();
+      } catch (e) {
+        void e;
+      }
+      mtRuntimeRef.current = null;
       try {
         RapierPhysicsSystem.destroy();
       } catch (e) {
@@ -263,8 +286,8 @@ export function FrameManager() {
       // Start a non-blocking simulation job and apply any pending result.
       try {
         // Lazy-load the runtime so it doesn't run in environments where workers are unavailable.
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const mt = require('./multithread/runtime').default;
+
+        const mt = mtRuntimeRef.current; if (!mt) throw new Error('Runtime not ready');
 
         // Preferred path: SharedArrayBuffer + Atomics (zero-copy) if available and explicitly enabled
         const sabEnabledEnv = Boolean((import.meta as unknown as { env?: Record<string, string> }).env?.VITE_ENABLE_SAB);
@@ -398,7 +421,10 @@ export function FrameManager() {
       } catch (err) {
         // If the multithread runtime isn't available or failed, fall back to main-thread
         // single-thread path below.
-        console.warn('[FrameManager] multithread runtime unavailable — falling back', err);
+        if (!hasLoggedMultithreadError.current && (err as Error).message !== 'Runtime not ready') {
+          console.warn('[FrameManager] multithread runtime unavailable — falling back', err);
+          hasLoggedMultithreadError.current = true;
+        }
       }
     } catch {
       // Fallthrough to main-thread path on any prepare error
