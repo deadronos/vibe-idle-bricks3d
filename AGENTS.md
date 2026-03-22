@@ -13,6 +13,18 @@ Idle Bricks 3D is a 3D idle breakout game. Agents working on this project should
 - **3D Rendering**: Uses React Three Fiber for WebGL rendering
 - **State Management**: Zustand store manages all game state
 
+## Progressive disclosure
+
+Start with `docs/agents/_index.md` and open deeper files only when they are relevant:
+
+- `docs/agents/project-context.md` for a quick orientation.
+- `docs/agents/workflow.md` before making changes.
+- `docs/agents/roles-and-responsibilities.md` when applying agent-specific guidance.
+- `docs/agents/testing-and-validation.md` when validating or debugging.
+- `docs/agents/learning-log.md` when a fix, regression, or documentation update should be captured for future work.
+
+When a bug is fixed, behavior changes, or documentation is updated, record the learning or fix in `docs/agents/learning-log.md` so later agents can build on the resolved issue instead of rediscovering it.
+
 ## Repository Structure
 
 ```
