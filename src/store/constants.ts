@@ -107,4 +107,28 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     threshold: 5,
     metric: 'ballCount',
   },
+  {
+    id: 'upgrade-crit-10',
+    label: 'Lucky Strike',
+    description: 'Reach 10% Critical Hit chance',
+    type: 'upgrade',
+    threshold: 0.1,
+    metric: 'critChance',
+  },
+  {
+    id: 'upgrade-crit-50',
+    label: 'Sharpshooter',
+    description: 'Reach 50% Critical Hit chance',
+    type: 'upgrade',
+    threshold: 0.5,
+    metric: 'critChance',
+  },
+  {
+    id: 'upgrade-crit-100',
+    label: 'Deadly Precision',
+    description: 'Reach 100% Critical Hit chance',
+    type: 'upgrade',
+    threshold: 1.0,
+    metric: 'critChance',
+  },
 ];

@@ -7,14 +7,24 @@ export interface HitResult {
 }
 
 /**
- * Calculates the final damage amount, applying critical hit logic.
+ * Calculates the final damage amount, applying tiered critical hit logic.
+ * Every 100% (1.0) crit chance adds a guaranteed +1x damage multiplier.
+ * Any remaining fractional chance provides a probability for another +1x.
+ *
+ * Example: 150% (1.5) crit chance = guaranteed 2x damage + 50% chance for 3x.
  *
  * @param {number} baseDamage - The base damage of the ball.
- * @param {number} critChance - The probability (0-1) of a critical hit.
+ * @param {number} critChance - The probability of a critical hit (can exceed 1.0).
  * @returns {number} The calculated damage.
  */
 export function calculateDamage(baseDamage: number, critChance: number): number {
-  return critChance && Math.random() < critChance ? baseDamage * 2 : baseDamage;
+  if (!critChance || critChance <= 0) return baseDamage;
+
+  const guaranteedMult = Math.floor(critChance);
+  const fractionalChance = critChance % 1;
+  const bonusMult = Math.random() < fractionalChance ? 1 : 0;
+
+  return baseDamage * (1 + guaranteedMult + bonusMult);
 }
 
 /**

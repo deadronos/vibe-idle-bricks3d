@@ -1,8 +1,8 @@
 import type { Vector3Tuple } from 'three';
+import type { GameStoreSlice } from '../types';
 import { effectBus } from '../../../systems/EffectEventBus';
 import { checkAndUnlockAchievements } from '../../achievements';
 import { createInitialBricks } from '../../createInitials';
-import type { GameState } from '../../types';
 
 /**
  * Collection of side-effect functions for brick hits.
@@ -45,12 +45,18 @@ export const effects = {
  *
  * @param {Function} set - The Zustand set function.
  * @param {Function} get - The Zustand get function.
+ * @param {Object} store - The Zustand store API.
  * @returns {Object} The hits slice actions.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const createHitsSlice = (set: any, get: any) => ({
+export const createHitsSlice: GameStoreSlice<{
+  damageBrick: (id: string, damage: number) => void;
+  removeBrick: (id: string) => void;
+  resetCombo: () => void;
+  applyHits: (hits: { brickId: string; damage: number }[]) => void;
+  regenerateBricks: () => void;
+}> = (set, get) => ({
   damageBrick: (id: string, damage: number) =>
-    set((state: GameState) => {
+    set((state) => {
       const brick = state.bricks.find((b) => b.id === id);
       if (!brick) return state;
 
@@ -121,7 +127,7 @@ export const createHitsSlice = (set: any, get: any) => ({
     }),
 
   removeBrick: (id: string) =>
-    set((state: GameState) => ({
+    set((state) => ({
       bricks: state.bricks.filter((brick) => brick.id !== id),
     })),
 
@@ -152,7 +158,7 @@ export const createHitsSlice = (set: any, get: any) => ({
   },
 
   regenerateBricks: () =>
-    set((state: GameState) => {
+    set((state) => {
       const nextWave = state.wave + 1;
       const maxWaveReached = Math.max(state.maxWaveReached, nextWave);
       const waveBonus = Math.floor(20 * nextWave);

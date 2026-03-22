@@ -42,9 +42,9 @@ describe('handleRehydrate', () => {
     vi.useRealTimers();
   });
 
-  it('should do nothing if state is undefined', () => {
+  it('should set isRehydrated to true if state is undefined', () => {
     handleRehydrate(undefined, mockDeps);
-    expect(mockSetState).not.toHaveBeenCalled();
+    expect(mockSetState).toHaveBeenCalledWith({ isRehydrated: true });
   });
 
   it('should apply rehydration synchronously when deps are available', () => {
@@ -62,6 +62,7 @@ describe('handleRehydrate', () => {
       wave: 2,
       ballCount: 3,
       ballSpawnQueue: 2, // 3 - 1
+      isRehydrated: true,
     }));
   });
 
@@ -109,6 +110,7 @@ describe('handleRehydrate', () => {
       ballDamage: 1,
       ballSpeed: 0.1,
       ballCount: 1,
+      isRehydrated: true,
     }));
   });
 

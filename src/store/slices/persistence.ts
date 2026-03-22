@@ -90,6 +90,7 @@ export const buildInitialState = (): GameDataState & GameEntitiesState & Upgrade
     unlockedAchievements: [],
     settings,
     vibeCrystals: 0,
+    isRehydrated: false,
     prestigeLevel: 0,
     prestigeMultiplier: 1,
     comboCount: 0,

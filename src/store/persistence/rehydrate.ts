@@ -46,11 +46,12 @@ export type RehydrateState = Pick<
  * @throws {Error} If rehydration fails or dependencies are missing.
  */
 export const handleRehydrate = (state: RehydrateState | undefined, deps: RehydrateDeps) => {
+  const { checkAndUnlockAchievements, createInitialBall, createInitialBricks, useGameStore } = deps;
+
   if (!state) {
+    useGameStore.setState({ isRehydrated: true });
     return;
   }
-
-  const { checkAndUnlockAchievements, createInitialBall, createInitialBricks, useGameStore } = deps;
 
   // Validate and clamp values after rehydration
   const wave = clampNumber(state.wave, DEFAULT_WAVE, DEFAULT_WAVE);
@@ -128,6 +129,7 @@ export const handleRehydrate = (state: RehydrateState | undefined, deps: Rehydra
       // Set to past time so queue processing can start immediately
       lastBallSpawnTime: 0,
       settings,
+      isRehydrated: true,
     });
   };
 

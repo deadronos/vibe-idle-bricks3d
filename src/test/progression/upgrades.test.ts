@@ -60,7 +60,7 @@ describe('upgrades slice', () => {
     const mockGet = vi.fn();
 
     it('upgradeBallDamage should upgrade if score is sufficient', () => {
-      const slice = createUpgradesSlice(mockSet, mockGet);
+      const slice = createUpgradesSlice(mockSet, mockGet, {} as any);
       const state = {
         score: 100,
         ballDamage: 1,
@@ -78,7 +78,7 @@ describe('upgrades slice', () => {
 
     it('upgradeBallSpeed should upgrade if score is sufficient', () => {
         mockSet.mockClear();
-        const slice = createUpgradesSlice(mockSet, mockGet);
+        const slice = createUpgradesSlice(mockSet, mockGet, {} as any);
         const state = {
           score: 100,
           ballSpeed: 0.1,
@@ -96,7 +96,7 @@ describe('upgrades slice', () => {
 
     it('upgradeBallCount should upgrade if score is sufficient and below max', () => {
         mockSet.mockClear();
-        const slice = createUpgradesSlice(mockSet, mockGet);
+        const slice = createUpgradesSlice(mockSet, mockGet, {} as any);
         const state = {
           score: 200,
           ballCount: 1,
@@ -117,7 +117,7 @@ describe('upgrades slice', () => {
 
       it('should not upgrade if score is insufficient', () => {
         mockSet.mockClear();
-        const slice = createUpgradesSlice(mockSet, mockGet);
+        const slice = createUpgradesSlice(mockSet, mockGet, {} as any);
         const state = {
           score: 0,
           ballDamage: 1,
@@ -133,7 +133,7 @@ describe('upgrades slice', () => {
 
       it('upgradeCritChance should upgrade if score is sufficient', () => {
         mockSet.mockClear();
-        const slice = createUpgradesSlice(mockSet, mockGet);
+        const slice = createUpgradesSlice(mockSet, mockGet, {} as any);
         const state = {
           score: 300,
           critChance: 0,
@@ -149,7 +149,7 @@ describe('upgrades slice', () => {
 
       it('upgradeCritChance should not upgrade if score insufficient', () => {
         mockSet.mockClear();
-        const slice = createUpgradesSlice(mockSet, mockGet);
+        const slice = createUpgradesSlice(mockSet, mockGet, {} as any);
         const state = {
           score: 0,
           critChance: 0,
@@ -162,7 +162,7 @@ describe('upgrades slice', () => {
 
       it('upgradeCritChance should not upgrade if maxed out', () => {
         mockSet.mockClear();
-        const slice = createUpgradesSlice(mockSet, mockGet);
+        const slice = createUpgradesSlice(mockSet, mockGet, {} as any);
         const state = {
           score: 10000,
           critChance: 0.5,

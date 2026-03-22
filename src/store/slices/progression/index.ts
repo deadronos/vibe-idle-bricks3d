@@ -34,11 +34,12 @@ type ProgressionActions = Pick<
  *
  * @param {Function} set - The Zustand set function.
  * @param {Function} get - The Zustand get function.
+ * @param {Object} store - The Zustand store API.
  * @returns {ProgressionActions} The aggregated progression actions.
  */
-export const createProgressionSlice: GameStoreSlice<ProgressionActions> = (set, get) => ({
-  ...createScoreSlice(set),
-  ...createUpgradesSlice(set, get),
-  ...createPrestigeSlice(set, get),
-  ...createHitsSlice(set, get),
+export const createProgressionSlice: GameStoreSlice<ProgressionActions> = (set, get, store) => ({
+  ...createScoreSlice(set, get, store),
+  ...createUpgradesSlice(set, get, store),
+  ...createPrestigeSlice(set, get, store),
+  ...createHitsSlice(set, get, store),
 });

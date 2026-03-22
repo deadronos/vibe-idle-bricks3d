@@ -3,7 +3,7 @@ import type { Vector3Tuple } from 'three';
 /**
  * Supported types of visual effects events.
  */
-export type EffectType = 'brick_hit' | 'brick_destroy';
+export type EffectType = 'brick_hit' | 'brick_destroy' | 'shake';
 
 /**
  * Payload for an effect event.
@@ -15,8 +15,8 @@ export interface EffectEvent {
   position: Vector3Tuple;
   /** The color associated with the effect (e.g., brick color). */
   color: string;
-  /** Optional numeric value, e.g., for damage numbers. */
-  amount?: number; // for damage numbers
+  /** Optional numeric value, e.g., for damage numbers or shake intensity. */
+  amount?: number;
 }
 
 /**
