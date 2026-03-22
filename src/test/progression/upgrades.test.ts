@@ -6,12 +6,13 @@ import {
   calculateCritChanceCost,
   createUpgradesSlice,
 } from '../../store/slices/progression/upgrades';
+import { MAX_CRIT_CHANCE } from '../../store/constants';
 import * as createInitials from '../../store/createInitials';
 import * as balls from '../../store/slices/balls';
+import type { Ball } from '../../store/types';
 
 vi.mock('../../store/achievements', async (importOriginal) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const actual = await importOriginal<any>();
+  const actual = await importOriginal<typeof import('../../store/achievements')>();
   return {
     ...actual,
     checkAndUnlockAchievements: vi.fn(() => ['mock-achievement']),
@@ -24,13 +25,19 @@ vi.mock('../../store/createInitials', () => ({
 }));
 
 vi.mock('../../store/slices/balls', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  updateBallDamages: vi.fn((balls, damage) => balls.map((b: any) => ({ ...b, damage }))),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  updateBallSpeeds: vi.fn((balls, speed) => balls.map((b: any) => ({ ...b, speed }))),
+  updateBallDamages: vi.fn((balls: Ball[], damage: number) =>
+    balls.map((ball) => ({ ...ball, damage }))
+  ),
+  updateBallSpeeds: vi.fn((balls: Ball[], speed: number) =>
+    balls.map((ball) => ({ ...ball, velocity: [speed, speed, speed] as Ball['velocity'] }))
+  ),
 }));
 
 describe('upgrades slice', () => {
+  const mockSet = vi.fn();
+  const mockGet = vi.fn();
+  const buildSlice = () => createUpgradesSlice(mockSet, mockGet, {} as never);
+
   describe('calculations', () => {
     it('calculateBallDamageCost', () => {
       expect(calculateBallDamageCost(1)).toBe(50);
@@ -56,11 +63,8 @@ describe('upgrades slice', () => {
   });
 
   describe('actions', () => {
-    const mockSet = vi.fn();
-    const mockGet = vi.fn();
-
     it('upgradeBallDamage should upgrade if score is sufficient', () => {
-      const slice = createUpgradesSlice(mockSet, mockGet, {} as any);
+      const slice = buildSlice();
       const state = {
         score: 100,
         ballDamage: 1,
@@ -78,7 +82,7 @@ describe('upgrades slice', () => {
 
     it('upgradeBallSpeed should upgrade if score is sufficient', () => {
         mockSet.mockClear();
-        const slice = createUpgradesSlice(mockSet, mockGet, {} as any);
+        const slice = buildSlice();
         const state = {
           score: 100,
           ballSpeed: 0.1,
@@ -96,7 +100,7 @@ describe('upgrades slice', () => {
 
     it('upgradeBallCount should upgrade if score is sufficient and below max', () => {
         mockSet.mockClear();
-        const slice = createUpgradesSlice(mockSet, mockGet, {} as any);
+        const slice = buildSlice();
         const state = {
           score: 200,
           ballCount: 1,
@@ -117,7 +121,7 @@ describe('upgrades slice', () => {
 
       it('should not upgrade if score is insufficient', () => {
         mockSet.mockClear();
-        const slice = createUpgradesSlice(mockSet, mockGet, {} as any);
+        const slice = buildSlice();
         const state = {
           score: 0,
           ballDamage: 1,
@@ -133,7 +137,7 @@ describe('upgrades slice', () => {
 
       it('upgradeCritChance should upgrade if score is sufficient', () => {
         mockSet.mockClear();
-        const slice = createUpgradesSlice(mockSet, mockGet, {} as any);
+        const slice = buildSlice();
         const state = {
           score: 300,
           critChance: 0,
@@ -149,7 +153,7 @@ describe('upgrades slice', () => {
 
       it('upgradeCritChance should not upgrade if score insufficient', () => {
         mockSet.mockClear();
-        const slice = createUpgradesSlice(mockSet, mockGet, {} as any);
+        const slice = buildSlice();
         const state = {
           score: 0,
           critChance: 0,
@@ -162,10 +166,10 @@ describe('upgrades slice', () => {
 
       it('upgradeCritChance should not upgrade if maxed out', () => {
         mockSet.mockClear();
-        const slice = createUpgradesSlice(mockSet, mockGet, {} as any);
+        const slice = buildSlice();
         const state = {
           score: 10000,
-          critChance: 0.5,
+          critChance: MAX_CRIT_CHANCE,
         };
         slice.upgradeCritChance();
         const updater = mockSet.mock.calls[0][0];

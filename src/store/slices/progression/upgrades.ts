@@ -1,6 +1,6 @@
 import type { GameStoreSlice } from '../types';
 import { checkAndUnlockAchievements, getBallSpeedLevel } from '../../achievements';
-import { MAX_BALL_COUNT } from '../../constants';
+import { MAX_BALL_COUNT, MAX_CRIT_CHANCE } from '../../constants';
 import { createInitialBall } from '../../createInitials';
 import { updateBallDamages, updateBallSpeeds } from '../balls';
 import type { GameState } from '../../types';
@@ -144,6 +144,8 @@ export const createUpgradesSlice: GameStoreSlice<
   upgradeCritChance: () =>
     set((state) => {
       const currentCrit = state.critChance || 0;
+      if (currentCrit >= MAX_CRIT_CHANCE) return state;
+
       const cost = calculateCritChanceCost(currentCrit);
       if (state.score >= cost) {
         const critChance = currentCrit + 0.01;

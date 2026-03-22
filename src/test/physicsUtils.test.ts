@@ -21,6 +21,15 @@ describe('physics utils', () => {
       expect(calculateDamage(10, 0.5)).toBe(10); // 0.6 >= 0.5 -> no crit
       Math.random = originalRandom;
     });
+
+    it('supports tiered crit damage above 100%', () => {
+      const originalRandom = Math.random;
+      Math.random = () => 0.2;
+
+      expect(calculateDamage(10, 1.5)).toBe(30);
+
+      Math.random = originalRandom;
+    });
   });
 
   describe('computeContactNormal', () => {

@@ -31,6 +31,8 @@ export const DEFAULT_BALL_COUNT = 1;
 export const WAVE_SCALE_FACTOR = 0.2;
 /** Maximum number of balls allowed. */
 export const MAX_BALL_COUNT = 20;
+/** Maximum critical hit chance allowed through upgrades. */
+export const MAX_CRIT_CHANCE = 0.5;
 
 /**
  * Key used for local storage persistence.
@@ -121,14 +123,6 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Reach 50% Critical Hit chance',
     type: 'upgrade',
     threshold: 0.5,
-    metric: 'critChance',
-  },
-  {
-    id: 'upgrade-crit-100',
-    label: 'Deadly Precision',
-    description: 'Reach 100% Critical Hit chance',
-    type: 'upgrade',
-    threshold: 1.0,
     metric: 'critChance',
   },
 ];
