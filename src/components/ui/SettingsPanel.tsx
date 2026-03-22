@@ -34,15 +34,16 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const [sabInitialized, setSabInitialized] = React.useState<boolean>(false);
 
   React.useEffect(() => {
+    (async () => {
     try {
       // import at runtime to avoid bundling worker setup into initial app bundle
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const mt = require('../../engine/multithread/runtime').default;
+
+      const { default: mt } = await import('../../engine/multithread/runtime');
       setSabAvailable(Boolean(mt.supportsSharedArrayBuffer));
       try {
         // require the sabRuntime to check initialized state
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const sabRuntime = require('../../engine/multithread/sabRuntime').default;
+
+        const { default: sabRuntime } = await import('../../engine/multithread/sabRuntime');
         setSabInitialized(
           Boolean(sabRuntime && (sabRuntime as { isInitialized?: () => boolean }).isInitialized?.())
         );
@@ -54,6 +55,8 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
       setSabAvailable(false);
       setSabInitialized(false);
     }
+
+    })();
 
     const root = modalRef.current;
     if (!root) return;
@@ -158,13 +161,13 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                 <>
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       try {
-                        // eslint-disable-next-line @typescript-eslint/no-require-imports
-                        const mt = require('../../engine/multithread/runtime').default;
+
+                        const { default: mt } = await import('../../engine/multithread/runtime');
                         mt.ensureSABRuntime(128);
-                        // eslint-disable-next-line @typescript-eslint/no-require-imports
-                        const sabRuntime = require('../../engine/multithread/sabRuntime').default;
+
+                        const { default: sabRuntime } = await import('../../engine/multithread/sabRuntime');
                         setSabInitialized(
                           Boolean(
                             sabRuntime &&
@@ -180,13 +183,13 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       try {
-                        // eslint-disable-next-line @typescript-eslint/no-require-imports
-                        const mt = require('../../engine/multithread/runtime').default;
+
+                        const { default: mt } = await import('../../engine/multithread/runtime');
                         mt.destroySABRuntime();
-                        // eslint-disable-next-line @typescript-eslint/no-require-imports
-                        const sabRuntime = require('../../engine/multithread/sabRuntime').default;
+
+                        const { default: sabRuntime } = await import('../../engine/multithread/sabRuntime');
                         setSabInitialized(
                           Boolean(
                             sabRuntime &&
