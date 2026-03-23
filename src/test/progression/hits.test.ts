@@ -13,20 +13,20 @@ vi.mock('../../store/createInitials', () => ({
 }));
 
 describe('hits slice', () => {
-  let mockSet: StoreApi<GameState>['setState'];
-  let mockGet: StoreApi<GameState>['getState'];
+  let mockSet: ReturnType<typeof vi.fn>;
+  let mockGet: ReturnType<typeof vi.fn>;
   let slice: ReturnType<typeof createHitsSlice>;
 
   beforeEach(() => {
-    mockSet = vi.fn<StoreApi<GameState>['setState']>();
-    mockGet = vi.fn<StoreApi<GameState>['getState']>();
-    slice = createHitsSlice(mockSet, mockGet, {} as never);
+    mockSet = vi.fn();
+    mockGet = vi.fn();
+    slice = createHitsSlice(mockSet as never, mockGet as never, {} as never);
   });
 
   describe('damageBrick', () => {
     it('should delegate to applyHits', () => {
       const applyHitsMock = vi.fn();
-      mockGet.mockReturnValue({ applyHits: applyHitsMock });
+      mockGet.mockReturnValue({ applyHits: applyHitsMock } as unknown as GameState);
 
       slice.damageBrick('brick1', 10);
       expect(applyHitsMock).toHaveBeenCalledWith([{ brickId: 'brick1', damage: 10 }]);
@@ -42,9 +42,10 @@ describe('hits slice', () => {
         comboMultiplier: 1,
         prestigeMultiplier: 1,
         unlockedAchievements: [],
-      };
+      } as unknown as GameState;
 
-      mockSet.mockImplementation((fn) => {
+      mockSet.mockImplementation((fn: Parameters<StoreApi<GameState>['setState']>[0]) => {
+        if (typeof fn !== 'function') return;
         const result = fn(state);
         expect(result.bricks[0].health).toBe(5);
       });
@@ -60,9 +61,10 @@ describe('hits slice', () => {
         comboMultiplier: 1,
         prestigeMultiplier: 1,
         unlockedAchievements: [],
-      };
+      } as unknown as GameState;
 
-      mockSet.mockImplementation((fn) => {
+      mockSet.mockImplementation((fn: Parameters<StoreApi<GameState>['setState']>[0]) => {
+        if (typeof fn !== 'function') return;
         const result = fn(state);
         expect(result.bricks.length).toBe(0);
         expect(result.score).toBe(10);
@@ -83,9 +85,10 @@ describe('hits slice', () => {
         score: 0,
         bricksDestroyed: 0,
         prestigeMultiplier: 1,
-      };
+      } as unknown as GameState;
 
-      mockSet.mockImplementation((fn) => {
+      mockSet.mockImplementation((fn: Parameters<StoreApi<GameState>['setState']>[0]) => {
+        if (typeof fn !== 'function') return;
         const result = fn(state);
         expect(result.comboCount).toBe(1);
         expect(result.comboMultiplier).toBeGreaterThan(1);

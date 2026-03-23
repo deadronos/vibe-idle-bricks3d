@@ -7,14 +7,19 @@ describe('persistence slice', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-03-23T12:00:00Z'));
 
-    const options = createPersistOptions(
-      () => ({ getState: () => ({}) as GameState } as never)
-    );
+    try {
+      const options = createPersistOptions(
+        () => ({ getState: () => ({}) as GameState } as never)
+      );
 
-    const partial = options.partialize({ lastSaveTime: 123 } as GameState);
+      const partialize = options.partialize;
+      expect(partialize).toBeDefined();
 
-    expect(partial.lastSaveTime).toBe(Date.now());
+      const partial = partialize!({ lastSaveTime: 123 } as GameState);
 
-    vi.useRealTimers();
+      expect(partial.lastSaveTime).toBe(Date.now());
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

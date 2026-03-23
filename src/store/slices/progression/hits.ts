@@ -127,7 +127,7 @@ export const createHitsSlice: GameStoreSlice<{
   regenerateBricks: () => void;
 }> = (set, get) => ({
   damageBrick: (id: string, damage: number) => {
-    get().applyHits([{ brickId: id, damage }]);
+    get().applyHits?.([{ brickId: id, damage }]);
   },
 
   removeBrick: (id: string) =>
