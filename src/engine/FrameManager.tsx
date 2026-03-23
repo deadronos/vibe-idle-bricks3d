@@ -242,12 +242,11 @@ export function FrameManager() {
               };
             });
 
-            const now = Date.now();
-            const shouldSync = balls.length !== next.length || now - lastBallSyncRef.current > 100;
-            if (shouldSync) {
-              useGameStore.setState({ balls: next });
-              lastBallSyncRef.current = now;
-            }
+              const now = Date.now();
+              if (balls.length !== next.length || now - lastBallSyncRef.current > 100) {
+                useGameStore.setState({ balls: next });
+                lastBallSyncRef.current = now;
+              }
           }
         } catch {
           // best-effort; ignore transform reading errors
@@ -359,12 +358,7 @@ export function FrameManager() {
               handleContact,
             });
 
-            const now = Date.now();
-            const shouldSync = balls.length !== next.length || now - lastBallSyncRef.current > 100;
-            if (shouldSync) {
-              useGameStore.setState({ balls: next });
-              lastBallSyncRef.current = now;
-            }
+            useGameStore.setState({ balls: next });
 
             return; // done for this frame
           }
@@ -425,12 +419,7 @@ export function FrameManager() {
             handleContact,
           });
 
-          const now = Date.now();
-          const shouldSync = balls.length !== next.length || now - lastBallSyncRef.current > 100;
-          if (shouldSync) {
-            useGameStore.setState({ balls: next });
-            lastBallSyncRef.current = now;
-          }
+          useGameStore.setState({ balls: next });
 
           return; // done for this frame
         }
@@ -485,12 +474,7 @@ export function FrameManager() {
       handleContact,
     });
 
-    const now = Date.now();
-    const shouldSync = balls.length !== nextBalls.length || now - lastBallSyncRef.current > 100;
-    if (shouldSync) {
-      useGameStore.setState({ balls: nextBalls });
-      lastBallSyncRef.current = now;
-    }
+    useGameStore.setState({ balls: nextBalls });
   });
 
   return null;

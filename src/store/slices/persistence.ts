@@ -138,7 +138,7 @@ export const createPersistOptions = (
     vibeCrystals: state.vibeCrystals,
     prestigeLevel: state.prestigeLevel,
     prestigeMultiplier: state.prestigeMultiplier,
-    lastSaveTime: state.lastSaveTime,
+    lastSaveTime: Date.now(),
   }),
   storage: createMetaStorage<PersistedState>(),
   onRehydrateStorage: () => {

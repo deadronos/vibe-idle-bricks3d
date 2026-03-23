@@ -3,7 +3,7 @@ import { checkAndUnlockAchievements, getBallSpeedLevel } from '../../achievement
 import { MAX_BALL_COUNT, MAX_CRIT_CHANCE } from '../../constants';
 import { createInitialBall } from '../../createInitials';
 import { updateBallDamages, updateBallSpeeds } from '../balls';
-import type { GameState, BuyMultiplier } from '../../types';
+import type { GameState } from '../../types';
 
 /**
  * Calculates the cost for a specific level of an upgrade.

@@ -32,15 +32,17 @@ export function MobileUpgrades() {
   const [showPrestige, setShowPrestige] = useState(false);
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === 'Escape') setOpen(false);
     };
-    if (open) window.addEventListener("keydown", onKeyDown);
+    if (open) window.addEventListener('keydown', onKeyDown);
     const onResize = () => {
       if (window.innerWidth > 768) setOpen(false);
     };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("resize", onResize);
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('resize', onResize);
+    };
   }, [open]);
   const [translateY, setTranslateY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
