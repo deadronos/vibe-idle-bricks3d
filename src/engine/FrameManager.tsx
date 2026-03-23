@@ -28,6 +28,7 @@ export function FrameManager() {
   // Refs for multithreaded runtime
   const mtRuntimeRef = useRef<typeof import('./multithread/runtime').default | null>(null);
   const hasLoggedMultithreadError = useRef(false);
+  const lastBallSyncRef = useRef(0);
 
   // Refs for Rapier runtime when enabled
   const rapierWorldRef = useRef<RapierWorld | null>(null);
@@ -241,7 +242,11 @@ export function FrameManager() {
               };
             });
 
-            useGameStore.setState({ balls: next });
+              const now = Date.now();
+              if (balls.length !== next.length || now - lastBallSyncRef.current > 100) {
+                useGameStore.setState({ balls: next });
+                lastBallSyncRef.current = now;
+              }
           }
         } catch {
           // best-effort; ignore transform reading errors

@@ -42,6 +42,7 @@ type UiActions = Pick<
   | 'setUseRapierPhysics'
   | 'setRapierActive'
   | 'setRapierInitError'
+  | 'setBuyMultiplier'
 >;
 
 /**
@@ -49,7 +50,7 @@ type UiActions = Pick<
  */
 type UiState = Pick<
   GameEntitiesState,
-  'isPaused' | 'useRapierPhysics' | 'rapierActive' | 'rapierInitError'
+  'isPaused' | 'useRapierPhysics' | 'rapierActive' | 'rapierInitError' | 'buyMultiplier'
 > &
   Pick<GameDataState, 'latestAnnouncement'>;
 
@@ -163,6 +164,7 @@ export const createUiSlice: GameStoreSlice<UiActions & UiState> = (set) => ({
   rapierActive: false,
   rapierInitError: null,
   latestAnnouncement: null,
+  buyMultiplier: 1,
 
   togglePause: () =>
     set((state) => ({
@@ -229,4 +231,5 @@ export const createUiSlice: GameStoreSlice<UiActions & UiState> = (set) => ({
   setRapierActive: (active) =>
     set(() => ({ rapierActive: active, rapierInitError: active ? null : undefined })),
   setRapierInitError: (msg) => set(() => ({ rapierInitError: msg })),
+  setBuyMultiplier: (multiplier) => set(() => ({ buyMultiplier: multiplier })),
 });

@@ -1,80 +1,71 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../../store/gameStore';
-import { MAX_CRIT_CHANCE } from '../../store/constants';
+import { MAX_BALL_COUNT, MAX_CRIT_CHANCE } from '../../store/constants';
 import { PrestigeModal } from './PrestigeModal';
-import './UI.css';
+import type { BuyMultiplier } from '../../store/types';
 
 /**
- * Mobile-specific upgrade drawer and quick actions.
- * Provides a slide-up drawer for upgrades and a sticky footer with quick upgrade buttons.
- * Includes gesture support for dragging the drawer closed.
+ * Mobile-friendly upgrades drawer.
+ * Supports touch interactions and a quick-upgrades toolbar.
  *
  * @returns {JSX.Element} The mobile upgrades component.
  */
 export function MobileUpgrades() {
-  const [open, setOpen] = React.useState(false);
-  const [showPrestige, setShowPrestige] = React.useState(false);
-  const [translateY, setTranslateY] = React.useState(0);
-  const [isDragging, setIsDragging] = React.useState(false);
-  const score = useGameStore((s) => s.score);
-  const ballCount = useGameStore((s) => s.ballCount);
-  const vibeCrystals = useGameStore((s) => s.vibeCrystals);
-  const upgradeBallDamage = useGameStore((s) => s.upgradeBallDamage);
-  const upgradeBallSpeed = useGameStore((s) => s.upgradeBallSpeed);
-  const upgradeBallCount = useGameStore((s) => s.upgradeBallCount);
-  const upgradeCritChance = useGameStore((s) => s.upgradeCritChance);
-  const getBallDamageCost = useGameStore((s) => s.getBallDamageCost);
-  const getBallSpeedCost = useGameStore((s) => s.getBallSpeedCost);
-  const getBallCountCost = useGameStore((s) => s.getBallCountCost);
-  const getCritChanceCost = useGameStore((s) => s.getCritChanceCost);
-  const critChance = useGameStore((s) => s.critChance);
+  const score = useGameStore((state) => state.score);
+  const ballCount = useGameStore((state) => state.ballCount);
+  const vibeCrystals = useGameStore((state) => state.vibeCrystals);
+  const buyMultiplier = useGameStore((state) => state.buyMultiplier || 1);
+  const setBuyMultiplier = useGameStore((state) => state.setBuyMultiplier);
 
-  const damageCost = getBallDamageCost();
-  const speedCost = getBallSpeedCost();
-  const ballCost = getBallCountCost();
-  const critCost = getCritChanceCost();
-  const drawerRef = React.useRef<HTMLDivElement | null>(null);
-  const headerRef = React.useRef<HTMLDivElement | null>(null);
+  const upgradeBallDamage = useGameStore((state) => state.upgradeBallDamage);
+  const upgradeBallSpeed = useGameStore((state) => state.upgradeBallSpeed);
+  const upgradeBallCount = useGameStore((state) => state.upgradeBallCount);
+  const upgradeCritChance = useGameStore((state) => state.upgradeCritChance);
 
-  // Attach drag handler hook
-  useDrawerDrag({ open, setOpen, drawerRef, headerRef, translateY, setTranslateY, setIsDragging });
+  const damageCost = useGameStore((state) => state.getBallDamageCost());
+  const speedCost = useGameStore((state) => state.getBallSpeedCost());
+  const ballCost = useGameStore((state) => state.getBallCountCost());
+  const critCost = useGameStore((state) => state.getCritChanceCost());
+  const critChance = useGameStore((state) => state.critChance);
 
-  // Close when resizing to desktop view
-  React.useEffect(() => {
-    if (!open) return;
-    const onResize = () => {
-      if (window.innerWidth > 768) {
-        setOpen(false);
-      }
-    };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [open]);
-
-  // Keep CSS variable in sync with state for transitions & snaps
-  React.useEffect(() => {
-    const drawer = drawerRef.current;
-    if (!drawer) return;
-    try {
-      drawer.style.setProperty('--mobile-upgrades-translate', `${translateY}px`);
-    } catch {
-      // ignore in test env
-    }
-  }, [translateY]);
-
-  // Close via Escape key for accessibility
-  React.useEffect(() => {
-    if (!open) return;
-    const onEsc = (e: KeyboardEvent) => {
+  const [open, setOpen] = useState(false);
+  const [showPrestige, setShowPrestige] = useState(false);
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
     };
-    document.addEventListener('keydown', onEsc);
-    return () => document.removeEventListener('keydown', onEsc);
+    if (open) window.addEventListener('keydown', onKeyDown);
+    const onResize = () => {
+      if (window.innerWidth > 768) setOpen(false);
+    };
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('resize', onResize);
+    };
   }, [open]);
+  const [translateY, setTranslateY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
-  // Focus trapping for drawer while open
-  React.useEffect(() => {
-    if (!open) return;
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  const multipliers: BuyMultiplier[] = [1, 10, 100, 'max'];
+
+  // Handle pointer interactions for dragging
+  useDrawerDrag({
+    open,
+    setOpen,
+    drawerRef,
+    headerRef,
+    translateY,
+    setTranslateY,
+    setIsDragging,
+  });
+
+  // Handle focus trapping and keyboard accessibility when open
+  useEffect(() => {
+    if (!open || !drawerRef.current) return;
     const root = drawerRef.current;
     if (!root) return;
     const focusables = root.querySelectorAll<HTMLElement>(
@@ -127,7 +118,7 @@ export function MobileUpgrades() {
         <button
           className="upgrade-button quick-upgrade"
           onClick={() => upgradeBallCount()}
-          disabled={score < ballCost || ballCount >= 20}
+          disabled={score < ballCost || ballCount >= MAX_BALL_COUNT}
           aria-label={`Add Ball — costs ${ballCost.toLocaleString()} points`}
         >
           🔮
@@ -189,13 +180,25 @@ export function MobileUpgrades() {
             </div>
 
             <div className="mobile-upgrades-content">
+              <div className="multiplier-selector">
+                {multipliers.map((m) => (
+                  <button
+                    key={m}
+                    className={`multiplier-button ${buyMultiplier === m ? 'active' : ''}`}
+                    onClick={() => setBuyMultiplier?.(m)}
+                  >
+                    {m === 'max' ? 'MAX' : `x${m}`}
+                  </button>
+                ))}
+              </div>
+
               <button
                 className="upgrade-button"
                 onClick={upgradeBallDamage}
                 disabled={score < damageCost}
               >
                 <div className="upgrade-info">
-                  <span className="upgrade-name">⚔️ Ball Damage +1</span>
+                  <span className="upgrade-name">⚔️ Ball Damage</span>
                   <span className="upgrade-cost">{damageCost.toLocaleString()} pts</span>
                 </div>
               </button>
@@ -206,7 +209,7 @@ export function MobileUpgrades() {
                 disabled={score < speedCost}
               >
                 <div className="upgrade-info">
-                  <span className="upgrade-name">💨 Ball Speed +2%</span>
+                  <span className="upgrade-name">💨 Ball Speed</span>
                   <span className="upgrade-cost">{speedCost.toLocaleString()} pts</span>
                 </div>
               </button>
@@ -214,11 +217,13 @@ export function MobileUpgrades() {
               <button
                 className="upgrade-button"
                 onClick={upgradeBallCount}
-                disabled={score < ballCost || ballCount >= 20}
+                disabled={score < ballCost || ballCount >= MAX_BALL_COUNT}
               >
                 <div className="upgrade-info">
                   <span className="upgrade-name">🔮 New Ball</span>
-                  <span className="upgrade-cost">{ballCost.toLocaleString()} pts</span>
+                  <span className="upgrade-cost">
+                    {ballCount >= MAX_BALL_COUNT ? 'MAX' : `${ballCost.toLocaleString()} pts`}
+                  </span>
                 </div>
               </button>
 
@@ -228,7 +233,7 @@ export function MobileUpgrades() {
                 disabled={score < critCost || (critChance || 0) >= MAX_CRIT_CHANCE}
               >
                 <div className="upgrade-info">
-                  <span className="upgrade-name">⚡ Crit Chance +1%</span>
+                  <span className="upgrade-name">⚡ Crit Chance</span>
                   <span className="upgrade-cost">
                     {(critChance || 0) >= MAX_CRIT_CHANCE ? 'MAX' : `${critCost.toLocaleString()} pts`}
                   </span>
@@ -259,15 +264,6 @@ export function MobileUpgrades() {
 // to avoid re-creating handlers when not open.
 /**
  * Hook to handle pointer interactions for dragging the drawer.
- *
- * @param {Object} props - Hook props.
- * @param {boolean} props.open - Whether the drawer is open.
- * @param {Function} props.setOpen - State setter for drawer visibility.
- * @param {React.RefObject<HTMLDivElement | null>} props.drawerRef - Ref to the drawer element.
- * @param {React.RefObject<HTMLDivElement | null>} props.headerRef - Ref to the drawer header (drag handle).
- * @param {number} props.translateY - Current vertical translation.
- * @param {Function} props.setTranslateY - Setter for vertical translation.
- * @param {Function} props.setIsDragging - Setter for dragging state.
  */
 function useDrawerDrag({
   open,
@@ -286,10 +282,10 @@ function useDrawerDrag({
   setTranslateY: (n: number) => void;
   setIsDragging: (b: boolean) => void;
 }) {
-  const startYRef = React.useRef<number | null>(null);
-  const lastPointerId = React.useRef<number | null>(null);
+  const startYRef = useRef<number | null>(null);
+  const lastPointerId = useRef<number | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) return;
     const header = headerRef.current;
     const drawer = drawerRef.current;
@@ -300,13 +296,11 @@ function useDrawerDrag({
       startYRef.current = e.clientY;
       lastPointerId.current = e.pointerId;
       setIsDragging(true);
-      // Prevent default to avoid page scroll on touch devices when dragging
       (e.target as Element).setPointerCapture?.(e.pointerId);
     };
 
     const onPointerMove = (e: PointerEvent) => {
       if (startYRef.current === null) return;
-      // Only handle primary pointer
       if (e.pointerId !== lastPointerId.current) return;
       const delta = Math.max(0, e.clientY - (startYRef.current ?? 0));
       const height = Math.max(0, drawer.getBoundingClientRect().height || 0);
@@ -315,19 +309,16 @@ function useDrawerDrag({
       try {
         drawer.style.setProperty('--mobile-upgrades-translate', `${capped}px`);
       } catch {
-        // ignore if style property can't be set in this environment
+        /* ignore */
       }
     };
 
     const onPointerUp = (e: PointerEvent) => {
       if (startYRef.current === null) return;
-      // Only handle primary pointer
       if (e.pointerId !== lastPointerId.current) return;
-      // Calculate threshold — 33% of drawer height
       const height = Math.max(0, drawer.getBoundingClientRect().height || 0);
       const threshold = height * 0.33;
-      const finalTranslate = translateY;
-      if (finalTranslate > threshold) {
+      if (translateY > threshold) {
         setOpen(false);
       } else {
         setTranslateY(0);
@@ -338,7 +329,7 @@ function useDrawerDrag({
       try {
         (e.target as Element).releasePointerCapture?.(e.pointerId);
       } catch {
-        // ignore
+        /* ignore */
       }
     };
 
