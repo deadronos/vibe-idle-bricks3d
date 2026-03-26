@@ -222,7 +222,7 @@ export function FrameManager() {
 
           // Use shared application logic
           applyFrameHits(hitsForStore, events, {
-            applyHits: useGameStore.getState().applyHits!,
+            applyHits: useGameStore.getState().applyHits,
             handleContact,
           });
         }
@@ -354,7 +354,7 @@ export function FrameManager() {
             });
 
             applyFrameHits(hits, contactInfos, {
-              applyHits: useGameStore.getState().applyHits!,
+              applyHits: useGameStore.getState().applyHits,
               handleContact,
             });
 
@@ -415,7 +415,7 @@ export function FrameManager() {
           });
 
           applyFrameHits(hits, contactInfos, {
-            applyHits: useGameStore.getState().applyHits!,
+            applyHits: useGameStore.getState().applyHits,
             handleContact,
           });
 
@@ -470,7 +470,7 @@ export function FrameManager() {
     });
 
     applyFrameHits(hits, contactInfos, {
-      applyHits: useGameStore.getState().applyHits!,
+      applyHits: useGameStore.getState().applyHits,
       handleContact,
     });
 

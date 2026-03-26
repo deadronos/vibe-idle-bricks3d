@@ -64,6 +64,7 @@ const makeState = (overrides: Partial<GameState> = {}): GameState => ({
   performPrestige: () => {},
   getPrestigeReward: () => 0,
   resetCombo: () => {},
+  applyHits: () => {},
   ...overrides,
 });
 

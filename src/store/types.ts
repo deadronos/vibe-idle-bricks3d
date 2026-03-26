@@ -195,7 +195,7 @@ export interface GameActions {
   setUseRapierPhysics?: (enabled: boolean) => void;
   setRapierActive?: (active: boolean) => void;
   setRapierInitError?: (msg: string | null) => void;
-  applyHits?: (hits: Array<{ brickId: string; damage: number }>) => void;
+  applyHits: (hits: Array<{ brickId: string; damage: number }>) => void;
 }
 
 /**

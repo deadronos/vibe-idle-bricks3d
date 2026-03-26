@@ -27,7 +27,7 @@ describe('prestige slice', () => {
     it('should reset state and award crystals if eligible', () => {
       const mockSet = vi.fn();
       const mockGet = vi.fn();
-      const slice = createPrestigeSlice(mockSet, mockGet, {} as any);
+      const slice = createPrestigeSlice(mockSet, mockGet, {} as never);
 
       const state = {
         maxWaveReached: 5,
@@ -51,7 +51,7 @@ describe('prestige slice', () => {
     it('should not prestige if reward is 0', () => {
         const mockSet = vi.fn();
         const mockGet = vi.fn();
-        const slice = createPrestigeSlice(mockSet, mockGet, {} as any);
+        const slice = createPrestigeSlice(mockSet, mockGet, {} as never);
 
         const state = {
           maxWaveReached: 1,
