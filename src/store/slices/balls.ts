@@ -32,7 +32,7 @@ export type BallsSlice = BallActions &
  * @returns {Vector3Tuple} The rescaled velocity vector.
  */
 const rescaleVelocity = (velocity: Vector3Tuple, targetSpeed: number): Vector3Tuple => {
-  const currentSpeed = Math.sqrt(velocity[0] ** 2 + velocity[1] ** 2 + velocity[2] ** 2);
+  const currentSpeed = Math.sqrt(velocity[0] * velocity[0] + velocity[1] * velocity[1] + velocity[2] * velocity[2]);
   const scale = currentSpeed > 0 ? targetSpeed / currentSpeed : 1;
   return [velocity[0] * scale, velocity[1] * scale, velocity[2] * scale];
 };

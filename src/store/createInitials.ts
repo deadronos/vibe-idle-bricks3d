@@ -35,11 +35,13 @@ export const scaleForWave = (base: number, wave: number) =>
  * @returns {Brick[]} An array of generated bricks.
  */
 export const createInitialBricks = (wave: number): Brick[] => {
-  const bricks: Brick[] = [];
   const rows = 4;
   const cols = 6;
   const layers = 3;
   const spacing = 1.8;
+  const totalBricks = rows * cols * layers;
+  const bricks: Brick[] = new Array(totalBricks);
+  let idx = 0;
 
   for (let layer = 0; layer < layers; layer++) {
     for (let row = 0; row < rows; row++) {
@@ -74,13 +76,13 @@ export const createInitialBricks = (wave: number): Brick[] => {
         // Ensure the very first brick is a normal brick (keeps behavior deterministic for tests)
         // If randomness produced a special brick (golden/armor) for the first slot,
         // explicitly reset it back to a normal brick including its value.
-        if (bricks.length === 0) {
+        if (idx === 0) {
           type = 'normal';
           armorMultiplier = undefined;
           value = baseValue;
         }
 
-        bricks.push({
+        bricks[idx++] = {
           id: generateBrickId(),
           position: [
             (col - cols / 2 + 0.5) * spacing,
@@ -93,7 +95,7 @@ export const createInitialBricks = (wave: number): Brick[] => {
           value,
           type,
           armorMultiplier,
-        });
+        };
       }
     }
   }
