@@ -1,4 +1,3 @@
-import React from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { MAX_BALL_COUNT, MAX_CRIT_CHANCE } from '../../store/constants';
 
