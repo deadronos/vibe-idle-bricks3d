@@ -96,19 +96,18 @@ export const useInstancedBricks = (bricks: Brick[]) => {
     }
   }, [bricks]);
 
-  // Optimized Rapier synchronization: Only add/remove modified bricks
-  // Avoids allocating new Set by using previousIdSet directly
+  // Keep Rapier bodies aligned with the current brick list while avoiding
+  // quadratic membership checks during removal.
   useLayoutEffect(() => {
     const world = getRapierWorld();
     if (!world) return;
 
     const previousIdSet = syncedBrickIds.current;
+    const currentIdSet = new Set(bricks.map((b) => b.id));
 
-    // Remove bricks that are no longer present - iterate over previous set
-    for (const id of previousIdSet) {
-      // Check if this ID still exists in current bricks
-      const stillExists = bricks.some((b) => b.id === id);
-      if (!stillExists) {
+    // Remove bricks that disappeared from state.
+    for (const id of Array.from(previousIdSet)) {
+      if (!currentIdSet.has(id)) {
         try {
           world.removeBrick(id);
           previousIdSet.delete(id);
@@ -118,16 +117,14 @@ export const useInstancedBricks = (bricks: Brick[]) => {
       }
     }
 
-    // Add or update bricks - only add if not already tracked
-    // Note: addBrick in body-management is safe to call for existing bricks (it updates transforms)
+    // Add or refresh all current bricks. `addBrick` is idempotent and updates
+    // existing transforms in the physics body manager.
     for (const b of bricks) {
-      if (!previousIdSet.has(b.id)) {
-        try {
-          world.addBrick(b);
-          previousIdSet.add(b.id);
-        } catch {
-          // ignore
-        }
+      try {
+        world.addBrick(b);
+        previousIdSet.add(b.id);
+      } catch {
+        // ignore
       }
     }
   }, [bricks]);
