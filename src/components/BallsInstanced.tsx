@@ -32,8 +32,9 @@ export function BallsInstanced({ world, maxInstances = 128, radius = 0.25, geome
   // Optimization: Removed idToIndex Map and per-frame Set allocation.
   // Since all balls are visually identical, we can assign instances 0..N directly.
   const tmpMat = useMemo(() => new THREE.Matrix4(), []);
+  const tmpScale = useMemo(() => new THREE.Vector3(), []);
   const settings = useGameStore((state) => state.settings);
-  const { computedQuality } = getRenderingOptions(settings);
+  const { computedQuality } = useMemo(() => getRenderingOptions(settings), [settings]);
   const segments = geometrySegments ?? (computedQuality === 'high' ? 16 : computedQuality === 'medium' ? 8 : 6);
 
   useFrame(() => {
@@ -56,8 +57,8 @@ export function BallsInstanced({ world, maxInstances = 128, radius = 0.25, geome
       const s = states[i];
       tmpMat.identity();
       tmpMat.setPosition(s.position[0], s.position[1], s.position[2]);
-      // simple uniform scale from radius
-      tmpMat.scale(new THREE.Vector3(radius, radius, radius));
+      // simple uniform scale from radius - reuse tmpScale to avoid allocations
+      tmpMat.scale(tmpScale.set(radius, radius, radius));
 
       meshRef.current.setMatrixAt(i, tmpMat);
     }
