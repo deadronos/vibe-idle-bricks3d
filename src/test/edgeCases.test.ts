@@ -1,9 +1,10 @@
+import { resetToKnownState, waitForRehydrationFix } from "./test-utils";
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   ACHIEVEMENTS,
   buildInitialState,
   useGameStore,
-  type GameState,
+
   DEFAULT_BALL_DAMAGE,
   DEFAULT_BALL_SPEED,
 } from '../store/gameStore';
@@ -12,21 +13,6 @@ import {
  * Edge case tests for rehydration and state management
  * Covers value clamping, corruption recovery, and unusual scenarios
  */
-
-const resetToKnownState = (overrides: Partial<GameState> = {}) => {
-  useGameStore.persist?.clearStorage();
-  useGameStore.setState({
-    ...buildInitialState(),
-    ...overrides,
-  });
-};
-
-/**
- * Helper to wait for setTimeout(0) in onRehydrateStorage to complete.
- * The rehydration fix uses setTimeout to avoid "Cannot access 'useGameStore'
- * before initialization" errors, so tests need to wait for it.
- */
-const waitForRehydrationFix = () => new Promise((resolve) => setTimeout(resolve, 10));
 
 describe('Rehydration - Value Clamping', () => {
   beforeEach(() => {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../../store/gameStore';
-import { MAX_BALL_COUNT, MAX_CRIT_CHANCE } from '../../store/constants';
+import { MAX_BALL_COUNT } from '../../store/constants';
 import { PrestigeModal } from './PrestigeModal';
+import { UpgradesList } from './UpgradesList';
 import type { BuyMultiplier } from '../../store/types';
 
 /**
@@ -20,13 +21,10 @@ export function MobileUpgrades() {
   const upgradeBallDamage = useGameStore((state) => state.upgradeBallDamage);
   const upgradeBallSpeed = useGameStore((state) => state.upgradeBallSpeed);
   const upgradeBallCount = useGameStore((state) => state.upgradeBallCount);
-  const upgradeCritChance = useGameStore((state) => state.upgradeCritChance);
 
   const damageCost = useGameStore((state) => state.getBallDamageCost());
   const speedCost = useGameStore((state) => state.getBallSpeedCost());
   const ballCost = useGameStore((state) => state.getBallCountCost());
-  const critCost = useGameStore((state) => state.getCritChanceCost());
-  const critChance = useGameStore((state) => state.critChance);
 
   const [open, setOpen] = useState(false);
   const [showPrestige, setShowPrestige] = useState(false);
@@ -192,53 +190,7 @@ export function MobileUpgrades() {
                 ))}
               </div>
 
-              <button
-                className="upgrade-button"
-                onClick={upgradeBallDamage}
-                disabled={score < damageCost}
-              >
-                <div className="upgrade-info">
-                  <span className="upgrade-name">⚔️ Ball Damage</span>
-                  <span className="upgrade-cost">{damageCost.toLocaleString()} pts</span>
-                </div>
-              </button>
-
-              <button
-                className="upgrade-button"
-                onClick={upgradeBallSpeed}
-                disabled={score < speedCost}
-              >
-                <div className="upgrade-info">
-                  <span className="upgrade-name">💨 Ball Speed</span>
-                  <span className="upgrade-cost">{speedCost.toLocaleString()} pts</span>
-                </div>
-              </button>
-
-              <button
-                className="upgrade-button"
-                onClick={upgradeBallCount}
-                disabled={score < ballCost || ballCount >= MAX_BALL_COUNT}
-              >
-                <div className="upgrade-info">
-                  <span className="upgrade-name">🔮 New Ball</span>
-                  <span className="upgrade-cost">
-                    {ballCount >= MAX_BALL_COUNT ? 'MAX' : `${ballCost.toLocaleString()} pts`}
-                  </span>
-                </div>
-              </button>
-
-              <button
-                className="upgrade-button"
-                onClick={upgradeCritChance}
-                disabled={score < critCost || (critChance || 0) >= MAX_CRIT_CHANCE}
-              >
-                <div className="upgrade-info">
-                  <span className="upgrade-name">⚡ Crit Chance</span>
-                  <span className="upgrade-cost">
-                    {(critChance || 0) >= MAX_CRIT_CHANCE ? 'MAX' : `${critCost.toLocaleString()} pts`}
-                  </span>
-                </div>
-              </button>
+              <UpgradesList />
 
               <div className="spacer" />
               <div className="prestige-section">

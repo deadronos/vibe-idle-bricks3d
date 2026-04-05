@@ -258,6 +258,64 @@ export function FrameManager() {
 
     const { critChance } = useGameStore.getState();
 
+    // Helper to process results
+    const applySimulationResult = (result: {
+      positions: Float32Array;
+      velocities: Float32Array;
+      hitBrickIds?: readonly (string | null)[];
+      hitIndices?: Int32Array;
+    }) => {
+      const hits: HitResult[] = [];
+      const contactInfos: ContactEvent[] = [];
+
+      const next: typeof balls = balls.map((b, i) => {
+        const off = i * 3;
+        const nextPosition: [number, number, number] = [
+          result.positions[off],
+          result.positions[off + 1],
+          result.positions[off + 2],
+        ];
+        const nextVelocity: [number, number, number] = [
+          result.velocities[off],
+          result.velocities[off + 1],
+          result.velocities[off + 2],
+        ];
+
+        let hitBrickId: string | null = null;
+        if (result.hitBrickIds) {
+          hitBrickId = result.hitBrickIds[i];
+        } else if (result.hitIndices) {
+          const hitIdx = result.hitIndices[i];
+          if (hitIdx >= 0) {
+            hitBrickId = bricks[hitIdx]?.id || null;
+          }
+        }
+
+        if (hitBrickId) {
+          hits.push({
+            brickId: hitBrickId,
+            damage: calculateDamage(b.damage, critChance || 0),
+          });
+          contactInfos.push(
+            createFallbackContactEvent(b, hitBrickId, nextPosition, b.velocity)
+          );
+        }
+
+        return {
+          ...b,
+          position: nextPosition,
+          velocity: nextVelocity,
+        };
+      });
+
+      applyFrameHits(hits, contactInfos, {
+        applyHits: useGameStore.getState().applyHits,
+        handleContact,
+      });
+
+      useGameStore.setState({ balls: next });
+    };
+
     // Attempt to use the multithreaded physics runtime when available. We pipe a
     // job to the worker each frame and apply the *previous* completed result if
     // present. This avoids blocking the main thread while still keeping the
@@ -316,50 +374,7 @@ export function FrameManager() {
           // Try to take a completed result from the SAB worker
           const r = mt.takeSABResult();
           if (r) {
-            const hits: HitResult[] = [];
-            const contactInfos: ContactEvent[] = [];
-
-            const next: typeof balls = balls.map((b, i) => {
-              const off = i * 3;
-              const nextPosition: [number, number, number] = [
-                r.positions[off],
-                r.positions[off + 1],
-                r.positions[off + 2],
-              ];
-              const nextVelocity: [number, number, number] = [
-                r.velocities[off],
-                r.velocities[off + 1],
-                r.velocities[off + 2],
-              ];
-
-              const hitIdx = r.hitIndices[i];
-              if (hitIdx >= 0) {
-                const hitBrickId = bricks[hitIdx]?.id;
-                if (hitBrickId) {
-                  hits.push({
-                    brickId: hitBrickId,
-                    damage: calculateDamage(b.damage, critChance || 0),
-                  });
-                  contactInfos.push(
-                    createFallbackContactEvent(b, hitBrickId, nextPosition, b.velocity)
-                  );
-                }
-              }
-
-              return {
-                ...b,
-                position: nextPosition,
-                velocity: nextVelocity,
-              };
-            });
-
-            applyFrameHits(hits, contactInfos, {
-              applyHits: useGameStore.getState().applyHits,
-              handleContact,
-            });
-
-            useGameStore.setState({ balls: next });
-
+            applySimulationResult(r);
             return; // done for this frame
           }
         }
@@ -378,49 +393,9 @@ export function FrameManager() {
           bricks,
         });
 
-        const res: ReturnType<typeof mt.takePendingResult> = mt.takePendingResult();
+        const res = mt.takePendingResult();
         if (res) {
-          const hits: HitResult[] = [];
-          const contactInfos: ContactEvent[] = [];
-
-          const next: typeof balls = balls.map((b, i) => {
-            const off = i * 3;
-            const nextPosition: [number, number, number] = [
-              res.positions[off],
-              res.positions[off + 1],
-              res.positions[off + 2],
-            ];
-            const nextVelocity: [number, number, number] = [
-              res.velocities[off],
-              res.velocities[off + 1],
-              res.velocities[off + 2],
-            ];
-
-            const hitBrickId = res.hitBrickIds[i];
-            if (hitBrickId) {
-              hits.push({
-                brickId: hitBrickId,
-                damage: calculateDamage(b.damage, critChance || 0),
-              });
-              contactInfos.push(
-                createFallbackContactEvent(b, hitBrickId, nextPosition, b.velocity)
-              );
-            }
-
-            return {
-              ...b,
-              position: nextPosition,
-              velocity: nextVelocity,
-            };
-          });
-
-          applyFrameHits(hits, contactInfos, {
-            applyHits: useGameStore.getState().applyHits,
-            handleContact,
-          });
-
-          useGameStore.setState({ balls: next });
-
+          applySimulationResult(res);
           return; // done for this frame
         }
       } catch (err) {
