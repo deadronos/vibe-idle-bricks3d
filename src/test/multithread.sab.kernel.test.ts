@@ -1,41 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { simulateStepInPlace } from '../engine/multithread/kernel';
 import { stepBallFrame } from '../engine/collision';
-import type { Ball, Brick } from '../store/types';
+import { mockArena, mockBrick, mockBalls } from './multithread.utils';
 
 describe('simulateStepInPlace (in-place SAB-friendly)', () => {
   it('writes results in-place and reports brick indices', () => {
-    const arena = { width: 12, height: 10, depth: 8 };
-
-    const brick: Brick = {
-      id: 'brick-1',
-      type: 'normal',
-      position: [0, 0, 0],
-      health: 10,
-      maxHealth: 10,
-      color: '#fff',
-      value: 10,
-    };
-
-    const balls: Ball[] = [
-      {
-        id: 'ball-1',
-        position: [-0.1, 0, 0],
-        velocity: [0.2, 0, 0],
-        radius: 0.5,
-        damage: 1,
-        color: '#fff',
-      },
-      {
-        id: 'ball-2',
-        position: [1, 0.2, -0.3],
-        velocity: [-0.1, 0.05, 0.05],
-        radius: 0.25,
-        damage: 2,
-        color: '#0ff',
-      },
-    ];
-
+    const arena = mockArena;
+    const brick = mockBrick;
+    const balls = mockBalls;
     const count = balls.length;
 
     // Use SharedArrayBuffer when available so the function is exercised in SAB mode
