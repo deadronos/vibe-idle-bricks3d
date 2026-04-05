@@ -10,8 +10,8 @@ import type { BehaviorContext, BrickBehavior, HitEvent } from './types';
  */
 export function computeHitDamage(ctx: BehaviorContext, hit: HitEvent): number {
   const state = ctx.getState();
-  const ball = state.balls.find((b) => b.id === hit.ballId);
-  if (ball) return ball.damage;
+  const ball = hit.ballId ? state.balls.find((b) => b.id === hit.ballId) : undefined;
+  if (ball) return ball.damage ?? 1;
   if (typeof hit.impulse === 'number') return hit.impulse;
   return 1;
 }

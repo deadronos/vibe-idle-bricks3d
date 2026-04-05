@@ -24,6 +24,8 @@ export const useInstancedBricks = (bricks: Brick[]) => {
 
   // Keep track of IDs we have synced to Rapier to avoid unnecessary recreation
   const syncedBrickIds = useRef<Set<string>>(new Set());
+  // Maintain a stable id -> index mapping to avoid depending on bricks array in callbacks
+  const idToIndexRef = useRef<Map<string, number>>(new Map());
 
   const applyInstanceColor = useCallback((index: number, brick: Brick, isHovered: boolean) => {
     if (!meshRef.current) return;
@@ -50,7 +52,8 @@ export const useInstancedBricks = (bricks: Brick[]) => {
     }
 
     if (targetIndex === -1) {
-      targetIndex = bricks.findIndex((brick) => brick.id === hoveredId);
+      // Use the stable idToIndex map for O(1) lookup instead of O(n) findIndex
+      targetIndex = idToIndexRef.current.get(hoveredId) ?? -1;
     }
 
     hoveredBrickIdRef.current = null;
@@ -67,6 +70,13 @@ export const useInstancedBricks = (bricks: Brick[]) => {
   useLayoutEffect(() => {
     if (!meshRef.current) return;
     const mesh = meshRef.current;
+
+    // Update the id -> index map for stable O(1) lookups
+    const idToIndex = idToIndexRef.current;
+    idToIndex.clear();
+    bricks.forEach((brick, index) => {
+      idToIndex.set(brick.id, index);
+    });
 
     // Direct update of matrices and colors
     mesh.count = bricks.length;
@@ -86,16 +96,17 @@ export const useInstancedBricks = (bricks: Brick[]) => {
     }
   }, [bricks]);
 
-  // Optimized Rapier synchronization: Only add/remove modified bricks
+  // Keep Rapier bodies aligned with the current brick list while avoiding
+  // quadratic membership checks during removal.
   useLayoutEffect(() => {
     const world = getRapierWorld();
     if (!world) return;
 
-    const currentIdSet = new Set(bricks.map((b) => b.id));
     const previousIdSet = syncedBrickIds.current;
+    const currentIdSet = new Set(bricks.map((b) => b.id));
 
-    // Remove bricks that are no longer present
-    for (const id of previousIdSet) {
+    // Remove bricks that disappeared from state.
+    for (const id of Array.from(previousIdSet)) {
       if (!currentIdSet.has(id)) {
         try {
           world.removeBrick(id);
@@ -106,8 +117,8 @@ export const useInstancedBricks = (bricks: Brick[]) => {
       }
     }
 
-    // Add or update bricks
-    // Note: addBrick in body-management is safe to call for existing bricks (it updates transforms)
+    // Add or refresh all current bricks. `addBrick` is idempotent and updates
+    // existing transforms in the physics body manager.
     for (const b of bricks) {
       try {
         world.addBrick(b);
@@ -140,7 +151,8 @@ export const useInstancedBricks = (bricks: Brick[]) => {
     const hoveredId = hoveredBrickIdRef.current;
     if (!hoveredId) return;
 
-    const nextIndex = bricks.findIndex((brick) => brick.id === hoveredId);
+    // Use stable idToIndex map for O(1) lookup instead of O(n) findIndex
+    const nextIndex = idToIndexRef.current.get(hoveredId) ?? -1;
     if (nextIndex === -1) {
       hoveredBrickIdRef.current = null;
       hoveredIndexRef.current = null;
@@ -159,6 +171,7 @@ export const useInstancedBricks = (bricks: Brick[]) => {
         return;
       }
 
+      // getBrickFromInstance uses direct array indexing (instanceId is the index)
       const brick = getBrickFromInstance(bricks, instanceId);
       if (!brick) {
         clearHoveredInstance();
@@ -174,7 +187,7 @@ export const useInstancedBricks = (bricks: Brick[]) => {
       hoveredIndexRef.current = instanceId;
       hoveredBrickIdRef.current = brick.id;
     },
-    [applyInstanceColor, bricks, clearHoveredInstance]
+    [applyInstanceColor, clearHoveredInstance] // bricks removed - getBrickFromInstance uses direct indexing
   );
 
   const handlePointerOut = useCallback(() => {
