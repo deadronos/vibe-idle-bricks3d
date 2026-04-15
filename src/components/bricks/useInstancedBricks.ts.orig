@@ -187,7 +187,7 @@ export const useInstancedBricks = (bricks: Brick[]) => {
       hoveredIndexRef.current = instanceId;
       hoveredBrickIdRef.current = brick.id;
     },
-    [applyInstanceColor, clearHoveredInstance, bricks]
+    [applyInstanceColor, clearHoveredInstance] // bricks removed - getBrickFromInstance uses direct indexing
   );
 
   const handlePointerOut = useCallback(() => {
