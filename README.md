@@ -33,9 +33,9 @@ A 3D "idle breakout" style game built with React, TypeScript, and React Three Fi
 
 Note: common package versions used in this repository (see package.json for the full list):
 
-- @react-three/fiber: ^9.4.2
+- @react-three/fiber: ^9.6.1
 - @react-three/drei: ^10.7.7
-- three: ^0.181.2
+- three: ^0.184.0
 - @dimforge/rapier3d-compat: ^0.19.3
 - @react-three/postprocessing: ^3.0.4
 
@@ -43,7 +43,7 @@ Note: common package versions used in this repository (see package.json for the 
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.19+ or 22.12+
 - pnpm (recommended) or npm / yarn
 
 ### Installation

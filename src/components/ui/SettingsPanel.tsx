@@ -54,9 +54,18 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
     }
   }, []);
 
+  const handleModalRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      modalRef.current = node;
+      if (node) {
+        void refreshSabStatus();
+      }
+    },
+    [refreshSabStatus],
+  );
+
   React.useEffect(() => {
     isMountedRef.current = true;
-    void refreshSabStatus();
 
     const root = modalRef.current;
     const prevActive = document.activeElement as HTMLElement | null;
@@ -103,13 +112,13 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
       if (onEsc) document.removeEventListener('keydown', onEsc);
       if (prevActive) prevActive.focus();
     };
-  }, [onClose, refreshSabStatus]);
+  }, [onClose]);
 
   return (
     <div className="settings-modal-overlay" onClick={onClose}>
       <div
         className="settings-modal"
-        ref={modalRef}
+        ref={handleModalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-heading"
