@@ -3,7 +3,7 @@
 ## Stack
 
 - React 19.x
-- TypeScript 5.x
+- TypeScript 6.x
 - React Three Fiber (R3F)
 - Three.js
 - Zustand
@@ -12,7 +12,7 @@
 
 ## Dev setup
 
-- npm install
+- npm install or corepack pnpm install
 - npm run dev to start
 - npm run build to produce production assets
 
