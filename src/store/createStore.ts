@@ -49,5 +49,8 @@ const createGameState: GameStateCreator = (set, get, store) => ({
  * Uses Zustand with persistence middleware.
  */
 export const useGameStore: UseBoundStore<PersistedStoreApi<GameState>> = create<GameState>()(
-  persist(createGameState, createPersistOptions(() => useGameStore))
+  persist(
+    createGameState,
+    createPersistOptions(() => useGameStore)
+  )
 );

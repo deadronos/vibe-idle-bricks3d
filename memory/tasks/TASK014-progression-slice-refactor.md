@@ -42,16 +42,16 @@ Summary: Split `progression.ts` into focused modules under `src/store/slices/pro
 
 ### Subtasks
 
-| ID  | Description                                                    | Status     | Updated    | Notes |
-| --- | -------------------------------------------------------------- | ---------- | ---------- | ----- |
-| 1.1 | Create `progression/` folder and stub modules                   | Not Started| 2025-12-05 |       |
-| 2.1 | Move helpers to `score.ts` and add unit tests                   | Not Started| 2025-12-05 |       |
-| 2.2 | Move upgrade logic to `upgrades.ts` and add unit tests          | Not Started| 2025-12-05 |       |
-| 2.3 | Move prestige logic to `prestige.ts` and add unit tests         | Not Started| 2025-12-05 |       |
-| 2.4 | Move hits/combo logic to `hits.ts` and adapt effects wrapper     | Not Started| 2025-12-05 |       |
-| 3.1 | Replace `progression.ts` with composed `index.ts` adapter       | Not Started| 2025-12-05 |       |
-| 4.1 | Add integration tests for parity scenarios                      | Not Started| 2025-12-05 |       |
-| 5.1 | Run full validation suite & CI updates                          | Not Started| 2025-12-05 |       |
+| ID  | Description                                                  | Status      | Updated    | Notes |
+| --- | ------------------------------------------------------------ | ----------- | ---------- | ----- |
+| 1.1 | Create `progression/` folder and stub modules                | Not Started | 2025-12-05 |       |
+| 2.1 | Move helpers to `score.ts` and add unit tests                | Not Started | 2025-12-05 |       |
+| 2.2 | Move upgrade logic to `upgrades.ts` and add unit tests       | Not Started | 2025-12-05 |       |
+| 2.3 | Move prestige logic to `prestige.ts` and add unit tests      | Not Started | 2025-12-05 |       |
+| 2.4 | Move hits/combo logic to `hits.ts` and adapt effects wrapper | Not Started | 2025-12-05 |       |
+| 3.1 | Replace `progression.ts` with composed `index.ts` adapter    | Not Started | 2025-12-05 |       |
+| 4.1 | Add integration tests for parity scenarios                   | Not Started | 2025-12-05 |       |
+| 5.1 | Run full validation suite & CI updates                       | Not Started | 2025-12-05 |       |
 
 ## Progress Log
 

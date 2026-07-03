@@ -1,6 +1,6 @@
 # TASK012 - Rapier World Refactor (DESIGN010)
 
- **Status:** Completed
+**Status:** Completed
 **Added:** 2025-12-05
 **Updated:** 2025-12-05
 
@@ -32,16 +32,16 @@ Create a task for DESIGN010 — Refactor `src/engine/rapier/rapierWorld.ts` into
 
 ### Subtasks
 
-| ID  | Description                                                      | Status     | Updated    | Notes |
-| --- | ---------------------------------------------------------------- | ---------- | ---------- | ----- |
-| 1.1 | Create `runtime-probes.ts` with probe helpers                     | Completed  | 2025-12-05 |       |
-| 2.1 | Implement `createBodyManager()` and boundary-safe accessors       | Completed  | 2025-12-05 |       |
-| 3.1 | Implement `contact-parsing.ts` and parsing heuristics             | Completed  | 2025-12-05 |       |
-| 4.1 | Implement `overlap-detector.ts` geometric fallback                | Completed  | 2025-12-05 |       |
-| 5.1 | Replace `rapierWorld.ts` with an adapter that composes modules    | Completed  | 2025-12-05 |       |
-| 6.1 | Add unit tests for each module                                    | Completed  | 2025-12-05 |       |
-| 7.1 | Add integration tests for parity of `drainContactEvents()`        | Completed  | 2025-12-05 |       |
-| 8.1 | Run validation suite and CI updates                               | Completed  | 2025-12-05 |       |
+| ID  | Description                                                    | Status    | Updated    | Notes |
+| --- | -------------------------------------------------------------- | --------- | ---------- | ----- |
+| 1.1 | Create `runtime-probes.ts` with probe helpers                  | Completed | 2025-12-05 |       |
+| 2.1 | Implement `createBodyManager()` and boundary-safe accessors    | Completed | 2025-12-05 |       |
+| 3.1 | Implement `contact-parsing.ts` and parsing heuristics          | Completed | 2025-12-05 |       |
+| 4.1 | Implement `overlap-detector.ts` geometric fallback             | Completed | 2025-12-05 |       |
+| 5.1 | Replace `rapierWorld.ts` with an adapter that composes modules | Completed | 2025-12-05 |       |
+| 6.1 | Add unit tests for each module                                 | Completed | 2025-12-05 |       |
+| 7.1 | Add integration tests for parity of `drainContactEvents()`     | Completed | 2025-12-05 |       |
+| 8.1 | Run validation suite and CI updates                            | Completed | 2025-12-05 |       |
 
 ## Progress Log
 

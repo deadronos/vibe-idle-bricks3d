@@ -53,7 +53,17 @@ describe('simulateStepInPlace (in-place SAB-friendly)', () => {
       outHitIdx[i] = -2; // sentinel
     }
 
-    simulateStepInPlace(count, 0.016, arena, positions, velocities, radii, damages, [brick], outHitIdx);
+    simulateStepInPlace(
+      count,
+      0.016,
+      arena,
+      positions,
+      velocities,
+      radii,
+      damages,
+      [brick],
+      outHitIdx
+    );
 
     for (let i = 0; i < count; i++) {
       const expected = stepBallFrame(balls[i], 0.016, arena, [brick]);

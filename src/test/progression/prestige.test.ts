@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { calculatePrestigeReward, createPrestigeSlice } from '../../store/slices/progression/prestige';
+import {
+  calculatePrestigeReward,
+  createPrestigeSlice,
+} from '../../store/slices/progression/prestige';
 
 vi.mock('../../store/slices/persistence', () => ({
   buildInitialState: vi.fn(() => ({
@@ -49,20 +52,20 @@ describe('prestige slice', () => {
     });
 
     it('should not prestige if reward is 0', () => {
-        const mockSet = vi.fn();
-        const mockGet = vi.fn();
-        const slice = createPrestigeSlice(mockSet, mockGet, {} as never);
+      const mockSet = vi.fn();
+      const mockGet = vi.fn();
+      const slice = createPrestigeSlice(mockSet, mockGet, {} as never);
 
-        const state = {
-          maxWaveReached: 1,
-          vibeCrystals: 0,
-        };
+      const state = {
+        maxWaveReached: 1,
+        vibeCrystals: 0,
+      };
 
-        slice.performPrestige();
-        const updater = mockSet.mock.calls[0][0];
-        const result = updater(state);
+      slice.performPrestige();
+      const updater = mockSet.mock.calls[0][0];
+      const result = updater(state);
 
-        expect(result).toBe(state);
+      expect(result).toBe(state);
     });
   });
 });

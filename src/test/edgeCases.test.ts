@@ -1,10 +1,9 @@
-import { resetToKnownState, waitForRehydrationFix } from "./test-utils";
+import { resetToKnownState, waitForRehydrationFix } from './test-utils';
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   ACHIEVEMENTS,
   buildInitialState,
   useGameStore,
-
   DEFAULT_BALL_DAMAGE,
   DEFAULT_BALL_SPEED,
 } from '../store/gameStore';

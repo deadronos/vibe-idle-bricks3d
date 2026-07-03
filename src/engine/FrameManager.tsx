@@ -242,11 +242,11 @@ export function FrameManager() {
               };
             });
 
-              const now = Date.now();
-              if (balls.length !== next.length || now - lastBallSyncRef.current > 100) {
-                useGameStore.setState({ balls: next });
-                lastBallSyncRef.current = now;
-              }
+            const now = Date.now();
+            if (balls.length !== next.length || now - lastBallSyncRef.current > 100) {
+              useGameStore.setState({ balls: next });
+              lastBallSyncRef.current = now;
+            }
           }
         } catch {
           // best-effort; ignore transform reading errors
@@ -296,9 +296,7 @@ export function FrameManager() {
             brickId: hitBrickId,
             damage: calculateDamage(b.damage, critChance || 0),
           });
-          contactInfos.push(
-            createFallbackContactEvent(b, hitBrickId, nextPosition, b.velocity)
-          );
+          contactInfos.push(createFallbackContactEvent(b, hitBrickId, nextPosition, b.velocity));
         }
 
         return {
@@ -350,10 +348,13 @@ export function FrameManager() {
       try {
         // Lazy-load the runtime so it doesn't run in environments where workers are unavailable.
 
-        const mt = mtRuntimeRef.current; if (!mt) throw new Error('Runtime not ready');
+        const mt = mtRuntimeRef.current;
+        if (!mt) throw new Error('Runtime not ready');
 
         // Preferred path: SharedArrayBuffer + Atomics (zero-copy) if available and explicitly enabled
-        const sabEnabledEnv = Boolean((import.meta as unknown as { env?: Record<string, string> }).env?.VITE_ENABLE_SAB);
+        const sabEnabledEnv = Boolean(
+          (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_ENABLE_SAB
+        );
         const sabEnabledSetting = Boolean(state.settings?.enableSABPhysics);
         const sabEnabled = sabEnabledEnv && sabEnabledSetting;
 

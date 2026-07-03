@@ -167,7 +167,9 @@ export const createPersistOptions = (
           setTimeout(() => {
             const store = getStore().getState();
             if (store.announce) {
-              store.announce(`Welcome back! You earned ${offlineEarnings.toLocaleString()} points while away.`);
+              store.announce(
+                `Welcome back! You earned ${offlineEarnings.toLocaleString()} points while away.`
+              );
             }
           }, 1000);
 
@@ -191,7 +193,7 @@ export const createPersistOptions = (
             useGameStore: store,
           });
         } catch (e) {
-          console.error("[GameStore] handleRehydrate error:", e);
+          console.error('[GameStore] handleRehydrate error:', e);
         }
       }, 0);
     };

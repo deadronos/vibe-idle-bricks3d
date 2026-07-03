@@ -8,9 +8,7 @@ describe('persistence slice', () => {
     vi.setSystemTime(new Date('2026-03-23T12:00:00Z'));
 
     try {
-      const options = createPersistOptions(
-        () => ({ getState: () => ({}) as GameState } as never)
-      );
+      const options = createPersistOptions(() => ({ getState: () => ({}) as GameState }) as never);
 
       const partialize = options.partialize;
       expect(partialize).toBeDefined();

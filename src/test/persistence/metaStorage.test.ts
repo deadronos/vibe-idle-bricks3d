@@ -39,7 +39,7 @@ describe('metaStorage', () => {
     it('setItem should persist to localStorage and meta if non-default', () => {
       const name = 'test-storage';
       const stateObj = {
-        state: { score: 100, wave: 2 }
+        state: { score: 100, wave: 2 },
       };
       const expectedJson = JSON.stringify(stateObj);
 
@@ -53,15 +53,15 @@ describe('metaStorage', () => {
       const name = 'test-storage-default';
       const stateObj = {
         state: {
-            score: 0,
-            bricksDestroyed: 0,
-            wave: DEFAULT_WAVE,
-            maxWaveReached: DEFAULT_WAVE,
-            ballDamage: 1,
-            ballSpeed: 0.1,
-            ballCount: 1,
-            unlockedAchievements: []
-        }
+          score: 0,
+          bricksDestroyed: 0,
+          wave: DEFAULT_WAVE,
+          maxWaveReached: DEFAULT_WAVE,
+          ballDamage: 1,
+          ballSpeed: 0.1,
+          ballCount: 1,
+          unlockedAchievements: [],
+        },
       };
       const expectedJson = JSON.stringify(stateObj);
 
@@ -83,15 +83,15 @@ describe('metaStorage', () => {
       const name = 'test-get-meta';
       const defaultState = {
         state: {
-            score: 0,
-            bricksDestroyed: 0,
-            wave: DEFAULT_WAVE,
-            maxWaveReached: DEFAULT_WAVE,
-            ballDamage: 1,
-            ballSpeed: 0.1,
-            ballCount: 1,
-            unlockedAchievements: []
-        }
+          score: 0,
+          bricksDestroyed: 0,
+          wave: DEFAULT_WAVE,
+          maxWaveReached: DEFAULT_WAVE,
+          ballDamage: 1,
+          ballSpeed: 0.1,
+          ballCount: 1,
+          unlockedAchievements: [],
+        },
       };
       const metaState = { state: { score: 100 } };
 

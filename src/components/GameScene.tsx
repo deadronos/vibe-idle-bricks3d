@@ -27,12 +27,13 @@ export function GameScene() {
   const rapierActive = useGameStore((state) => state.rapierActive ?? false);
   const regenerateBricks = useGameStore((state) => state.regenerateBricks);
 
-  const { pixelRatio, bloomIntensity, shadowSize, particleCount, computedQuality } = getRenderingOptions({
-    graphicsQuality,
-    enableBloom,
-    enableShadows,
-    enableParticles,
-  });
+  const { pixelRatio, bloomIntensity, shadowSize, particleCount, computedQuality } =
+    getRenderingOptions({
+      graphicsQuality,
+      enableBloom,
+      enableShadows,
+      enableParticles,
+    });
 
   return (
     <div className="game-scene-root">

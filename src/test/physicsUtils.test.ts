@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { calculateDamage, computeContactNormal, applyFrameHits, type HitResult } from '../engine/physics/utils';
+import {
+  calculateDamage,
+  computeContactNormal,
+  applyFrameHits,
+  type HitResult,
+} from '../engine/physics/utils';
 import type { ContactEvent } from '../engine/rapier/types';
 
 describe('physics utils', () => {
@@ -41,36 +46,38 @@ describe('physics utils', () => {
     });
 
     it('returns [0,0,1] for zero velocity', () => {
-        expect(computeContactNormal([0, 0, 0])).toEqual([0, 0, 1]);
+      expect(computeContactNormal([0, 0, 0])).toEqual([0, 0, 1]);
     });
   });
 
   describe('applyFrameHits', () => {
     it('calls applyHits and handleContact', () => {
-        const applyHits = vi.fn();
-        const handleContact = vi.fn();
+      const applyHits = vi.fn();
+      const handleContact = vi.fn();
 
-        const hits: HitResult[] = [{ brickId: 'b1', damage: 10 }];
-        const contacts: ContactEvent[] = [{
-            ballId: 'ball1',
-            brickId: 'b1',
-            point: [0,0,0],
-            normal: [0,1,0],
-        }];
+      const hits: HitResult[] = [{ brickId: 'b1', damage: 10 }];
+      const contacts: ContactEvent[] = [
+        {
+          ballId: 'ball1',
+          brickId: 'b1',
+          point: [0, 0, 0],
+          normal: [0, 1, 0],
+        },
+      ];
 
-        applyFrameHits(hits, contacts, { applyHits, handleContact });
+      applyFrameHits(hits, contacts, { applyHits, handleContact });
 
-        expect(applyHits).toHaveBeenCalledWith(hits);
-        expect(handleContact).toHaveBeenCalledTimes(1);
-        expect(handleContact).toHaveBeenCalledWith(contacts[0], { applyDamage: false });
+      expect(applyHits).toHaveBeenCalledWith(hits);
+      expect(handleContact).toHaveBeenCalledTimes(1);
+      expect(handleContact).toHaveBeenCalledWith(contacts[0], { applyDamage: false });
     });
 
     it('does nothing if no hits', () => {
-        const applyHits = vi.fn();
-        const handleContact = vi.fn();
-        applyFrameHits([], [], { applyHits, handleContact });
-        expect(applyHits).not.toHaveBeenCalled();
-        expect(handleContact).not.toHaveBeenCalled();
+      const applyHits = vi.fn();
+      const handleContact = vi.fn();
+      applyFrameHits([], [], { applyHits, handleContact });
+      expect(applyHits).not.toHaveBeenCalled();
+      expect(handleContact).not.toHaveBeenCalled();
     });
   });
 });

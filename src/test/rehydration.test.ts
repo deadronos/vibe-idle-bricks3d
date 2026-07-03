@@ -1,11 +1,6 @@
-import { resetToKnownState, waitForRehydrationFix } from "./test-utils";
+import { resetToKnownState, waitForRehydrationFix } from './test-utils';
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  buildInitialState,
-  createInitialBall,
-  useGameStore,
-
-} from '../store/gameStore';
+import { buildInitialState, createInitialBall, useGameStore } from '../store/gameStore';
 
 /**
  * Comprehensive rehydration tests covering:

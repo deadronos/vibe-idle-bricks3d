@@ -4,7 +4,9 @@ test('SAB runtime initialization via Settings UI (dev-only)', async ({ page }) =
   await page.goto('/');
 
   // If crossOriginIsolated isn't enabled in this environment, skip the test.
-  const coi = await page.evaluate(() => (globalThis as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated);
+  const coi = await page.evaluate(
+    () => (globalThis as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated
+  );
   test.skip(!coi, 'Cross-origin isolation not enabled in this environment');
 
   // Open settings

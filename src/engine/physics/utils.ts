@@ -37,8 +37,7 @@ export function calculateDamage(baseDamage: number, critChance: number): number 
  * @returns {Vec3} The normalized direction vector or [0,0,1].
  */
 export function computeContactNormal(velocity: Vec3): Vec3 {
-  const speedSq =
-    velocity[0] * velocity[0] + velocity[1] * velocity[1] + velocity[2] * velocity[2];
+  const speedSq = velocity[0] * velocity[0] + velocity[1] * velocity[1] + velocity[2] * velocity[2];
   if (speedSq > 1e-12) {
     const invSpeed = 1 / Math.sqrt(speedSq);
     return [velocity[0] * invSpeed, velocity[1] * invSpeed, velocity[2] * invSpeed];

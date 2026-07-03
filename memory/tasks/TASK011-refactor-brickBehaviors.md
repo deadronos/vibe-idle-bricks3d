@@ -28,13 +28,13 @@ Create a task for DESIGN009 — refactor `src/systems/brickBehaviors.ts` into mo
 
 ### Subtasks
 
-| ID  | Description                                                       | Status      | Updated    | Notes |
-| --- | ----------------------------------------------------------------- | ----------- | ---------- | ----- |
-| 1.1 | Scaffold behaviors directory, types, and registry API             | Completed   | 2025-12-04 | Added registry + reset helpers |
-| 2.1 | Implement `hitDamage` and `score` modules with unit tests         | Completed   | 2025-12-04 | Added compute/apply helpers + tests |
-| 3.1 | Add `spawnEffect` and `powerup` helpers                            | Completed   | 2025-12-04 | Stub behaviors for future wiring |
-| 4.1 | Adapt `brickBehaviors.ts` to use registry; add integration test   | Completed   | 2025-12-04 | handleContact now delegates to registry |
-| 5.1 | Run validation commands (typecheck, lint, test:run, build)        | Not Started | 2025-12-04 | Pending |
+| ID  | Description                                                     | Status      | Updated    | Notes                                   |
+| --- | --------------------------------------------------------------- | ----------- | ---------- | --------------------------------------- |
+| 1.1 | Scaffold behaviors directory, types, and registry API           | Completed   | 2025-12-04 | Added registry + reset helpers          |
+| 2.1 | Implement `hitDamage` and `score` modules with unit tests       | Completed   | 2025-12-04 | Added compute/apply helpers + tests     |
+| 3.1 | Add `spawnEffect` and `powerup` helpers                         | Completed   | 2025-12-04 | Stub behaviors for future wiring        |
+| 4.1 | Adapt `brickBehaviors.ts` to use registry; add integration test | Completed   | 2025-12-04 | handleContact now delegates to registry |
+| 5.1 | Run validation commands (typecheck, lint, test:run, build)      | Not Started | 2025-12-04 | Pending                                 |
 
 ## Progress Log
 
@@ -46,4 +46,5 @@ Create a task for DESIGN009 — refactor `src/systems/brickBehaviors.ts` into mo
 ---
 
 **References:**
+
 - Design doc: [DESIGN009 — Refactor `brickBehaviors`](../designs/DESIGN009-refactor-brickBehaviors.md)

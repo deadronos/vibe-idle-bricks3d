@@ -42,30 +42,32 @@ describe('BricksLayer', () => {
 
 describe('BallsLayer', () => {
   it('uses instanced rendering when Rapier is active', () => {
-    render(
-      <BallsLayer
-        balls={[]}
-        rapierActive
-        computedQuality="medium"
-      />,
-    );
+    render(<BallsLayer balls={[]} rapierActive computedQuality="medium" />);
 
     expect(screen.getByTestId('balls-instanced')).toHaveAttribute('data-max', '128');
   });
 
   it('renders individual balls when Rapier is inactive', () => {
     const balls: BallType[] = [
-      { id: 'b1', position: [0, 0, 0], velocity: [0, 0, 0], radius: 0.25, color: '#fff', damage: 1 },
-      { id: 'b2', position: [1, 0, 0], velocity: [0, 0, 0], radius: 0.25, color: '#fff', damage: 1 },
+      {
+        id: 'b1',
+        position: [0, 0, 0],
+        velocity: [0, 0, 0],
+        radius: 0.25,
+        color: '#fff',
+        damage: 1,
+      },
+      {
+        id: 'b2',
+        position: [1, 0, 0],
+        velocity: [0, 0, 0],
+        radius: 0.25,
+        color: '#fff',
+        damage: 1,
+      },
     ];
 
-    render(
-      <BallsLayer
-        balls={balls}
-        rapierActive={false}
-        computedQuality="high"
-      />,
-    );
+    render(<BallsLayer balls={balls} rapierActive={false} computedQuality="high" />);
 
     const rendered = screen.getAllByTestId('ball');
     expect(rendered).toHaveLength(2);

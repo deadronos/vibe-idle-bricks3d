@@ -31,14 +31,14 @@ Create a task for DESIGN008 — Refactor `src/components/GameScene.tsx` into sco
 
 ### Subtasks
 
-| ID  | Description                                             | Status      | Updated    | Notes |
-| --- | ------------------------------------------------------- | ----------- | ---------- | ----- |
-| 1.1 | Scaffold folder and move helpers into `GameScene/utils.ts` | Completed | 2025-12-04 |       |
-| 2.1 | Implement `SceneSetup` and `Lighting` and compose in `GameScene` | Completed | 2025-12-04 |       |
-| 3.1 | Extract `ArenaLayer` for bounds/colliders               | Completed | 2025-12-04 |       |
-| 4.1 | Extract `BricksLayer` with instancing and tests         | Completed | 2025-12-04 | Added targeted tests for layers |
-| 5.1 | Extract `BallsLayer` with localized `useFrame` hooks    | Completed | 2025-12-04 |       |
-| 6.1 | Update tests and run full validation suite              | In Progress | 2025-12-04 | Typecheck passing; lint/build pending; new layer tests run |
+| ID  | Description                                                      | Status      | Updated    | Notes                                                      |
+| --- | ---------------------------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------- |
+| 1.1 | Scaffold folder and move helpers into `GameScene/utils.ts`       | Completed   | 2025-12-04 |                                                            |
+| 2.1 | Implement `SceneSetup` and `Lighting` and compose in `GameScene` | Completed   | 2025-12-04 |                                                            |
+| 3.1 | Extract `ArenaLayer` for bounds/colliders                        | Completed   | 2025-12-04 |                                                            |
+| 4.1 | Extract `BricksLayer` with instancing and tests                  | Completed   | 2025-12-04 | Added targeted tests for layers                            |
+| 5.1 | Extract `BallsLayer` with localized `useFrame` hooks             | Completed   | 2025-12-04 |                                                            |
+| 6.1 | Update tests and run full validation suite                       | In Progress | 2025-12-04 | Typecheck passing; lint/build pending; new layer tests run |
 
 ## Progress Log
 
@@ -51,4 +51,5 @@ Create a task for DESIGN008 — Refactor `src/components/GameScene.tsx` into sco
 ---
 
 **References:**
+
 - Design doc: [DESIGN008 — Refactor `GameScene`](../designs/DESIGN008-refactor-GameScene.md)

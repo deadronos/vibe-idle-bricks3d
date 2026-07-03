@@ -4,7 +4,7 @@ import type { GameSettings } from '../store/types';
 
 describe('getRenderingOptions', () => {
   it('returns low defaults for low quality', () => {
-    const settings = { 
+    const settings = {
       graphicsQuality: 'low',
       enableBloom: true,
       enableShadows: true,
@@ -19,7 +19,7 @@ describe('getRenderingOptions', () => {
   });
 
   it('returns medium defaults for medium quality', () => {
-    const settings = { 
+    const settings = {
       graphicsQuality: 'medium',
       enableBloom: true,
       enableShadows: true,
@@ -34,7 +34,7 @@ describe('getRenderingOptions', () => {
   });
 
   it('returns high defaults for high quality', () => {
-    const settings = { 
+    const settings = {
       graphicsQuality: 'high',
       enableBloom: true,
       enableShadows: true,
@@ -54,7 +54,7 @@ describe('getRenderingOptions', () => {
     const prev = (globalThis as unknown as { devicePixelRatio?: number }).devicePixelRatio;
     try {
       (globalThis as unknown as { devicePixelRatio?: number }).devicePixelRatio = 2;
-      const settings = { 
+      const settings = {
         graphicsQuality: 'auto',
         enableBloom: true,
         enableShadows: true,
