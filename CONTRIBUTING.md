@@ -11,10 +11,10 @@ Local testing:
 
 ```bash
 # run the Rapier smoke test locally
-npm run test:rapier-smoke
+pnpm run test:rapier-smoke
 
 # override CI gating / debug on platforms where WASM fails
-RAPIER=false npm run test:rapier-smoke
+RAPIER=false pnpm run test:rapier-smoke
 ```
 
 If the smoke test fails on your CI environment, consult the project maintainers before flipping the default — we may need to add platform-specific fixes or a rollout plan with feature flags.
