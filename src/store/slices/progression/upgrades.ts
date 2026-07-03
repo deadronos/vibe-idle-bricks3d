@@ -104,7 +104,13 @@ export const createUpgradesSlice: GameStoreSlice<
 
   getBallCountCost: () => {
     const state = get();
-    const count = getPurchaseCount(state, 100, 2, state.ballCount - 1, MAX_BALL_COUNT - state.ballCount);
+    const count = getPurchaseCount(
+      state,
+      100,
+      2,
+      state.ballCount - 1,
+      MAX_BALL_COUNT - state.ballCount
+    );
     return getTotalCost(100, 2, state.ballCount - 1, Math.max(1, count));
   },
 
@@ -157,7 +163,13 @@ export const createUpgradesSlice: GameStoreSlice<
 
   upgradeBallCount: () =>
     set((state) => {
-      const count = getPurchaseCount(state, 100, 2, state.ballCount - 1, MAX_BALL_COUNT - state.ballCount);
+      const count = getPurchaseCount(
+        state,
+        100,
+        2,
+        state.ballCount - 1,
+        MAX_BALL_COUNT - state.ballCount
+      );
       if (count <= 0) return state;
       const cost = getTotalCost(100, 2, state.ballCount - 1, count);
       if (state.score >= cost) {

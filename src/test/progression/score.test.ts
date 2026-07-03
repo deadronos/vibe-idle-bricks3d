@@ -38,10 +38,9 @@ describe('score slice', () => {
 
       expect(result.score).toBe(200); // 100 + 50 * 2
       expect(result.unlockedAchievements).toEqual(['mock-achievement']);
-      expect(achievements.checkAndUnlockAchievements).toHaveBeenCalledWith(
-        mockState,
-        { score: 200 }
-      );
+      expect(achievements.checkAndUnlockAchievements).toHaveBeenCalledWith(mockState, {
+        score: 200,
+      });
     });
   });
 });

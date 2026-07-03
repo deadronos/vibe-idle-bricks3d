@@ -57,13 +57,15 @@ describe('handleRehydrate', () => {
 
     handleRehydrate(state, mockDeps);
 
-    expect(mockSetState).toHaveBeenCalledWith(expect.objectContaining({
-      score: 100,
-      wave: 2,
-      ballCount: 3,
-      ballSpawnQueue: 2, // 3 - 1
-      isRehydrated: true,
-    }));
+    expect(mockSetState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        score: 100,
+        wave: 2,
+        ballCount: 3,
+        ballSpawnQueue: 2, // 3 - 1
+        isRehydrated: true,
+      })
+    );
   });
 
   it('should defer rehydration if deps throw error (e.g. init order)', () => {
@@ -82,7 +84,10 @@ describe('handleRehydrate', () => {
 
     // Should have tried and failed
     expect(mockSetState).toHaveBeenCalledTimes(1);
-    expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Deferring rehydrate'), expect.anything());
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Deferring rehydrate'),
+      expect.anything()
+    );
 
     // Advance timer to trigger retry
     vi.runAllTimers();
@@ -105,13 +110,15 @@ describe('handleRehydrate', () => {
 
     handleRehydrate(state, mockDeps);
 
-    expect(mockSetState).toHaveBeenCalledWith(expect.objectContaining({
-      wave: 1,
-      ballDamage: 1,
-      ballSpeed: 0.1,
-      ballCount: 1,
-      isRehydrated: true,
-    }));
+    expect(mockSetState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        wave: 1,
+        ballDamage: 1,
+        ballSpeed: 0.1,
+        ballCount: 1,
+        isRehydrated: true,
+      })
+    );
   });
 
   it('should trigger safety net if balls are missing after rehydration (non-test env)', () => {
@@ -142,12 +149,14 @@ describe('handleRehydrate', () => {
     // Advance timer for revalidate (16ms)
     vi.advanceTimersByTime(20);
 
-    expect(mockSetState).toHaveBeenCalledWith(expect.objectContaining({
-      balls: expect.arrayContaining([
-        expect.objectContaining({
-          damage: 10
-        })
-      ])
-    }));
+    expect(mockSetState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        balls: expect.arrayContaining([
+          expect.objectContaining({
+            damage: 10,
+          }),
+        ]),
+      })
+    );
   });
 });

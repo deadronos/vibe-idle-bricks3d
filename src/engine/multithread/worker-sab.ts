@@ -33,7 +33,17 @@ function loop() {
 
   while (running) {
     // Ring-mode processing (preferred when available)
-    if (flags && notify && counts && metaFloats && positions && velocities && radii && damages && outHitIndices) {
+    if (
+      flags &&
+      notify &&
+      counts &&
+      metaFloats &&
+      positions &&
+      velocities &&
+      radii &&
+      damages &&
+      outHitIndices
+    ) {
       let didWork = false;
 
       for (let s = 0; s < ringSize; s++) {
@@ -144,7 +154,17 @@ function loop() {
           depth: metaFloats[3],
         };
 
-        simulateStepInPlace(count, delta, arena, positions, velocities, radii, damages, bricks, outHitIndices);
+        simulateStepInPlace(
+          count,
+          delta,
+          arena,
+          positions,
+          velocities,
+          radii,
+          damages,
+          bricks,
+          outHitIndices
+        );
       } catch (err) {
         safeLog('[worker-sab] error during simulateStepInPlace', err);
       } finally {

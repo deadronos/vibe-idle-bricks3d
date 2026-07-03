@@ -18,15 +18,9 @@ describe('UpgradesPanel', () => {
     render(<UpgradesPanel />);
 
     expect(screen.getByRole('heading', { name: 'Upgrades' })).toBeDefined();
-    expect(
-      screen.getByRole('button', { name: /Upgrade Ball Damage — costs/i })
-    ).toBeDefined();
-    expect(
-      screen.getByRole('button', { name: /Upgrade Ball Speed — costs/i })
-    ).toBeDefined();
+    expect(screen.getByRole('button', { name: /Upgrade Ball Damage — costs/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /Upgrade Ball Speed — costs/i })).toBeDefined();
     expect(screen.getByRole('button', { name: /Add Ball — costs/i })).toBeDefined();
-    expect(
-      screen.getByRole('button', { name: /Upgrade Crit Chance — costs/i })
-    ).toBeDefined();
+    expect(screen.getByRole('button', { name: /Upgrade Crit Chance — costs/i })).toBeDefined();
   });
 });

@@ -27,7 +27,12 @@ interface BallsInstancedProps {
  * @param {BallsInstancedProps} props - Component props.
  * @returns {JSX.Element} The instanced mesh.
  */
-export function BallsInstanced({ world, maxInstances = 128, radius = 0.25, geometrySegments }: BallsInstancedProps) {
+export function BallsInstanced({
+  world,
+  maxInstances = 128,
+  radius = 0.25,
+  geometrySegments,
+}: BallsInstancedProps) {
   const meshRef = useRef<THREE.InstancedMesh | null>(null);
   // Optimization: Removed idToIndex Map and per-frame Set allocation.
   // Since all balls are visually identical, we can assign instances 0..N directly.
@@ -35,7 +40,8 @@ export function BallsInstanced({ world, maxInstances = 128, radius = 0.25, geome
   const tmpScale = useMemo(() => new THREE.Vector3(), []);
   const settings = useGameStore((state) => state.settings);
   const { computedQuality } = useMemo(() => getRenderingOptions(settings), [settings]);
-  const segments = geometrySegments ?? (computedQuality === 'high' ? 16 : computedQuality === 'medium' ? 8 : 6);
+  const segments =
+    geometrySegments ?? (computedQuality === 'high' ? 16 : computedQuality === 'medium' ? 8 : 6);
 
   useFrame(() => {
     // If caller didn't pass a world instance, try the shared runtime registry
@@ -76,8 +82,8 @@ export function BallsInstanced({ world, maxInstances = 128, radius = 0.25, geome
         undefined as unknown as THREE.Material,
         maxInstances,
       ]}
-        castShadow={computedQuality !== 'low'}
-        >
+      castShadow={computedQuality !== 'low'}
+    >
       <sphereGeometry args={[radius, segments, segments]} />
       <meshStandardMaterial color="white" />
     </instancedMesh>

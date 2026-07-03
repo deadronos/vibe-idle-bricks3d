@@ -52,7 +52,11 @@ export type BrickBehavior = {
    * @param {HitEvent} hit - The hit event details.
    * @param {BehaviorRunOptions} [options] - Execution options.
    */
-  onHit?: (ctx: BehaviorContext, hit: HitEvent, options?: BehaviorRunOptions) => void | Promise<void>;
+  onHit?: (
+    ctx: BehaviorContext,
+    hit: HitEvent,
+    options?: BehaviorRunOptions
+  ) => void | Promise<void>;
   /**
    * Callback executed when a brick with this behavior is destroyed.
    *

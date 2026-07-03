@@ -28,19 +28,21 @@ describe('sabRuntime ring-buffer behavior (dev-only)', () => {
     expect(started).toBe(true);
 
     // Poll for a result (timeout after 2s)
-    const result = await new Promise<ReturnType<typeof sabRuntime.takeResultIfReady> | null>((resolve) => {
-      const deadline = Date.now() + 2000;
-      const id = setInterval(() => {
-        const r = sabRuntime.takeResultIfReady();
-        if (r) {
-          clearInterval(id);
-          resolve(r);
-        } else if (Date.now() > deadline) {
-          clearInterval(id);
-          resolve(null);
-        }
-      }, 20);
-    });
+    const result = await new Promise<ReturnType<typeof sabRuntime.takeResultIfReady> | null>(
+      (resolve) => {
+        const deadline = Date.now() + 2000;
+        const id = setInterval(() => {
+          const r = sabRuntime.takeResultIfReady();
+          if (r) {
+            clearInterval(id);
+            resolve(r);
+          } else if (Date.now() > deadline) {
+            clearInterval(id);
+            resolve(null);
+          }
+        }, 20);
+      }
+    );
 
     expect(result).not.toBeNull();
     if (result) {

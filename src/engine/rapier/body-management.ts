@@ -1,7 +1,15 @@
 import { BRICK_HALF_SIZE } from '../collision/constants';
 import type { Ball, Brick } from '../../store/types';
 import type { RapierModule, RapierWorldRuntime, RapierBody, BallState, Vec3 } from './types';
-import { maybeHandle, readTranslation, readLinvel, readRotation, readAngvel, safeApplyImpulse, safeApplyTorque } from './runtime-probes';
+import {
+  maybeHandle,
+  readTranslation,
+  readLinvel,
+  readRotation,
+  readAngvel,
+  safeApplyImpulse,
+  safeApplyTorque,
+} from './runtime-probes';
 
 /**
  * Creates a body manager to handle Rapier bodies for balls and bricks.

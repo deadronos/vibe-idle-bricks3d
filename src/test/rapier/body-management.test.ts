@@ -68,19 +68,19 @@ describe('body-management', () => {
   });
 
   it('gets ball states', () => {
-      const ball = { id: 'b1', position: [0, 0, 0], velocity: [0, 0, 0], radius: 1 } as any;
-      const body = {
-          translation: () => ({ x: 1, y: 2, z: 3 }),
-          linvel: () => ({ x: 4, y: 5, z: 6 }),
-          rotation: () => ({ x: 0, y: 0, z: 0, w: 1 }),
-          angvel: () => ({ x: 0, y: 0, z: 0 })
-      };
-      mockRuntime.createRigidBody.mockReturnValue(body);
-      manager.addBall(ball);
+    const ball = { id: 'b1', position: [0, 0, 0], velocity: [0, 0, 0], radius: 1 } as any;
+    const body = {
+      translation: () => ({ x: 1, y: 2, z: 3 }),
+      linvel: () => ({ x: 4, y: 5, z: 6 }),
+      rotation: () => ({ x: 0, y: 0, z: 0, w: 1 }),
+      angvel: () => ({ x: 0, y: 0, z: 0 }),
+    };
+    mockRuntime.createRigidBody.mockReturnValue(body);
+    manager.addBall(ball);
 
-      const states = manager.getBallStates();
-      expect(states).toHaveLength(1);
-      expect(states[0].position).toEqual([1, 2, 3]);
-      expect(states[0].velocity).toEqual([4, 5, 6]);
+    const states = manager.getBallStates();
+    expect(states).toHaveLength(1);
+    expect(states[0].position).toEqual([1, 2, 3]);
+    expect(states[0].velocity).toEqual([4, 5, 6]);
   });
 });

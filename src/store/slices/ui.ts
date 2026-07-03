@@ -101,7 +101,10 @@ const detectDeviceProfile = (): DeviceProfile => {
 export const computeGraphicsSettings = (
   quality: GraphicsQuality,
   profile: DeviceProfile = detectDeviceProfile()
-): Pick<GameSettings, 'enableBloom' | 'enableShadows' | 'enableParticles' | 'enableFullRigidPhysics'> => {
+): Pick<
+  GameSettings,
+  'enableBloom' | 'enableShadows' | 'enableParticles' | 'enableFullRigidPhysics'
+> => {
   if (quality === 'low') {
     return {
       enableBloom: false,
@@ -131,9 +134,9 @@ export const computeGraphicsSettings = (
 
   const lowPowerDevice = Boolean(
     (profile.deviceMemory && profile.deviceMemory <= 2) ||
-      (profile.hardwareConcurrency && profile.hardwareConcurrency <= 2) ||
-      profile.prefersReducedMotion ||
-      profile.smallScreen
+    (profile.hardwareConcurrency && profile.hardwareConcurrency <= 2) ||
+    profile.prefersReducedMotion ||
+    profile.smallScreen
   );
 
   return lowPowerDevice

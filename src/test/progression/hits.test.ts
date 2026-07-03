@@ -94,7 +94,10 @@ describe('hits slice', () => {
         expect(result.comboMultiplier).toBeGreaterThan(1);
       });
 
-      slice.applyHits([{ brickId: 'b1', damage: 1 }, { brickId: 'b2', damage: 1 }]);
+      slice.applyHits([
+        { brickId: 'b1', damage: 1 },
+        { brickId: 'b2', damage: 1 },
+      ]);
     });
   });
 });

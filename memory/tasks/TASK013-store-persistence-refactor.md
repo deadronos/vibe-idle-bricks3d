@@ -30,14 +30,14 @@ Create a task for DESIGN011 — Refactor `src/store/persistence.ts` into `metaSt
 
 ### Subtasks
 
-| ID  | Description                                                    | Status      | Updated    | Notes |
-| --- | -------------------------------------------------------------- | ----------- | ---------- | ----- |
-| 1.1 | Implement `metaStorage.ts` unit-tested storage adapter         | Complete    | 2025-12-05 |       |
-| 2.1 | Add `validators.ts` tests for boundary/clamp behavior          | Complete    | 2025-12-05 |       |
-| 3.1 | Implement `rehydrate.ts` with `RehydrateDeps` and tests        | Complete    | 2025-12-05 |       |
-| 4.1 | Replace `persistence.ts` with adapter re-exports                | Complete    | 2025-12-05 |       |
-| 5.1 | Add integration tests for parity and `meta` behavior           | Complete    | 2025-12-05 | Covered by existing tests and new unit tests |
-| 6.1 | Run full validation suite & CI updates                         | Complete    | 2025-12-05 |       |
+| ID  | Description                                             | Status   | Updated    | Notes                                        |
+| --- | ------------------------------------------------------- | -------- | ---------- | -------------------------------------------- |
+| 1.1 | Implement `metaStorage.ts` unit-tested storage adapter  | Complete | 2025-12-05 |                                              |
+| 2.1 | Add `validators.ts` tests for boundary/clamp behavior   | Complete | 2025-12-05 |                                              |
+| 3.1 | Implement `rehydrate.ts` with `RehydrateDeps` and tests | Complete | 2025-12-05 |                                              |
+| 4.1 | Replace `persistence.ts` with adapter re-exports        | Complete | 2025-12-05 |                                              |
+| 5.1 | Add integration tests for parity and `meta` behavior    | Complete | 2025-12-05 | Covered by existing tests and new unit tests |
+| 6.1 | Run full validation suite & CI updates                  | Complete | 2025-12-05 |                                              |
 
 ## Progress Log
 

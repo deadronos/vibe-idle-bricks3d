@@ -61,7 +61,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         void refreshSabStatus();
       }
     },
-    [refreshSabStatus],
+    [refreshSabStatus]
   );
 
   React.useEffect(() => {
@@ -169,7 +169,9 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
             <div>
               <strong>SharedArrayBuffer Runtime</strong>
             </div>
-            <div id="sab-supported">Supported: {sabAvailable ? 'Yes' : 'No (cross-origin isolation required)'}</div>
+            <div id="sab-supported">
+              Supported: {sabAvailable ? 'Yes' : 'No (cross-origin isolation required)'}
+            </div>
             <div id="sab-initialized">Initialized: {sabInitialized ? 'Yes' : 'No'}</div>
             <div className="sab-controls">
               {sabAvailable && (

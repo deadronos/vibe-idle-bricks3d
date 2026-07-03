@@ -83,7 +83,6 @@ Manual integration test flow (dev)
 4. Observe the **Initialized: Yes** status and verify the simulation continues to advance.
 5. Toggle **Shutdown SAB** to verify the worker shuts down cleanly and the app falls back to the transferable-worker or main-thread path.
 
-
 Security
 
 - Only enable these headers when you understand the security implications and have reviewed third-party resources used by the page.

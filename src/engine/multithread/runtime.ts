@@ -11,12 +11,15 @@ let runtimeDisabled = false;
 
 const SAB_AVAILABLE =
   typeof SharedArrayBuffer !== 'undefined' &&
-  !!((globalThis as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated);
+  !!(globalThis as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated;
 
 /** Number of workers to use when initializing the runtime. */
 function defaultWorkerCount(): number {
   try {
-    const hc = typeof navigator !== 'undefined' ? (navigator as Navigator & { hardwareConcurrency?: number }).hardwareConcurrency : undefined;
+    const hc =
+      typeof navigator !== 'undefined'
+        ? (navigator as Navigator & { hardwareConcurrency?: number }).hardwareConcurrency
+        : undefined;
     if (!hc || hc <= 1) return 1;
     // Reserve one core for the main thread
     return Math.max(1, hc - 1);
@@ -82,22 +85,28 @@ export function tickSimulation(input: SimInput) {
     const handle = spawn(movable, simulateStep as unknown as (args: SimInput) => unknown);
 
     // join the handle and store the result as pending; don't block the caller.
-    void handle.join().then((res: unknown) => {
-      jobInFlight = false;
-      if (res && typeof res === 'object') {
-        const r = res as { ok?: boolean; value?: unknown; error?: unknown };
-        if (r.ok) {
-          pendingResult = r.value as SimResult;
+    void handle.join().then(
+      (res: unknown) => {
+        jobInFlight = false;
+        if (res && typeof res === 'object') {
+          const r = res as { ok?: boolean; value?: unknown; error?: unknown };
+          if (r.ok) {
+            pendingResult = r.value as SimResult;
+          } else {
+            console.warn(
+              '[multithread/runtime] worker job failed or returned an error',
+              r.error ?? r
+            );
+          }
         } else {
-          console.warn('[multithread/runtime] worker job failed or returned an error', r.error ?? r);
+          console.warn('[multithread/runtime] worker returned unexpected result', res);
         }
-      } else {
-        console.warn('[multithread/runtime] worker returned unexpected result', res);
+      },
+      (err: unknown) => {
+        jobInFlight = false;
+        console.warn('[multithread/runtime] worker.join() rejected', err);
       }
-    }, (err: unknown) => {
-      jobInFlight = false;
-      console.warn('[multithread/runtime] worker.join() rejected', err);
-    });
+    );
   } catch (err) {
     jobInFlight = false;
     runtimeDisabled = true;

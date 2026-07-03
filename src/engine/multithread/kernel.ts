@@ -75,7 +75,6 @@ export function simulateStep(input: SimInput): SimResult {
   };
 }
 
-
 /**
  * Run the simulation writing results in-place into the provided output buffers.
  * This function is intended for SharedArrayBuffer-based workflows where zero-copy

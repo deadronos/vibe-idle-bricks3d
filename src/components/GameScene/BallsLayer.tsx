@@ -21,5 +21,11 @@ export function BallsLayer({ balls, rapierActive, computedQuality }: BallsLayerP
     return <BallsInstanced maxInstances={maxInstances} />;
   }
 
-  return <>{balls.map((ball) => <Ball key={ball.id} ball={ball} />)}</>;
+  return (
+    <>
+      {balls.map((ball) => (
+        <Ball key={ball.id} ball={ball} />
+      ))}
+    </>
+  );
 }

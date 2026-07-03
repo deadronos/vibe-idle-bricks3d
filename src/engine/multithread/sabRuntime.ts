@@ -26,7 +26,10 @@ let initialized = false;
 let ringSize = 0; // number of slots in ring buffer (1 = single-control mode)
 
 export function available(): boolean {
-  return typeof SharedArrayBuffer !== 'undefined' && !!((globalThis as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated);
+  return (
+    typeof SharedArrayBuffer !== 'undefined' &&
+    !!(globalThis as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated
+  );
 }
 
 export function isInitialized() {
@@ -42,11 +45,21 @@ function allocSABArrays(newCapacity: number, newRingSize = 4) {
 
   // When ringSize === 1, this is the simple single-control mode; allocate minimal arrays
   if (ringSize === 1) {
-    positions = new Float32Array(new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity * 3));
-    velocities = new Float32Array(new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity * 3));
-    radii = new Float32Array(new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity));
-    damages = new Float32Array(new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity));
-    outHitIndices = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * perSlotCapacity));
+    positions = new Float32Array(
+      new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity * 3)
+    );
+    velocities = new Float32Array(
+      new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity * 3)
+    );
+    radii = new Float32Array(
+      new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity)
+    );
+    damages = new Float32Array(
+      new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * perSlotCapacity)
+    );
+    outHitIndices = new Int32Array(
+      new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * perSlotCapacity)
+    );
     // control meta
     control = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 1));
     metaFloats = new Float64Array(new SharedArrayBuffer(Float64Array.BYTES_PER_ELEMENT * 4));
@@ -62,11 +75,17 @@ function allocSABArrays(newCapacity: number, newRingSize = 4) {
   const totalVectors = perSlotCapacity * 3 * ringSize;
   const totalScalars = perSlotCapacity * ringSize;
 
-  positions = new Float32Array(new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * totalPositions));
-  velocities = new Float32Array(new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * totalVectors));
+  positions = new Float32Array(
+    new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * totalPositions)
+  );
+  velocities = new Float32Array(
+    new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * totalVectors)
+  );
   radii = new Float32Array(new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * totalScalars));
   damages = new Float32Array(new SharedArrayBuffer(Float32Array.BYTES_PER_ELEMENT * totalScalars));
-  outHitIndices = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * totalScalars));
+  outHitIndices = new Int32Array(
+    new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * totalScalars)
+  );
 
   // Per-slot flags: 0=free,1=pending,2=processing,3=done
   control = null;
@@ -298,14 +317,12 @@ export function submitJobIfIdle(balls: Ball[], delta: number, arena: ArenaSize):
 }
 
 /** Check for a completed job and collect result if available; returns null if not ready. */
-export function takeResultIfReady():
-  | {
-      positions: Float32Array;
-      velocities: Float32Array;
-      hitIndices: Int32Array;
-      count: number;
-    }
-  | null {
+export function takeResultIfReady(): {
+  positions: Float32Array;
+  velocities: Float32Array;
+  hitIndices: Int32Array;
+  count: number;
+} | null {
   if (!initialized || !positions || !velocities || !outHitIndices || !metaFloats) return null;
 
   // Ring-mode: search for a completed slot

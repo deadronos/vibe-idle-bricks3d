@@ -9,7 +9,8 @@ import type { GameSettings } from '../../store/types';
  */
 export function getRenderingOptions(settings: Partial<GameSettings> | undefined) {
   const quality = settings?.graphicsQuality ?? 'auto';
-  const dpr = typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1;
+  const dpr =
+    typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1;
   const computedQuality = ((): 'low' | 'medium' | 'high' => {
     if (quality === 'auto') {
       if (!settings?.enableShadows) return 'low';
@@ -33,7 +34,8 @@ export function getRenderingOptions(settings: Partial<GameSettings> | undefined)
         ? 0.8
         : 0.0
     : 0.0;
-  const pixelRatio = computedQuality === 'low' ? 0.75 : computedQuality === 'medium' ? 1.0 : Math.min(dpr, 2);
+  const pixelRatio =
+    computedQuality === 'low' ? 0.75 : computedQuality === 'medium' ? 1.0 : Math.min(dpr, 2);
   return { computedQuality, shadowSize, particleCount, bloomIntensity, pixelRatio };
 }
 
