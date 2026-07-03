@@ -49,27 +49,33 @@ When a bug is fixed, behavior changes, or documentation is updated, record the l
 
 ## Development Workflow
 
+## Development Workflow
+
+The project uses **pnpm** as its package manager. Always use `pnpm install`,
+`pnpm run`, etc. — `npm install` / `npm ci` is no longer supported in this repo
+(`package-lock.json` is gitignored and CI uses `pnpm install --frozen-lockfile`).
+
 ### Before Making Changes
 
 1. Read relevant source files to understand context
-2. Run `npm run lint` to check current lint status
-3. Run `npm run typecheck` to verify types
-4. Run `npm run test:run` to ensure tests pass
+2. Run `pnpm run lint` to check current lint status
+3. Run `pnpm run typecheck` to verify types
+4. Run `pnpm run test:run` to ensure tests pass
 
 ### Making Changes
 
 1. Make minimal, focused changes
 2. Follow existing code patterns
 3. Maintain TypeScript strict mode compliance
-4. Run `npm run format` to ensure consistent formatting
-5. Run `npm run lint:fix` to auto-fix lint issues
+4. Run `pnpm run format` to ensure consistent formatting
+5. Run `pnpm run lint:fix` to auto-fix lint issues
 
 ### After Making Changes
 
-1. Run `npm run typecheck` to verify type safety
-2. Run `npm run lint` to check for issues
-3. Run `npm run test:run` to verify tests pass
-4. Run `npm run build` to ensure production build works
+1. Run `pnpm run typecheck` to verify type safety
+2. Run `pnpm run lint` to check for issues
+3. Run `pnpm run test:run` to verify tests pass
+4. Run `pnpm run build` to ensure production build works
 
 ## Code Quality Standards
 
@@ -77,17 +83,17 @@ When a bug is fixed, behavior changes, or documentation is updated, record the l
 
 All changes must pass:
 
-- `npm run typecheck` - TypeScript compilation
-- `npm run lint` - ESLint rules
-- `npm run test:run` - All tests
-- `npm run build` - Production build
+- `pnpm run typecheck` - TypeScript compilation
+- `pnpm run lint` - ESLint rules
+- `pnpm run test:run` - All tests
+- `pnpm run build` - Production build
 
 ### Formatting
 
 Code must be formatted with Prettier:
 
 ```bash
-npm run format  # Auto-format all files
+pnpm run format  # Auto-format all files
 ```
 
 Configuration is in `.prettierrc`:
@@ -152,7 +158,7 @@ When reviewing changes:
 - **Unit Tests**: Store logic and pure functions
 - **Location**: `src/test/`
 - **Framework**: Vitest with React Testing Library
-- **Run**: `npm run test:run`
+- **Run**: `pnpm test:run`
 
 ## Common Tasks
 

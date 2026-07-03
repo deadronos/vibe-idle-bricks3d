@@ -14,13 +14,13 @@ How to enable locally
   - macOS / Linux:
 
     ```bash
-    VITE_ENABLE_COOP=1 npm run dev
+    VITE_ENABLE_COOP=1 pnpm run dev
     ```
 
   - Windows (PowerShell):
 
     ```powershell
-    $Env:VITE_ENABLE_COOP = '1'; npm run dev
+    $Env:VITE_ENABLE_COOP = '1'; pnpm run dev
     ```
 
 - To enable the experimental SharedArrayBuffer-based physics POC, set `VITE_ENABLE_SAB=1` in addition to `VITE_ENABLE_COOP`:
@@ -28,13 +28,13 @@ How to enable locally
   - macOS / Linux:
 
     ```bash
-    VITE_ENABLE_COOP=1 VITE_ENABLE_SAB=1 npm run dev
+    VITE_ENABLE_COOP=1 VITE_ENABLE_SAB=1 pnpm run dev
     ```
 
   - Windows (PowerShell):
 
     ```powershell
-    $Env:VITE_ENABLE_COOP = '1'; $Env:VITE_ENABLE_SAB = '1'; npm run dev
+    $Env:VITE_ENABLE_COOP = '1'; $Env:VITE_ENABLE_SAB = '1'; pnpm run dev
     ```
 
   When enabled, the FrameManager will attempt to initialize a SAB worker and use zero-copy in-place buffers for ball state updates. If SharedArrayBuffer or cross-origin isolation are not available, the runtime will safely fall back to the transferable-worker or main-thread path.
@@ -69,13 +69,13 @@ Manual integration test flow (dev)
    - macOS / Linux:
 
      ```bash
-     VITE_ENABLE_COOP=1 VITE_ENABLE_SAB=1 npm run dev
+     VITE_ENABLE_COOP=1 VITE_ENABLE_SAB=1 pnpm run dev
      ```
 
    - Windows (PowerShell):
 
      ```powershell
-     $Env:VITE_ENABLE_COOP = '1'; $Env:VITE_ENABLE_SAB = '1'; npm run dev
+     $Env:VITE_ENABLE_COOP = '1'; $Env:VITE_ENABLE_SAB = '1'; pnpm run dev
      ```
 
 2. Open the app in a browser that supports `SharedArrayBuffer` in cross-origin isolated pages (Chrome 92+, etc.).
@@ -86,3 +86,4 @@ Manual integration test flow (dev)
 Security
 
 - Only enable these headers when you understand the security implications and have reviewed third-party resources used by the page.
+
