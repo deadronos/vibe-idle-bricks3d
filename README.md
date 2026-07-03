@@ -44,26 +44,26 @@ Note: common package versions used in this repository (see package.json for the 
 ### Prerequisites
 
 - Node.js 20.19+ or 22.12+
-- pnpm (recommended) or npm / yarn
+- pnpm
+
+This project is pnpm-only. `npm install` / `npm ci` will fail — CI uses
+`pnpm install --frozen-lockfile` against `pnpm-lock.yaml`, and `package-lock.json`
+is gitignored.
 
 ### Installation
 
 ```bash
-# Install dependencies (pnpm recommended)
+# Install dependencies
 pnpm install
-# or: npm install / yarn install
 
 # Start development server
 pnpm run dev
-# or: npm run dev
 
 # Run tests (see scripts below)
 pnpm run test
-# or: npm run test
 
 # Build for production
 pnpm run build
-# or: npm run build
 ```
 
 ### Experimental: SharedArrayBuffer-based physics (POC)
@@ -79,13 +79,13 @@ Notes:
 Example (macOS / Linux):
 
 ```bash
-VITE_ENABLE_COOP=1 VITE_ENABLE_SAB=1 npm run dev
+VITE_ENABLE_COOP=1 VITE_ENABLE_SAB=1 pnpm run dev
 ```
 
 Example (Windows PowerShell):
 
 ```powershell
-$Env:VITE_ENABLE_COOP = '1'; $Env:VITE_ENABLE_SAB = '1'; npm run dev
+$Env:VITE_ENABLE_COOP = '1'; $Env:VITE_ENABLE_SAB = '1'; pnpm run dev
 ```
 
 When enabled, `FrameManager` will attempt to initialize the SAB worker and use it; otherwise the system falls back to the transferable-worker path or single-threaded simulation.
@@ -94,7 +94,7 @@ See `docs/SHAREDARRAYBUFFER.md` for more details and caveats about cross-origin 
 
 ## Testing
 
-The repository uses Vitest for unit and integration tests. Useful scripts are available in `package.json` (run with `pnpm` / `npm`):
+The repository uses Vitest for unit and integration tests. Useful scripts are available in `package.json` (run with `pnpm`):
 
 ```bash
 # Run tests (headless / default)
